@@ -21,7 +21,15 @@ configSource=configSource.replace('mode:"demo"','mode:'+JSON.stringify(mode))
  .replace('allowExternalPublicApi:false','allowExternalPublicApi:'+String(process.env.ALLOW_EXTERNAL_PUBLIC_API==="true"));
 writeFileSync(configPath,configSource);
 for(const page of pages){
- const html=readFileSync(join(dist,page),"utf8");
+ let html=readFileSync(join(dist,page),"utf8");
+ if(!html.includes('http-equiv="Content-Security-Policy"')||!html.includes("script-src 'self'"))
+  throw Error("Public CSP missing or unsafe in "+page);
+ // Only the explicitly configured external API origin may be used by a release build.
+ if(mode==="live"&&!apiBase.startsWith("/")){
+  const origin=new URL(apiBase).origin;
+  html=html.replace("connect-src 'self';","connect-src 'self' "+origin+";");
+  writeFileSync(join(dist,page),html);
+ }
  const paths=[...html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g)].map(m=>m[1]);
  for(const path of paths)if(!existsSync(join(dist,path)))throw Error("Missing public asset: "+path+" in "+page);
 }

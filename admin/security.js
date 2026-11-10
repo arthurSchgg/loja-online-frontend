@@ -39,6 +39,8 @@ export function setupSecurityPanel(api, {onPasswordChanged, onSessionExpired} = 
       status(feedback, error?.message || "Não foi possível alterar a senha.", true);
       if (error?.status === 401) onSessionExpired?.();
     } finally {
+      // Failed requests must not leave current/new passwords in form controls.
+      passwordForm.querySelectorAll('input[type="password"]').forEach(input => { input.value = ""; });
       button.disabled = false;
     }
   });
@@ -58,6 +60,8 @@ export function setupSecurityPanel(api, {onPasswordChanged, onSessionExpired} = 
       status(feedback, error?.message || "Não foi possível solicitar a alteração.", true);
       if (error?.status === 401) onSessionExpired?.();
     } finally {
+      // Failed requests must not leave current/new passwords in form controls.
+      emailForm.querySelectorAll('input[type="password"]').forEach(input => { input.value = ""; });
       button.disabled = false;
     }
   });

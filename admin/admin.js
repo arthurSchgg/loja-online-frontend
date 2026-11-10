@@ -20,7 +20,19 @@ const formDefs={
 const endMap={brands:"brands",categories:"categories",products:"products",offerings:"offerings",content:"content-sections",campaigns:"campaigns",audit:"audit-events",store:"store"};
 function info(message,isError=false){const p=$("#admin-status");p.textContent=message;p.classList.toggle("error",!!isError);}
 function toolInfo(message,isError=false){const p=$("#record-tool-status");p.textContent=message;p.classList.toggle("error",!!isError);}
-function showLogin(){sessionUser=null;$("#admin-workspace").hidden=true;$("#login-panel").hidden=false;}
+function showLogin(){
+ sessionUser=null;editing=null;dirty=false;recordsPage=0;
+ $("#admin-workspace").hidden=true;$("#login-panel").hidden=false;
+ // The panel is hidden, not destroyed, so clear private records and unsaved form data.
+ $("#login-form").reset();
+ $("#admin-user").textContent="";
+ $("#edit-form").replaceChildren();
+ $("#admin-records").replaceChildren();
+ $("#record-tool-body").replaceChildren();
+ $("#security-password-form")?.reset();
+ $("#security-email-form")?.reset();
+ const dialog=$("#record-tool-dialog");if(dialog?.open)dialog.close();
+}
 function showWorkspace(name){sessionUser=name;$("#admin-user").textContent="Sessão: "+name;$("#login-panel").hidden=true;$("#admin-workspace").hidden=false;changeModule(true);}
 async function bootstrap(){
  if(!adminOriginAllowed(window.location)){info("Painel exige HTTPS e API sob a mesma origem. Bloqueado neste endereço.",true);$("#login-form").querySelector("button").disabled=true;return;}

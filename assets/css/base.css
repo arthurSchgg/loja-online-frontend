@@ -19,3 +19,19 @@ a:hover{color:var(--color-accent)}.sr-only{position:absolute;width:1px;height:1p
 @media(max-width:1024px){.nav-links{display:none}.mobile-toggle{display:grid}.footer-grid{grid-template-columns:2fr 1fr}}
 @media(max-width:768px){.header-inner{min-height:70px}.brand{min-width:0}.brand-mark{width:45px;height:45px}.brand strong{font-size:1.15rem}.section-heading{display:block}.section-heading .text-link{display:inline-block;margin-top:24px}.footer-grid{grid-template-columns:1fr}.footer-end{flex-direction:column}.section{padding-block:72px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+
+/* Native page transitions stay progressive: browsers without support keep normal navigation. */
+@media (prefers-reduced-motion: no-preference) {
+ @view-transition { navigation: auto; }
+ ::view-transition-old(root) { animation: .17s ease-in both page-fade-out; }
+ ::view-transition-new(root) { animation: .26s ease-out both page-fade-in; }
+}
+@keyframes page-fade-out {to{opacity:.82}}
+@keyframes page-fade-in {from{opacity:.82}to{opacity:1}}
+.scroll-progress{position:fixed;z-index:100;top:0;left:0;width:100%;height:3px;background:var(--color-accent);transform:scaleX(0);transform-origin:left center;pointer-events:none}
+.site-header{transition:background-color 280ms ease,box-shadow 280ms ease}
+.site-header:focus-within{box-shadow:0 7px 32px rgba(59,35,29,.08)}
+@media(prefers-reduced-motion:reduce){
+ ::view-transition-old(root),::view-transition-new(root){animation:none!important}
+}

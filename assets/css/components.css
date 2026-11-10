@@ -17,3 +17,16 @@
 @media(max-width:1024px){.product-grid{grid-template-columns:repeat(3,1fr)}.filter-bar{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:768px){.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.filter-bar{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:375px){.product-grid{grid-template-columns:1fr}.filter-bar{grid-template-columns:1fr}}
+
+
+/* Small, transform-only interactions for a calmer premium storefront. */
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ .btn{position:relative;transition:transform .3s var(--ease-lux),background .3s ease,color .3s ease,box-shadow .3s ease}
+ .btn:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(66,38,30,.14)}
+ .btn:active{transform:translateY(-1px) scale(.985)}
+ .product-visual{transition:box-shadow .4s ease}
+ .product-card:hover .product-visual{box-shadow:0 16px 36px rgba(61,34,28,.13)}
+ .quiz-choice{transition:background .25s ease,padding-left .3s var(--ease-lux)}
+ .quiz-choice:hover{background:var(--color-highlight);padding-left:16px}
+ .text-link{transition:color .25s ease,border-color .25s ease}
+}

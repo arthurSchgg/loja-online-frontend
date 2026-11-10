@@ -18,3 +18,22 @@
 /* Official contacts are published only when the live API provides them. */
 .contact-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
 .contact-links a{max-width:100%;overflow-wrap:anywhere}
+
+
+@media (prefers-reduced-motion: no-preference) {
+ .hero-image::before{animation:ambient-glow 8s ease-in-out infinite alternate}
+ .hero-watermark{animation:watermark-drift 15s ease-in-out infinite alternate}
+ .marquee:hover .marquee-track,.marquee:focus-within .marquee-track{animation-play-state:paused}
+}
+@keyframes ambient-glow{to{transform:scale(1.09);opacity:.6}}
+@keyframes watermark-drift{to{transform:translate3d(-18px,10px,0)}}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ .family-tile{transition:transform .42s var(--ease-lux),box-shadow .42s ease}
+ .family-tile:hover{transform:translateY(-8px);box-shadow:0 14px 34px rgba(60,35,27,.1)}
+ .family-tile i{transition:transform .55s var(--ease-lux)}
+ .family-tile:hover i{transform:rotate(13deg) scale(1.08)}
+ .collection-tile:focus-visible img,.collection-tile:hover img{transform:translateY(-16px) scale(1.04)}
+}
+@media(prefers-reduced-motion:reduce){
+ .hero-image::before,.hero-watermark,.marquee-track{animation:none!important}
+}
