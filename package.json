@@ -1,0 +1,16 @@
+{
+  "name": "lojinha-da-katia-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Luxury editorial perfume showcase and WhatsApp consultation - no checkout",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "python3 -m http.server 5500",
+    "check": "node --check assets/js/data.js && node --check assets/js/cart.js && node --check assets/js/layout.js && node --check assets/js/storefront.js && node --check assets/js/catalog.js && node --check assets/js/product.js && node --check assets/js/animations.js",
+    "test": "node --test tests/*.test.js",
+    "build": "node tools/build.mjs"
+  }
+}
