@@ -10,6 +10,7 @@ const numberId=id=>Number.isSafeInteger(Number(id))&&Number(id)>0?Number(id):nul
 const productTitle=p=>safe(p.name||"Produto sem nome");
 function imageFromProduct(p){
  const raw=p?.images?.[0]?.url;
+ if(typeof raw!=="string"||!raw.trim())return "assets/images/brand/logo-katia.svg";
  try{
   const url=new URL(raw,location.href);
   if(url.protocol==="https:"||(url.origin===location.origin&&["http:","https:"].includes(url.protocol)))return url.href;
@@ -17,6 +18,7 @@ function imageFromProduct(p){
  return "assets/images/brand/logo-katia.svg";
 }
 const imageFromOffering=o=>{
+ if(typeof o.imageUrl!=="string"||!o.imageUrl.trim())return "assets/images/brand/logo-katia.svg";
  try{const u=new URL(o.imageUrl,location.href);if(u.protocol==="https:"||u.origin===location.origin)return u.href;}catch{}
  return "assets/images/brand/logo-katia.svg";
 };
