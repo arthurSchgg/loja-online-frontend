@@ -1,5 +1,7 @@
 import {byId,PERFUMES,price,money,SIZES} from "./data.js";
+import {isLive} from "./config.js";
 import {productCard,escapeHtml} from "./layout.js";
+if(!isLive){
 const params=new URLSearchParams(location.search),p=byId(params.get("id")),host=document.getElementById("product-content"),related=document.getElementById("related-grid");
 if(host){
  if(!p){host.innerHTML='<div class="container section"><h1>Fragrância não encontrada</h1><p>Explore nossa coleção demonstrativa.</p><a href="catalogo.html" class="btn btn--primary">Voltar ao catálogo</a></div>';document.title="Não encontrado | Lojinha da Kátia";}
@@ -14,3 +16,5 @@ if(host){
   if(related)related.innerHTML=PERFUMES.filter(x=>x.id!==p.id&&(x.family===p.family)).slice(0,4).map(productCard).join("");
  }
 }
+
+} // end demo-only renderer; live product handled by live.js

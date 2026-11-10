@@ -35,6 +35,8 @@ jobs:
             npm run check
             npm test
             npm run build
+            # Verify the same source also builds in live mode without secrets.
+            SITE_MODE=live API_BASE_URL=/api/v1 npm run build
           else
             echo "::notice::Governance-only baseline: app not imported yet; no app tests executed"
           fi
