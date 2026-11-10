@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {validateExperienceDraft,validateRecommendations} from "../admin/experiences.js";
+import {validateExperienceDraft,validateRecommendations,normalizeAdminExperience} from "../admin/experiences.js";
 const draft=()=>({
  title:"Qual sua essência?",description:"Quiz",published:false,
  results:[{key:"floral",title:"Floral",description:""}],
@@ -30,4 +30,17 @@ test("recommendations accept up to 3 distinct product IDs",()=>{
  assert.throws(()=>validateRecommendations({experienceId:2,resultKey:"floral",ids:"1,2,3,4"}),/máximo 3/);
  assert.throws(()=>validateRecommendations({experienceId:2,resultKey:"floral",ids:"1,1"}),/repetição/);
  assert.throws(()=>validateRecommendations({experienceId:0,resultKey:"floral",ids:"1"}),/ID/);
+});
+
+test("admin edit requires complete result keys and returns update-safe draft",()=>{
+ const quiz={id:4,title:"Perfil",description:"",published:true,
+  results:[{id:1,key:"floral",title:"Floral",description:"",productIds:[8]}],
+  questions:[{id:2,title:"Aroma",position:0,options:[
+   {id:3,label:"Rosa",position:0,resultKey:"floral"},
+   {id:4,label:"Flor",position:1,resultKey:"floral"}]}]};
+ const normalized=normalizeAdminExperience(quiz);
+ assert.equal(normalized.id,4);
+ assert.equal(normalized.questions[0].options[0].resultKey,"floral");
+ assert.throws(()=>normalizeAdminExperience({...quiz,questions:[{...quiz.questions[0],options:[{label:"Sem chave"}]}]}),/chaves/);
+ assert.throws(()=>normalizeAdminExperience({...quiz,results:undefined}),/completo/);
 });
