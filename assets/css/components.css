@@ -62,3 +62,8 @@
 @media(prefers-reduced-motion:reduce){
  .product-visual img{--motion-shift:0px!important;--image-hover-lift:0px!important;--image-hover-scale:1!important}
 }
+
+@media(prefers-reduced-motion:reduce){
+ .product-card:hover .product-visual img,
+ .product-card:focus-within .product-visual img{transform:none!important}
+}
