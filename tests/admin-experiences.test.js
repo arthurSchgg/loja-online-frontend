@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {validateExperienceDraft,validateRecommendations,normalizeAdminExperience} from "../admin/experiences.js";
+import {validateExperienceDraft,validateRecommendations,normalizeAdminExperience,removedResultKeys} from "../admin/experiences.js";
 const draft=()=>({
  title:"Qual sua essência?",description:"Quiz",published:false,
  results:[{key:"floral",title:"Floral",description:""}],
@@ -43,4 +43,10 @@ test("admin edit requires complete result keys and returns update-safe draft",()
  assert.equal(normalized.questions[0].options[0].resultKey,"floral");
  assert.throws(()=>normalizeAdminExperience({...quiz,questions:[{...quiz.questions[0],options:[{label:"Sem chave"}]}]}),/chaves/);
  assert.throws(()=>normalizeAdminExperience({...quiz,results:undefined}),/completo/);
+});
+
+test("removing or renaming result keys requires a destructive-change confirmation",()=>{
+ assert.deepEqual(removedResultKeys(["floral","wood"],["floral"]),["wood"]);
+ assert.deepEqual(removedResultKeys(["floral"],["flowers"]),["floral"]);
+ assert.deepEqual(removedResultKeys(["floral"],["floral","wood"]),[]);
 });
