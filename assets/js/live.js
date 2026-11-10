@@ -65,7 +65,7 @@ function showConfirmation({type,item}){
  dlg.querySelector("#confirmed-link").replaceChildren();
  const options=dlg.querySelector("#confirm-options");options.replaceChildren();
  if(type==="OFFERING"){
-  const grouped=Object.groupBy((item.options||[]).filter(o=>o.active),o=>o.kind);
+  const grouped=(item.options||[]).filter(o=>o.active).reduce((acc,o)=>{(acc[o.kind]??=[]).push(o);return acc;},{});
   for(const [kind,values] of Object.entries(grouped)){
    const label=document.createElement("label");label.className="field";label.textContent=kind==="AROMA"?"Aroma":kind==="COLOR"?"Cor":"Embalagem";
    const select=document.createElement("select");select.dataset.optionKind=kind;
