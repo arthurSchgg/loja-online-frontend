@@ -1,5 +1,5 @@
 import test from "node:test";import assert from "node:assert/strict";
-import {ApiError,apiUrl,publicRequest,normalizePage,confirmWhatsApp,currentPrice,productSearchPath} from "../assets/js/api.js";
+import {ApiError,apiUrl,publicRequest,normalizePage,confirmWhatsApp,currentPrice,productSearchPath,validateWhatsAppUrl} from "../assets/js/api.js";
 test("API base remains same origin and only public credentials omitted",async()=>{
  const out=await publicRequest("/products",{fetchImpl:async(url,opts)=>{assert.equal(opts.credentials,"omit");assert.ok(url.includes("/api/v1/products"));return {ok:true,status:200,json:async()=>[]};}});
  assert.deepEqual(out,[]);
@@ -46,4 +46,26 @@ test("server sorts on effective price and validates max price",()=>{
  assert.throws(()=>productSearchPath(0,{sort:"id,desc"}),/Ordenação inválida/);
  assert.throws(()=>productSearchPath(0,{maxPrice:"-1"}),/Preço máximo inválido/);
  assert.throws(()=>productSearchPath(0,{maxPrice:"not a number"}),/Preço máximo inválido/);
+});
+
+
+test("WhatsApp link validation accepts only authorized phone-specific URLs",()=>{
+ const valid="https://wa.me/5547999999999?text=Ol%C3%A1%20loja";
+ assert.equal(validateWhatsAppUrl(valid),valid);
+ assert.equal(validateWhatsAppUrl("https://api.whatsapp.com/send?phone=5547999999999&text=Ola"),
+  "https://api.whatsapp.com/send?phone=5547999999999&text=Ola");
+ for(const unsafe of [
+  "https://attacker.example/?next=wa.me",
+  "https://wa.me.evil.example/5547999999999",
+  "http://wa.me/5547999999999",
+  "https://user:password@wa.me/5547999999999",
+  "https://wa.me:443/invalid",
+  "https://wa.me/5547999999999/extra",
+  "https://wa.me/not-a-number",
+  "https://wa.me/5547999999999#irrelevant",
+  "https://api.whatsapp.com/send?phone=bad",
+  "https://api.whatsapp.com/other?phone=5547999999999",
+  "javascript:alert(1)"
+ ])assert.throws(()=>validateWhatsAppUrl(unsafe),ApiError);
+ assert.throws(()=>validateWhatsAppUrl(null),ApiError);
 });
