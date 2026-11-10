@@ -7,9 +7,10 @@ import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
 import {escapeHtml} from "./layout.js";
 import {officialStoreLinks} from "./official-contact.js";
+import {safeNumericId as numberId} from "./render-safety.js";
 import {createConfirmationGate} from "./confirmation-gate.js";
 const safe=value=>escapeHtml(value??"");
-const numberId=id=>Number.isSafeInteger(Number(id))&&Number(id)>0?Number(id):null;
+
 const productTitle=p=>safe(p.name||"Produto sem nome");
 function imageFromProduct(p){
  const raw=p?.images?.[0]?.url;
