@@ -4,6 +4,7 @@
 import {isLive} from "./config.js";
 import {fetchProducts,fetchProduct,fetchOfferings,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,ApiError} from "./api.js";
 import {money} from "./data.js";
+import {createPaginator} from "./pagination.js";
 import {escapeHtml} from "./layout.js";
 const safe=value=>escapeHtml(value??"");
 const numberId=id=>Number.isSafeInteger(Number(id))&&Number(id)>0?Number(id):null;
@@ -139,7 +140,7 @@ async function initCatalog(){
  for(const field of ["gender","size"]){const input=form.elements[field];if(input)input.closest(".field").hidden=true;}
  const heading=document.querySelector(".catalog-hero .lead");if(heading)heading.textContent="Produtos publicados e preços consultados da API. Confirme antes de abrir o WhatsApp.";
  const family=form.elements.family;family.innerHTML='<option value="">Todas as categorias</option>';
- const all=[];let page=0,hasNext=true;
+ const all=[];const pager=createPaginator(fetchProducts);let hasNext=true;
  const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
  function render(){
   const data=new FormData(form),q=String(data.get("query")||"").toLocaleLowerCase("pt-BR"),category=String(data.get("family")||""),max=Number(data.get("max")||100000);
@@ -155,9 +156,9 @@ async function initCatalog(){
   loadMore.disabled=true;status(grid,"Carregando produtos publicados...");
   try{
    // Increment only after a successful response, so retry never skips a page.
-   const result=await fetchProducts(page);
-   page++;
-   all.push(...result.items.filter(p=>Number.isSafeInteger(Number(p.id))));currentProducts=all;hasNext=result.hasNext;
+   const result=await pager.next();
+   hasNext=pager.hasNext;
+   all.push(...result.items.filter(p=>Number.isSafeInteger(Number(p.id))));currentProducts=all;
    const categories=[...new Set(all.flatMap(p=>(p.categories||[]).map(c=>c.name)))].sort();
    const selected=family.value;family.innerHTML='<option value="">Todas as categorias</option>'+categories.map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join("");family.value=selected;
    render();loadMore.textContent="Carregar mais produtos";
