@@ -71,6 +71,10 @@ conteúdo e dados institucionais; estoque, promoções, opções de velas e audi
 A integração precisa ser testada no staging autorizado. Veja
 [docs/ADMIN-OPERATIONS.md](docs/ADMIN-OPERATIONS.md).
 
+## Smoke de integração pública
+
+Para conferir o contrato REST público contra um backend de staging com TLS validado, execute `npm run smoke:public -- https://staging.exemplo.com`. O script faz somente GET, sem cookies, escrita ou dados fictícios automáticos; valida endpoints públicos e ordenação global por preço efetivo. Consulte [docs/STAGING-PUBLIC-SMOKE.md](docs/STAGING-PUBLIC-SMOKE.md). Essa evidência complementa, mas **não substitui**, a homologação no navegador.
+
 ## Qualidade e produção
 
 CI executa `npm run check`, `npm test` e `npm run build`. A aprovação do CI não substitui a homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade ou AWS. `main` permanece reservada a releases aprovados.
