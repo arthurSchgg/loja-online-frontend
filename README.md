@@ -44,6 +44,8 @@ Em modo live, a busca textual e as categorias consultam a API em todas as págin
 
 No modo live, a seção de contato consulta `GET /api/v1/store` e só mostra WhatsApp/Instagram/e-mail oficiais configurados no backend. O formulário de newsletter fictício é removido desse modo, sem armazenar dados de visitantes.
 
+Em modo live, a home **não apresenta coleções fictícias como produtos reais**: o bloco de coleções demonstrativas é ocultado, os destaques de categorias usam `GET /api/v1/categories`, e textos de quiz e avisos são coerentes com dados publicados. Os frascos ilustrativos são exclusivos do modo demo; a homologação visual com a identidade oficial ainda é obrigatória.
+
 ## Administração e recuperação de acesso
 
 A administração de quizzes e recomendações fica em `admin-experiences.html` (build administrativo), com criação e edição visual de quizzes existentes, e vínculo de até três produtos por perfil. A edição usa o DTO completo e restrito de `GET /api/v1/admin/experiences/{id}`; caso faltem chaves de resultado, a interface bloqueia a edição para impedir perda de dados. Ao remover ou renomear chaves de perfis, a interface solicita confirmação; recomendações dos perfis mantidos são preservadas pelo backend. Requer backend com PR #156 integrado e homologação full stack antes da produção.
