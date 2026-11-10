@@ -41,7 +41,7 @@ export async function fetchExperience(id,signal){return publicRequest("/experien
 export async function evaluateExperience(id,answers){
  return publicRequest("/experiences/"+Number(id)+"/evaluate",{method:"POST",payload:{answers}});
 }
-export function currentPrice(dto){const val=Number(dto?.effectivePrice??dto?.price);return Number.isFinite(val)&&val>=0?val:null;}
+export function currentPrice(dto){const raw=dto?.effectivePrice??dto?.price;if(raw===null||raw===undefined)return null;const val=Number(raw);return Number.isFinite(val)&&val>=0?val:null;}
 export async function confirmWhatsApp({type,id,expectedPrice,customizations={}}){
  if(!["PRODUCT","OFFERING"].includes(type)||!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new ApiError("Seleção inválida.");
  const payload={type,id:Number(id),expectedPrice:expectedPrice===null?null:expectedPrice,customizations};
