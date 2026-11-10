@@ -102,7 +102,7 @@ test("demo | quiz and reduced-motion preference work without errors",async({page
  expect(errors).toEqual([]);
 });
 
-test("live | published product, categories, no demo basket and confirmed WhatsApp",async({page})=>{
+test("live | published product, categories, private basket removed and confirmed WhatsApp",async({page})=>{
  const errors=collectPageErrors(page);
  await mockPublicBackend(page);
  await page.goto("/index.html");
