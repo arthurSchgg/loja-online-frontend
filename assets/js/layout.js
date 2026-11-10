@@ -1,7 +1,10 @@
 import {PERFUMES,byId,money,price} from "./data.js";
 import {addItem,changeQuantity,totalCount,readBag} from "./cart.js";
+import {isLive} from "./config.js";
 export const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let bag=[];try{bag=readBag(window.sessionStorage);}catch{}
+let bag=[];
+// Never read stale demonstration items when actual products are served by the API.
+try{if(!isLive)bag=readBag(window.sessionStorage);}catch{}
 const demoNotice="Coleção ilustrativa, preços fictícios. Sem pagamento ou pedido real. Consulte a loja pelo canal oficial após confirmação de preço e disponibilidade.";
 export function productCard(p){
  return '<article class="product-card" style="--card-theme:'+p.theme+'"><a href="produto.html?id='+encodeURIComponent(p.id)+'" aria-label="Ver '+escapeHtml(p.name)+'"><div class="product-visual"><span class="badge">Conceito</span><img src="'+p.image+'" alt="Ilustração de frasco: '+escapeHtml(p.name)+'" loading="lazy" width="320" height="420"></div></a><div class="product-card__meta"><small>'+escapeHtml(p.family)+' · '+escapeHtml(p.gender)+'</small><h3><a href="produto.html?id='+encodeURIComponent(p.id)+'">'+escapeHtml(p.name)+'</a></h3><p>'+escapeHtml(p.description)+'</p><div class="product-card__bottom"><strong>Ilustrativo: '+money(price(p))+'</strong><button type="button" class="icon-button" data-add="'+p.id+'" aria-label="Adicionar '+escapeHtml(p.name)+' à sacola demonstrativa">＋</button></div></div></article>';
@@ -26,13 +29,21 @@ function renderShell(){
  });
  document.addEventListener("click",e=>{
   const add=e.target.closest("[data-add]");
-  if(add){const item=byId(add.dataset.add);if(item){bag=addItem(bag,{id:item.id,size:Number(add.dataset.size||50),qty:1});saveBag();openBag();}}
+  if(add&&!isLive){const item=byId(add.dataset.add);if(item){bag=addItem(bag,{id:item.id,size:Number(add.dataset.size||50),qty:1});saveBag();openBag();}}
   const edit=e.target.closest("[data-cart-change]");
   if(edit){bag=changeQuantity(bag,edit.dataset.id,Number(edit.dataset.size),Number(edit.dataset.cartChange));saveBag();}
  });
+ if(isLive){
+  // The real storefront only offers server-validated WhatsApp consultation.
+  // Do not display a fictitious basket or subtotal on live pages.
+  document.querySelector("[data-open-cart]")?.remove();
+  drawer?.remove();
+  const footerLabel=footer?.querySelector(".footer-end span");
+  if(footerLabel)footerLabel.textContent="© Lojinha da Kátia · Catálogo publicado";
+ }
  renderBag();
 }
-function saveBag(){try{window.sessionStorage.setItem("katia-demo-bag",JSON.stringify(bag));}catch{}renderBag();}
+function saveBag(){if(isLive)return;try{window.sessionStorage.setItem("katia-demo-bag",JSON.stringify(bag));}catch{}renderBag();}
 function renderBag(){
  document.querySelectorAll("[data-cart-count]").forEach(x=>x.textContent=String(totalCount(bag)));
  const el=document.getElementById("cart-items");if(!el)return;
@@ -40,6 +51,6 @@ function renderBag(){
  const total=bag.reduce((sum,x)=>{const p=byId(x.id);return sum+(p?price(p,x.size)*x.qty:0);},0);
  document.getElementById("bag-total").textContent="Subtotal ilustrativo: "+money(total);
 }
-export function openBag(){const dialog=document.getElementById("cart-dialog");if(dialog&&!dialog.open)dialog.showModal();}
+export function openBag(){if(isLive)return;const dialog=document.getElementById("cart-dialog");if(dialog&&!dialog.open)dialog.showModal();}
 export function toast(message){const toastEl=document.getElementById("toast");if(!toastEl)return;toastEl.textContent=message;toastEl.hidden=false;window.clearTimeout(toastEl._timer);toastEl._timer=window.setTimeout(()=>toastEl.hidden=true,3600);}
 renderShell();
