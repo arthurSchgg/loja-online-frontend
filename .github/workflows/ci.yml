@@ -48,4 +48,9 @@ jobs:
           if [ -d dist ]; then
             test ! -f dist/admin.html
             test ! -e dist/assets/js/admin.js
+            test ! -f dist/reset-password.html
+            test ! -f dist/confirm-email.html
+            test ! -d dist/admin
+            test -f dist-admin/reset-password.html
+            test -f dist-admin/confirm-email.html
           fi
