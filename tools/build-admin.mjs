@@ -8,9 +8,11 @@ mkdirSync(join(dest,"assets/css"),{recursive:true});
 for(const file of ["tokens.css","base.css","components.css"])cpSync(join(root,"assets/css",file),join(dest,"assets/css",file));
 mkdirSync(join(dest,"assets/images"),{recursive:true});
 cpSync(join(root,"assets/images/brand"),join(dest,"assets/images/brand"),{recursive:true});
-const html=readFileSync(join(dest,"admin.html"),"utf8");
-const entries=[...html.matchAll(/(?:src|href)="((?:assets|admin)\/[^"]+)"/g)].map(x=>x[1]);
-for(const entry of entries)if(!existsSync(join(dest,entry)))throw Error("Missing admin asset "+entry);
+for(const page of ["admin.html","reset-password.html","confirm-email.html"]){
+ const html=readFileSync(join(dest,page),"utf8");
+ const entries=[...html.matchAll(/(?:src|href)="((?:assets|admin)\/[^"]+)"/g)].map(x=>x[1]);
+ for(const entry of entries)if(!existsSync(join(dest,entry)))throw Error("Missing admin asset "+entry+" in "+page);
+}
 if(existsSync(join(dest,"assets/js/live.js")))throw Error("Public catalog copied into admin artifact");
 if(existsSync(join(dest,"catalogo.html")))throw Error("Public catalog page in admin artifact");
 console.log("Admin bundle PASS — only same-origin protected deployment; never CDN on separate host.");
