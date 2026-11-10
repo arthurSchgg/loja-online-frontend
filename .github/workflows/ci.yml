@@ -67,9 +67,9 @@ jobs:
           fi
 
   browser-smoke:
-    # Real Chromium verification is separate from fast Node checks and never
-    # uses production accounts, cookies, external API data or cloud credentials.
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 supports Ubuntu 24.04; latest GitHub runner may be 26.04.
+    # No production accounts, cookies, external API data or cloud credentials.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
