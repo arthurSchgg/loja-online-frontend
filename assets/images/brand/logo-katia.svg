@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Lojinha da Kátia">
+<defs><linearGradient id="copper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8a88b"/><stop offset=".45" stop-color="#ae5c3d"/><stop offset=".7" stop-color="#f6d3bc"/><stop offset="1" stop-color="#8c3f27"/></linearGradient></defs>
+<circle cx="160" cy="160" r="151" fill="#fff6f0" stroke="url(#copper)" stroke-width="13"/><circle cx="160" cy="160" r="138" fill="none" stroke="#cc9277" stroke-width="2"/>
+<g fill="none" stroke="#b87358" stroke-width="3" stroke-linecap="round"><path d="M55 250Q85 210 102 165Q111 133 110 93"/><path d="M84 200Q53 183 64 142"/><path d="M91 168Q124 139 139 125"/><path d="M108 116Q86 96 83 80"/></g>
+<g fill="#eab1b3" opacity=".72"><path d="M87 202Q44 199 59 153Q99 157 87 202Z"/><path d="M104 168Q121 126 139 128Q130 165 104 168Z"/><path d="M100 114Q70 102 79 74Q107 87 100 114Z"/></g>
+<text x="156" y="187" font-size="130" font-family="Georgia,serif" font-weight="normal" font-style="italic" text-anchor="middle" fill="url(#copper)" stroke="#8f4e34" stroke-width="1">Lk</text>
+<path d="M226 107Q240 78 254 105Q271 78 284 105Q285 122 254 147Q224 124 226 107Z" fill="none" stroke="#de8b92" stroke-width="6" stroke-linejoin="round"/>
+<text x="160" y="244" text-anchor="middle" font-size="17" letter-spacing="3" font-family="Arial,sans-serif" fill="#704233">LOJINHA DA KÁTIA</text><path d="M85 226H123M197 226H235" stroke="#b66c5b" stroke-width="3"/><path d="M160 231Q147 220 142 227Q135 237 160 251Q185 237 178 227Q173 220 160 231Z" fill="#ba6460"/>
+</svg>
