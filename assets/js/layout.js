@@ -16,10 +16,32 @@ function renderShell(){
  if(footer)footer.innerHTML='<footer class="site-footer"><div class="container"><div class="footer-grid"><div><span class="eyebrow">NOSSA ESSÊNCIA</span><h3>Lojinha da Kátia</h3><p>Mais do que comprar, é viver uma experiência.</p><p>Fragrâncias, presentes e pequenos rituais que deixam boas lembranças.</p></div><nav aria-label="Institucional"><strong>Explore</strong><a href="catalogo.html">Fragrâncias</a><a href="index.html#quiz">Encontre seu perfume</a><a href="index.html#experiencias">Espaço das Velas</a></nav><nav aria-label="Informações"><strong>Informações</strong><a href="privacidade.html">Privacidade</a><a href="index.html#contato">Contato</a><a href="https://github.com/arthurSchgg/loja-online-frontend" rel="noopener noreferrer" target="_blank">Projeto</a></nav></div><div class="footer-end"><span>© Lojinha da Kátia · Conceito demonstrativo</span><span>Sem checkout, pagamento ou pedidos neste site</span></div></div></footer>';
  const drawer=document.getElementById("cart-dialog");
  if(drawer)drawer.innerHTML='<div class="drawer-inner"><div class="drawer-head"><h2 id="bag-heading">Sua sacola</h2><button type="button" class="icon-button" data-close-cart aria-label="Fechar sacola">✕</button></div><div class="drawer-items" id="cart-items"></div><div class="drawer-footer"><strong id="bag-total"></strong><small>'+escapeHtml(demoNotice)+'</small><button class="btn btn--primary btn--full" type="button" id="copy-bag">Copiar resumo ilustrativo</button></div></div>';
- document.querySelector("[data-mobile-toggle]")?.addEventListener("click",e=>{
-  const btn=e.currentTarget,nav=document.getElementById("mobile-links");const open=btn.getAttribute("aria-expanded")!=="true";
-  btn.setAttribute("aria-expanded",String(open));nav.hidden=!open;btn.setAttribute("aria-label",open?"Fechar menu":"Abrir menu");
- });
+ const menuButton=document.querySelector("[data-mobile-toggle]");
+ const mobileMenu=document.getElementById("mobile-links");
+ if(menuButton&&mobileMenu){
+  const setMenuOpen=open=>{
+   mobileMenu.hidden=!open;
+   menuButton.setAttribute("aria-expanded",String(open));
+   menuButton.setAttribute("aria-label",open?"Fechar menu":"Abrir menu");
+  };
+  menuButton.addEventListener("click",()=>setMenuOpen(mobileMenu.hidden));
+  mobileMenu.addEventListener("click",event=>{
+   if(event.target.closest("a"))setMenuOpen(false);
+  });
+  document.addEventListener("keydown",event=>{
+   if(event.key==="Escape"&&!mobileMenu.hidden){
+    setMenuOpen(false);
+    menuButton.focus();
+   }
+  });
+  document.addEventListener("click",event=>{
+   if(!mobileMenu.hidden&&!mobileMenu.contains(event.target)&&
+      !menuButton.contains(event.target))setMenuOpen(false);
+  });
+  window.matchMedia?.("(min-width: 1025px)").addEventListener?.("change",event=>{
+   if(event.matches)setMenuOpen(false);
+  });
+ }
  document.querySelector("[data-open-cart]")?.addEventListener("click",openBag);
  document.querySelector("[data-close-cart]")?.addEventListener("click",()=>drawer?.close());
  drawer?.addEventListener("click",e=>{if(e.target===drawer)drawer.close();});
