@@ -1,4 +1,5 @@
 import {AdminApi,AdminApiError,adminOriginAllowed} from "./api.js";
+import {setupSecurityPanel} from "./security.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
