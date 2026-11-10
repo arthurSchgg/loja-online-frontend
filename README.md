@@ -40,6 +40,15 @@ SITE_MODE=live API_BASE_URL=/api/v1 npm run build
 
 O site não usa automaticamente preços fictícios quando a API fica indisponível. Ver [contratos e limites](docs/API-INTEGRATION.md). A API pública usa `credentials: omit` (sem cookies de administração). O WhatsApp real exige confirmação e validação da URL entregue pelo backend.
 
+## Administração e recuperação de acesso
+
+O painel possui formulário de mudança de senha e confirmação de novo e-mail.
+O build administrativo `npm run build:admin` inclui
+`reset-password.html` e `confirm-email.html`; essas páginas nunca
+integram a vitrine pública. Links enviados pelo backend devem apontar
+para essas URLs na mesma origem HTTPS. Ver
+[documentação de segurança da conta](docs/ADMIN-ACCOUNT-SECURITY.md).
+
 ## Segurança e escopo do backend
 
 O backend Spring Boot é o responsável por preços vigentes, estoque, opções de velas, mensagens de WhatsApp e autenticação administrativa. O frontend nunca deve criar pedidos ou aceitar compras sem esse contrato. A área administrativa precisa compartilhar **mesma origem HTTPS** com a API (sessão HTTP e CSRF); não publicar o admin dentro do build estático da vitrine.
