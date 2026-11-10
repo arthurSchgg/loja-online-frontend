@@ -1,5 +1,5 @@
 import test from "node:test";import assert from "node:assert/strict";
-import {AdminApi,AdminApiError,adminOriginAllowed} from "../admin/api.js";
+import {AdminApi,AdminApiError,adminOriginAllowed,validateAdminPath} from "../admin/api.js";
 test("admin denied on non-HTTPS outside localhost",()=>{
  assert.equal(adminOriginAllowed({protocol:"http:",hostname:"example.org"}),false);
  assert.equal(adminOriginAllowed({protocol:"https:",hostname:"shop.example"}),true);
@@ -30,4 +30,36 @@ test("login uses form encoding, never persists tokens",async()=>{
   return {ok:true,status:200,json:async()=>({authenticated:true,username:"admin"})};
  });
  const me=await client.login("admin","secret");assert.equal(me.username,"admin");assert.ok(count>=4);
+});
+
+
+test("administrative API blocks path traversal and disguised external paths",()=>{
+ for(const raw of [
+  "//evil.example", "/admin//users", "/admin/../auth/me",
+  "/admin/%2e%2e/auth/me", "/admin/%2f%2fevil", "/admin/brands#hidden",
+  "/admin/brands\\evil", "/admin/brands\nInjected", "https://evil.example/admin", ""
+ ])assert.throws(()=>validateAdminPath(raw),AdminApiError);
+ assert.equal(validateAdminPath("/admin/products/17/stock/movements?page=0&size=10"),
+  "/admin/products/17/stock/movements?page=0&size=10");
+ assert.equal(validateAdminPath("/auth/csrf"),"/auth/csrf");
+ assert.equal(validateAdminPath("/store"),"/store");
+});
+
+test("admin requests do not follow redirects or leak referrer across origins",async()=>{
+ const api=new AdminApi(async(path,options)=>{
+  assert.equal(options.redirect,"error");
+  assert.equal(options.referrerPolicy,"same-origin");
+  assert.equal(options.credentials,"same-origin");
+  assert.equal(options.cache,"no-store");
+  return {ok:true,status:200,json:async()=>({authenticated:true})};
+ });
+ assert.equal((await api.me()).authenticated,true);
+});
+
+test("unexpected CSRF header names and empty tokens are rejected",async()=>{
+ for(const data of [{headerName:"X-Injection",token:"abc"},
+  {headerName:"X-CSRF-TOKEN",token:""}]){
+  const api=new AdminApi(async()=>({ok:true,status:200,json:async()=>data}));
+  await assert.rejects(()=>api.refreshCsrf(),/CSRF/);
+ }
 });
