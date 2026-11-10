@@ -48,6 +48,12 @@ A vitrine nunca substitui falha de API por perfumes/preços ilustrativos. CI cob
 
 Na ausência de contatos ou falha da API, a página apresenta estado neutro e não inventa números, emails ou redes sociais.
 
+## Conteúdo editorial vs catálogo publicado
+
+Em `SITE_MODE=live`, a home oculta a seção de coleções conceituais com produtos fictícios e exibe até oito categorias oriundas de `GET /api/v1/categories`. Links são codificados e não são criadas categorias inexistentes. As mensagens de destaque, quiz e contato deixam de chamar experiências reais de demonstração; ilustrações de frascos fictícios não são usadas como produtos publicados. O modo `demo` preserva a direção de arte original.
+
+A identidade visual definitiva, banners e conteúdo comercial dependem de revisão da proprietária; essas alterações não autorizam produção.
+
 ## Homologação pendente
 - [ ] Testar em navegador com API e PostgreSQL de homologação autorizados.
 - [ ] Conferir limites, paginação, filtros, promoção, indisponibilidade, preço e erro 409.
