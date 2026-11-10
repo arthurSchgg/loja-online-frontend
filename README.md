@@ -1,6 +1,6 @@
 # Lojinha da Kátia — Perfumaria de Luxo (Frontend)
 
-Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem frameworks de interface. Identidade rosé/cobre, tipografia editorial, frascos vetoriais originais e animações GSAP/ScrollTrigger + Lenis com fallback.
+Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem frameworks de interface. Identidade rosé/cobre, tipografia editorial, frascos vetoriais originais e animações nativas com IntersectionObserver/Web Animations API, sem scripts de animação de terceiros.
 
 > **MODO DEMONSTRAÇÃO:** os oito perfumes, preços e pirâmides olfativas são fictícios. A sacola é uma lista de interesse, sem checkout, pedido, pagamento ou reservas. Contato real via WhatsApp exige confirmação no backend.
 
@@ -24,7 +24,7 @@ Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módul
 - `assets/css/tokens.css`: seis cores centrais, tipografia, escala 4/8px, sombras, raios, movimento.
 - `assets/css/base.css`, `components.css`, `pages.css`: base, componentes e layouts.
 - `assets/js/data.js`: somente catálogo fictício; substituir por API depois de homologação.
-- `assets/js/animations.js`: GSAP, ScrollTrigger, Lenis, parallax, reveal e fallback `prefers-reduced-motion`.
+- `assets/js/animations.js`: revelações ao rolar a página, parallax limitado, microinterações e indicador de leitura, respeitando `prefers-reduced-motion` e Save-Data.
 - `assets/images/perfumes/`: ilustrações SVG autorais sem imagens de terceiros.
 - `docs/DESIGN-SYSTEM.md`: componentes e acessibilidade.
 - `docs/GIT-FLOW.md` e `docs/SECURITY-PERMISSIONS.md`: branches, revisões, proteção e privilégios.
@@ -56,6 +56,10 @@ O build administrativo `npm run build:admin` inclui
 integram a vitrine pública. Links enviados pelo backend devem apontar
 para essas URLs na mesma origem HTTPS. Ver
 [documentação de segurança da conta](docs/ADMIN-ACCOUNT-SECURITY.md).
+
+## Animações e proteção do frontend
+
+O frontend usa recursos nativos para animações suaves e mantém a rolagem do navegador. As páginas possuem CSP com scripts restritos à própria origem; o build verifica a separação entre `dist/` e `dist-admin/`. O cliente administrativo utiliza sessão/CSRF com credenciais apenas na memória, e o backend continua responsável pela autorização. Consulte [movimento, CSP e checklist para HTTPS](docs/FRONTEND-MOTION-SECURITY.md). O deploy final exige cabeçalhos de segurança definidos no servidor/CDN, além de testes de acessibilidade e performance com navegador real.
 
 ## Segurança e escopo do backend
 
