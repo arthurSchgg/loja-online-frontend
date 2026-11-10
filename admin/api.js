@@ -47,6 +47,12 @@ export class AdminApi{
   try{await this.refreshCsrf();return await this.#fetch("/auth/logout",{method:"POST",csrf:true});}
   finally{this.#csrf=null;}
  }
+ async postAuth(path,payload){
+  const publicFlows=["/auth/password-reset/request","/auth/password-reset/confirm","/auth/email-change/confirm"];
+  if(!publicFlows.includes(path))throw new AdminApiError("Ação de recuperação não permitida.");
+  await this.refreshCsrf();
+  return this.#fetch(path,{method:"POST",body:payload,csrf:true});
+ }
  async get(path){return this.#fetch(path);}
  async write(method,path,payload){
   if(!["POST","PUT","PATCH","DELETE"].includes(method)||!path.startsWith("/admin/"))throw new AdminApiError("Rota de escrita não autorizada.");
