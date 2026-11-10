@@ -65,3 +65,34 @@ jobs:
             test -f dist-admin/reset-password.html
             test -f dist-admin/confirm-email.html
           fi
+
+  browser-smoke:
+    # Real Chromium verification is separate from fast Node checks and never
+    # uses production accounts, cookies, external API data or cloud credentials.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned browser runner without executing package lifecycle scripts
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Install isolated Chromium for visual interaction smoke
+        run: npx playwright install --with-deps chromium
+      - name: Test demo UI, responsive breakpoints and reduced motion
+        run: |
+          npm run build
+          npm run test:browser -- --grep "^demo"
+      - name: Test live storefront against a local mocked public API
+        run: |
+          API_BASE_URL=/api/v1 npm run build:release
+          npm run test:browser -- --grep "^live"
+      - name: Save browser screenshots and traces only on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storefront-browser-failures
+          if-no-files-found: ignore
+          retention-days: 7
+          path: test-results/
