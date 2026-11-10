@@ -54,6 +54,7 @@ export async function fetchProduct(id,signal){
  if(!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new ApiError("ID de produto inválido.");
  return publicRequest("/products/"+Number(id),{signal});
 }
+export async function fetchStore(signal){return publicRequest("/store",{signal});}
 export async function fetchOfferings(signal){return publicRequest("/offerings",{signal});}
 export async function fetchExperiences(signal){return publicRequest("/experiences",{signal});}
 export async function fetchExperience(id,signal){return publicRequest("/experiences/"+Number(id),{signal});}
