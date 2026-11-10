@@ -30,3 +30,35 @@
  .quiz-choice:hover{background:var(--color-highlight);padding-left:16px}
  .text-link{transition:color .25s ease,border-color .25s ease}
 }
+
+
+/* Image depth on scroll and hover share CSS variables instead of competing transforms. */
+.product-visual img{
+ --motion-shift:0px;
+ --image-hover-lift:0px;
+ --image-hover-scale:1;
+ transform:translate3d(0,calc(var(--motion-shift) + var(--image-hover-lift)),0) scale(var(--image-hover-scale));
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ .product-card:hover .product-visual img,
+ .product-card:focus-within .product-visual img{
+  --image-hover-lift:-8px;
+  --image-hover-scale:1.065;
+ }
+ .product-card:hover .product-visual img{transform:translate3d(0,calc(var(--motion-shift) + var(--image-hover-lift)),0) scale(var(--image-hover-scale))}
+}
+.product-card:focus-within .product-visual{outline:2px solid var(--color-accent);outline-offset:2px}
+.product-card__bottom .btn{min-width:0;white-space:normal;text-align:center}
+@media(max-width:1024px){
+ .product-card__bottom{align-items:stretch;flex-direction:column}
+ .product-card__bottom .btn{width:100%;padding-inline:12px}
+}
+@media(max-width:560px){
+ .product-grid{grid-template-columns:1fr;gap:34px}
+ .filter-bar{grid-template-columns:1fr;gap:12px}
+ .product-card__bottom{flex-direction:row;align-items:center}
+ .product-card__bottom .btn{width:auto}
+}
+@media(prefers-reduced-motion:reduce){
+ .product-visual img{--motion-shift:0px!important;--image-hover-lift:0px!important;--image-hover-scale:1!important}
+}
