@@ -14,3 +14,7 @@
 @media(max-width:768px){.hero-layout,.quiz-layout,.product-view,.editorial{grid-template-columns:1fr}.hero-layout{min-height:auto}.hero-copy{padding-block:80px 0}.hero h1{font-size:clamp(4.2rem,15vw,7rem)}.hero-image{height:380px}.hero-image img{height:380px}.hero-watermark{font-size:8rem}.collection-grid{grid-template-columns:1fr}.collection-tile{min-height:380px}.family-tile{min-height:245px}.editorial{min-height:0}.editorial-visual{height:420px}.editorial-visual img{height:400px}.editorial-copy{padding:60px 24px}.newsletter form{flex-direction:column}.product-view{padding-block:40px}.notes-grid{grid-template-columns:1fr}.catalog-hero{padding:65px 0 20px}}
 @media(max-width:375px){.families-grid{grid-template-columns:1fr}.collection-tile .copy{width:80%}.collection-tile img{opacity:.4}}
 @media(prefers-reduced-motion:reduce){.marquee-track{animation:none}.hero-image img,.product-main-art img{transition:none}}
+
+/* Official contacts are published only when the live API provides them. */
+.contact-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+.contact-links a{max-width:100%;overflow-wrap:anywhere}

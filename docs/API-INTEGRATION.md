@@ -42,6 +42,12 @@ Em `SITE_MODE=live`, a busca por nome/descrição e o filtro de categoria são *
 
 A vitrine nunca substitui falha de API por perfumes/preços ilustrativos. CI cobre filtros, URLs, paginação, falha e requisições concorrentes; homologação real permanece necessária.
 
+## Contato institucional em modo live
+
+`GET /api/v1/store` devolve `displayName`, `slogan`, `whatsapp`, `instagramUrl` e `email` publicáveis. O frontend **remove o formulário de newsletter fictício** em modo live e só apresenta canais efetivamente preenchidos/validados. WhatsApp genérico usa `wa.me` com número administrado; Instagram aceita apenas HTTPS oficial; e-mail usa `mailto:` válido. A confirmação de produtos e preços continua exigindo `POST /api/v1/whatsapp/confirm`.
+
+Na ausência de contatos ou falha da API, a página apresenta estado neutro e não inventa números, emails ou redes sociais.
+
 ## Homologação pendente
 - [ ] Testar em navegador com API e PostgreSQL de homologação autorizados.
 - [ ] Conferir limites, paginação, filtros, promoção, indisponibilidade, preço e erro 409.

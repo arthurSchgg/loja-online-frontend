@@ -42,6 +42,8 @@ No modo live, o site oculta a sacola fictícia (inclusive itens antigos de sess�
 
 Em modo live, a busca textual e as categorias consultam a API em todas as páginas (sem limitar a pesquisa aos produtos já carregados). O seletor usa categorias reais; links `?familia=...` são resolvidos pelo nome cadastrado. A ordenação e o filtro de preço são feitos no backend em todo o catálogo, inclusive promoções vigentes, quando a API contém o contrato do backend PR #160. Não publique este frontend sobre versões antigas da API. Falhas de página são recuperáveis sem saltar resultados.
 
+No modo live, a seção de contato consulta `GET /api/v1/store` e só mostra WhatsApp/Instagram/e-mail oficiais configurados no backend. O formulário de newsletter fictício é removido desse modo, sem armazenar dados de visitantes.
+
 ## Administração e recuperação de acesso
 
 A administração de quizzes e recomendações fica em `admin-experiences.html` (build administrativo), com criação e edição visual de quizzes existentes, e vínculo de até três produtos por perfil. A edição usa o DTO completo e restrito de `GET /api/v1/admin/experiences/{id}`; caso faltem chaves de resultado, a interface bloqueia a edição para impedir perda de dados. Ao remover ou renomear chaves de perfis, a interface solicita confirmação; recomendações dos perfis mantidos são preservadas pelo backend. Requer backend com PR #156 integrado e homologação full stack antes da produção.
