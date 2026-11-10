@@ -8,14 +8,14 @@
 <p id="experiences-status" role="status" aria-live="polite">Verificando acesso...</p><p><a href="admin.html">Entrar no painel administrativo</a></p>
 <div id="experiences-workspace" hidden>
 <section class="admin-panel" aria-labelledby="create-heading"><h2 id="create-heading">Criar experiência</h2>
-<p class="muted">A API não fornece o modelo completo para editar resultados antigos. Para evitar perda de dados, esta interface permite criar experiências novas e editar recomendações sem sobrescrever quizzes existentes.</p>
+<p class="muted">A edição exige o contrato administrativo completo do backend (PR #156), com chaves e perfis. Recomendações de perfis mantidos são preservadas; confirme alterações de chaves e publicação antes de salvar.</p>
 <form id="quiz-editor" class="admin-form">
 <label class="field">Título<input name="title" maxlength="180" required></label>
 <label class="field">Descrição<textarea name="description" rows="3" maxlength="2000"></textarea></label>
 <label class="field"><input name="published" type="checkbox"> Publicar após salvar (confirme o conteúdo previamente)</label>
 <h3>Perfis de resultado</h3><div id="quiz-results"></div><button id="add-result" type="button" class="btn btn--secondary">Adicionar perfil</button>
 <h3>Perguntas</h3><div id="quiz-questions"></div><button id="add-question" type="button" class="btn btn--secondary">Adicionar pergunta</button>
-<button id="submit-quiz" type="submit" class="btn btn--primary">Cadastrar experiência</button>
+<button id="submit-quiz" type="submit" class="btn btn--primary">Cadastrar experiência</button> <button id="cancel-edit" type="button" class="btn btn--ghost" hidden>Cancelar edição</button>
 </form></section>
 <div class="admin-columns">
 <section class="admin-panel" aria-labelledby="existing-heading"><div class="admin-section-heading"><h2 id="existing-heading">Experiências cadastradas</h2><button id="reload-experiences" type="button" class="btn btn--ghost">Atualizar</button></div><div id="available-experiences" class="experience-list" aria-live="polite"></div></section>
