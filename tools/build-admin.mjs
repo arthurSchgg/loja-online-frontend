@@ -2,7 +2,7 @@ import {cpSync,rmSync,mkdirSync,existsSync,readFileSync} from "node:fs";
 import {join,resolve} from "node:path";
 const root=resolve(new URL("..",import.meta.url).pathname),dest=join(root,"dist-admin");
 rmSync(dest,{recursive:true,force:true});mkdirSync(dest,{recursive:true});
-cpSync(join(root,"admin.html"),join(dest,"admin.html"));
+for(const page of ["admin.html","reset-password.html","confirm-email.html"])cpSync(join(root,page),join(dest,page));
 cpSync(join(root,"admin"),join(dest,"admin"),{recursive:true});
 mkdirSync(join(dest,"assets/css"),{recursive:true});
 for(const file of ["tokens.css","base.css","components.css"])cpSync(join(root,"assets/css",file),join(dest,"assets/css",file));
