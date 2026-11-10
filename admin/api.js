@@ -9,18 +9,31 @@ export function adminOriginAllowed(locationInfo=globalThis.location){
  const host=String(locationInfo.hostname||"").toLowerCase();
  return String(locationInfo.protocol)==="https:"||(["localhost","127.0.0.1"].includes(host)&&String(locationInfo.protocol)==="http:");
 }
+/** Restrict admin client paths to explicit same-origin API routes.
+ * This is defense in depth; Spring Security remains the authority.
+ */
+export function validateAdminPath(path){
+ if(typeof path!=="string"||
+    !/^\/(?:auth|admin|store)(?:\/[A-Za-z0-9._~%+-]+)*(?:\?[A-Za-z0-9_.~%=&,+-]*)?$/.test(path)||
+    path.includes("..")||path.includes("//")||/%(?:2e|2f|5c|00)/i.test(path))
+  throw new AdminApiError("Caminho de API inválido.");
+ return path;
+}
 export class AdminApi{
  #csrf=null;
  constructor(fetchImpl=globalThis.fetch){this.fetchImpl=fetchImpl;}
  async #fetch(path,{method="GET",body,csrf=false}={}){
-  if(!path.startsWith("/")||path.includes(".."))throw new AdminApiError("Caminho inválido.");
+  validateAdminPath(path);
+  if(typeof globalThis.location!=="undefined"&&!adminOriginAllowed(globalThis.location))
+   throw new AdminApiError("Painel exige HTTPS na mesma origem da API.");
   const headers={Accept:"application/json"};
   if(csrf){if(!this.#csrf)await this.refreshCsrf();headers[this.#csrf.headerName]=this.#csrf.token;}
   let requestBody;
   if(body instanceof URLSearchParams){requestBody=body;headers["Content-Type"]="application/x-www-form-urlencoded";}
   else if(body!==undefined){requestBody=JSON.stringify(body);headers["Content-Type"]="application/json";}
   let response;
-  try{response=await this.fetchImpl("/api/v1"+path,{method,headers,body:requestBody,credentials:"same-origin",cache:"no-store"});}
+  try{response=await this.fetchImpl("/api/v1"+path,{method,headers,body:requestBody,
+    credentials:"same-origin",cache:"no-store",redirect:"error",referrerPolicy:"same-origin"});}
   catch{throw new AdminApiError("Servidor indisponível.");}
   if(!response.ok){
    if(response.status===401)this.#csrf=null;
@@ -31,7 +44,9 @@ export class AdminApi{
   try{return await response.json();}catch{throw new AdminApiError("Resposta inválida do servidor.",response.status);}
  }
  async refreshCsrf(){
-  const data=await this.#fetch("/auth/csrf");if(!data?.headerName||!data.token)throw new AdminApiError("Falha na proteção CSRF");
+  const data=await this.#fetch("/auth/csrf");
+  if(data?.headerName!=="X-CSRF-TOKEN"||typeof data.token!=="string"||!data.token||data.token.length>4096)
+   throw new AdminApiError("Falha na proteção CSRF");
   this.#csrf={headerName:data.headerName,token:data.token};return data;
  }
  async me(){return this.#fetch("/auth/me");}
