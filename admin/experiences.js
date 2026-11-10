@@ -61,6 +61,11 @@ export function validateRecommendations({experienceId,resultKey,ids}) {
 }
 const api=new AdminApi(),$=selector=>document.querySelector(selector);
 let editingId=null;
+let originalResultKeys=[];
+export function removedResultKeys(originalKeys,nextKeys){
+ const next=new Set(nextKeys);
+ return originalKeys.filter(key=>!next.has(key));
+}
 function notify(message,error=false){
  const el=$("#experiences-status");if(el){el.textContent=message;el.classList.toggle("error",error);}
 }
@@ -107,6 +112,7 @@ function draftFromDom(){
 }
 function resetEditor(){
  editingId=null;
+ originalResultKeys=[];
  $("#quiz-editor").reset();
  $("#quiz-results").replaceChildren(resultRow());
  $("#quiz-questions").replaceChildren(questionRow());
@@ -139,6 +145,7 @@ function fillEditor(data){
   $("#quiz-questions").append(row);
  }
  editingId=draft.id;
+ originalResultKeys=draft.results.map(x=>x.key);
  $("#submit-quiz").textContent="Salvar alterações";
  $("#cancel-edit").hidden=false;
  $("#create-heading").textContent="Editar experiência #"+draft.id;
@@ -180,6 +187,11 @@ function init() {
   e.preventDefault();const btn=$("#submit-quiz");btn.disabled=true;notify("Salvando experiência...");
   try{
    const payload=draftFromDom(),id=editingId;
+   const removed=id===null?[]:removedResultKeys(originalResultKeys,payload.results.map(x=>x.key));
+   if(removed.length && !window.confirm("Remover ou renomear os perfis "+removed.join(", ")+
+    "? Recomendações e vínculos desses perfis serão apagados.")){
+    notify("Alterações não salvas: exclusão de perfil cancelada.");return;
+   }
    const saved=id===null?await api.write("POST","/admin/experiences",payload):
     await api.write("PUT","/admin/experiences/"+id,payload);
    $("#recs-experience-id").value=String(saved.id);$("#recs-result-key").value=payload.results[0].key;
