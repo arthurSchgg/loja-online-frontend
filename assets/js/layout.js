@@ -34,6 +34,9 @@ function renderShell(){
   if(edit){bag=changeQuantity(bag,edit.dataset.id,Number(edit.dataset.size),Number(edit.dataset.cartChange));saveBag();}
  });
  if(isLive){
+  // Distinguish the published catalog from demonstration/editorial concepts.
+  const notice=document.querySelector(".announcement");
+  if(notice)notice.textContent="LOJINHA DA KÁTIA · MAIS DO QUE COMPRAR, É VIVER UMA EXPERIÊNCIA";
   // The real storefront only offers server-validated WhatsApp consultation.
   // Do not display a fictitious basket or subtotal on live pages.
   document.querySelector("[data-open-cart]")?.remove();

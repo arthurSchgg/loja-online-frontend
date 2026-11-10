@@ -113,7 +113,48 @@ async function initContact(){
   status(links,"Não foi possível consultar os contatos oficiais. Tente novamente mais tarde.",true);
  }
 }
+async function initLiveCategoryHighlights(){
+ const section=document.getElementById("familias"),grid=section?.querySelector(".families-grid");
+ if(!grid)return;
+ const title=section.querySelector("h2"),lead=section.querySelector("p.lead");
+ if(title)title.textContent="Explore as categorias da loja.";
+ if(lead)lead.textContent="Encontre produtos nas categorias realmente disponíveis no catálogo.";
+ grid.replaceChildren();status(grid,"Carregando categorias publicadas...");
+ try{
+  const categories=await fetchCategories();
+  grid.replaceChildren();
+  if(!categories.length){status(grid,"Nenhuma categoria publicada no momento.");return;}
+  const palette=["#edced6","#e7e7c4","#dfd0c1","#ebcfc6"];
+  for(const [index,category] of categories.slice(0,8).entries()){
+   const link=document.createElement("a");
+   link.className="family-tile";
+   link.href="catalogo.html?familia="+encodeURIComponent(category.name);
+   link.style.setProperty("--tile-color",palette[index%palette.length]);
+   const order=document.createElement("span");order.textContent=String(index+1).padStart(2,"0")+" / "+String(categories.length).padStart(2,"0");
+   const symbol=document.createElement("i");symbol.textContent="✿";symbol.setAttribute("aria-hidden","true");
+   const heading=document.createElement("strong");heading.textContent=category.name;
+   const detail=document.createElement("span");detail.textContent="Ver produtos da categoria ↗";
+   link.append(order,symbol,heading,detail);grid.append(link);
+  }
+ }catch(error){
+  grid.replaceChildren();status(grid,"Categorias indisponíveis. Use a busca do catálogo.",true);
+ }
+}
 async function initHome(){
+ // Concept-only collection tiles must never imply fictitious products are on sale.
+ const demoCollections=document.getElementById("colecoes");
+ if(demoCollections)demoCollections.hidden=true;
+ const showcase=document.getElementById("mais-amados");
+ if(showcase){
+  const eyebrow=showcase.querySelector(".eyebrow"),heading=showcase.querySelector("h2");
+  if(eyebrow)eyebrow.textContent="CATÁLOGO PUBLICADO";
+  if(heading)heading.textContent="Produtos para descobrir.";
+ }
+ const quizLead=document.querySelector("#quiz p.lead");
+ if(quizLead)quizLead.textContent="Responda às experiências da loja sem armazenar suas respostas.";
+ const editorialImage=document.querySelector("#experiencias img[data-parallax]");
+ if(editorialImage){editorialImage.src="assets/images/brand/logo-katia.svg";editorialImage.alt="Símbolo da Lojinha da Kátia";}
+ void initLiveCategoryHighlights();
  void initContact();
  const grid=document.getElementById("featured-grid");
  if(grid){
