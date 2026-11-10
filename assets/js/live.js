@@ -2,10 +2,11 @@
  * All prices/availability in live mode originate from the backend.
  */
 import {isLive} from "./config.js";
-import {fetchProducts,fetchProduct,fetchOfferings,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
+import {fetchProducts,fetchProduct,fetchOfferings,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
 import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
 import {escapeHtml} from "./layout.js";
+import {officialStoreLinks} from "./official-contact.js";
 const safe=value=>escapeHtml(value??"");
 const numberId=id=>Number.isSafeInteger(Number(id))&&Number(id)>0?Number(id):null;
 const productTitle=p=>safe(p.name||"Produto sem nome");
@@ -84,7 +85,36 @@ document.addEventListener("click",e=>{
  const offer=e.target.closest("[data-confirm-offering]");
  if(offer){const o=currentOfferings.find(x=>x.id===Number(offer.dataset.confirmOffering));if(o)showConfirmation({type:"OFFERING",item:o});}
 });
+async function initContact(){
+ const section=document.getElementById("contato"),container=section?.querySelector(".container");
+ if(!container)return;
+ // No email is collected in live mode: the newsletter remains demo-only.
+ container.querySelector("#newsletter-form")?.remove();
+ const description=container.querySelector("p:not(.muted)");
+ if(description)description.textContent="Fale com a loja pelos canais oficiais informados pela administração.";
+ const disclaimer=container.querySelector("p.muted");
+ if(disclaimer)disclaimer.textContent="Valores, estoque e disponibilidade são confirmados antes de qualquer solicitação sobre produtos.";
+ const links=document.createElement("nav");links.className="contact-links";
+ links.setAttribute("aria-label","Canais oficiais da loja");container.append(links);
+ status(links,"Carregando contatos oficiais...");
+ try{
+  const store=await fetchStore();
+  const channels=officialStoreLinks(store);
+  links.replaceChildren();
+  if(!channels.length){status(links,"A loja ainda não publicou canais de contato.");return;}
+  for(const channel of channels){
+   const a=document.createElement("a");a.className="btn btn--secondary";
+   a.href=channel.href;a.textContent=channel.label;
+   if(channel.external){a.target="_blank";a.rel="noopener noreferrer";}
+   links.append(a);
+  }
+ }catch(error){
+  links.replaceChildren();
+  status(links,"Não foi possível consultar os contatos oficiais. Tente novamente mais tarde.",true);
+ }
+}
 async function initHome(){
+ void initContact();
  const grid=document.getElementById("featured-grid");
  if(grid){
   grid.replaceChildren();status(grid,"Carregando produtos publicados...");
