@@ -28,7 +28,7 @@ export function normalizePage(data){
  if(!data||!Array.isArray(data.content))throw new ApiError("Formato de catálogo inesperado.");
  return {items:data.content,hasNext:typeof data.last==="boolean"?!data.last:false};
 }
-export async function fetchProducts(page=0,signal,filters={}){
+export function productSearchPath(page=0,filters={}){
  const number=Number(page);
  if(!Number.isSafeInteger(number)||number<0)throw new ApiError("Página inválida.");
  const query=new URLSearchParams({page:String(number),size:"12"});
@@ -40,7 +40,10 @@ export async function fetchProducts(page=0,signal,filters={}){
   if(!Number.isSafeInteger(id)||id<1)throw new ApiError("Categoria inválida.");
   query.set("categoryId",String(id));
  }
- return normalizePage(await publicRequest("/products?"+query.toString(),{signal}));
+ return "/products?"+query.toString();
+}
+export async function fetchProducts(page=0,signal,filters={}){
+ return normalizePage(await publicRequest(productSearchPath(page,filters),{signal}));
 }
 export async function fetchCategories(signal){
  const categories=await publicRequest("/categories",{signal});
