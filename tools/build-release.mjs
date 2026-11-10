@@ -18,7 +18,7 @@ if(raw.startsWith("/")&&!raw.startsWith("//")){
 process.env.SITE_MODE="live";
 process.env.API_BASE_URL=raw;
 await import("./build.mjs");
-const root=resolve(new URL("..",import.meta.url).pathname);
+const root=resolve(fileURLToPath(new URL("..",import.meta.url)));
 const file=join(root,"dist","assets/js/config.js");
 if(!existsSync(file)||!readFileSync(file,"utf8").includes('mode:"live"'))
  throw new Error("O artefato de release precisa estar em SITE_MODE=live.");
