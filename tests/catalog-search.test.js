@@ -12,14 +12,14 @@ test("server-side filters persist through pagination and reset to page zero",asy
  assert.deepEqual((await catalog.next()).items.map(p=>p.id),[1]);
  assert.equal((await catalog.next()).hasNext,false);
  assert.deepEqual(received,[
-  {page:0,q:"vela floral",categoryId:7},
-  {page:1,q:"vela floral",categoryId:7}
+  {page:0,q:"vela floral",categoryId:7,sort:"recent",maxPrice:null},
+  {page:1,q:"vela floral",categoryId:7,sort:"recent",maxPrice:null}
  ]);
  catalog.setFilters({q:"natura",categoryId:null});
  assert.equal(catalog.state.page,0);
  assert.deepEqual(catalog.state.items,[]);
  await catalog.next();
- assert.deepEqual(received[2],{page:0,q:"natura",categoryId:null});
+ assert.deepEqual(received[2],{page:0,q:"natura",categoryId:null,sort:"recent",maxPrice:null});
 });
 
 test("late responses from old search must not appear in a newer filter",async()=>{
@@ -76,4 +76,26 @@ test("invalid categories and malformed pages are rejected",async()=>{
  catalog.setFilters({categoryId:null});
  await assert.rejects(()=>catalog.next(),/Página inválida/);
  assert.equal(catalog.state.page,0);
+});
+
+test("changing price ceiling or global order restarts server pagination",async()=>{
+ const received=[];
+ const catalog=createCatalogSearch(async(page,filters)=>{
+  received.push({page,...filters});
+  return {items:[{id:page+2}],hasNext:page===0};
+ });
+ catalog.setFilters({sort:"price-asc",maxPrice:"39.90"});
+ await catalog.next();
+ await catalog.next();
+ catalog.setFilters({sort:"price-desc",maxPrice:"100"});
+ assert.equal(catalog.state.page,0);
+ assert.equal(catalog.state.items.length,0);
+ await catalog.next();
+ assert.deepEqual(received,[
+  {page:0,q:"",categoryId:null,sort:"price-asc",maxPrice:39.9},
+  {page:1,q:"",categoryId:null,sort:"price-asc",maxPrice:39.9},
+  {page:0,q:"",categoryId:null,sort:"price-desc",maxPrice:100}
+ ]);
+ assert.throws(()=>catalog.setFilters({sort:"unknown"}),/Ordenação inválida/);
+ assert.throws(()=>catalog.setFilters({maxPrice:-1}),/Preço máximo inválido/);
 });
