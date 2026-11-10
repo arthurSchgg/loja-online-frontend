@@ -1,0 +1,48 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# Explicit minimal runner permissions; comments explain the reason.
+permissions:
+  contents: read # checkout only; no push, write-issues or cloud credentials
+  actions: read # CI can read its own workflow results; no admin permissions
+
+concurrency:
+  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check repository policy (secrets, generated assets, governance)
+        run: python3 scripts/verify_repo_policy.py
+      - name: Check JavaScript syntax and run tests when app is present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f package.json ]; then
+            npm run check
+            npm test
+            npm run build
+          else
+            echo "::notice::Governance-only baseline: app not imported yet; no app tests executed"
+          fi
+      - name: Verify output contains no administrative client bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d dist ]; then
+            test ! -f dist/admin.html
+            test ! -e dist/assets/js/admin.js
+          fi

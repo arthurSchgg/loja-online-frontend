@@ -1,0 +1,16 @@
+# Build artifacts and local tooling
+dist/
+node_modules/
+coverage/
+.playwright/
+.DS_Store
+*.log
+# Local credentials are never committed
+.env
+.env.*
+!.env.example
+# No local private customer data or certificates
+*.pem
+*.key
+*.p12
+__pycache__/
