@@ -1,5 +1,6 @@
 import {AdminApi,AdminApiError,adminOriginAllowed} from "./api.js";
 import {setupSecurityPanel} from "./security.js";
+import {validateProductImages} from "./product-validation.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
@@ -90,7 +91,7 @@ function collectForm(){
   if(name==="categoryIds")v=v?v.split(",").map(s=>Number(s.trim())).filter(Number.isSafeInteger):[];
   if(name==="whatsapp"&&v==="")v=null;
   if(name==="images")v=v?v.split("\n").map((line,i)=>{const [url, ...rest]=line.split("|");return {url:url.trim(),altText:rest.join("|").trim(),position:i};}).filter(x=>x.url):[];
-  if(name==="images"){for(const image of v){if(!image.url.startsWith("https://")&&!image.url.startsWith("/"))throw new Error("Imagens precisam de URLs HTTPS ou relativas seguras.");}}
+
   if(["imageUrl","linkUrl","instagramUrl"].includes(name)&&v){
    const parsed=new URL(v,location.origin);
    if(parsed.protocol!=="https:"&&!["localhost","127.0.0.1"].includes(parsed.hostname))throw new Error("Use URL HTTPS em "+name);
@@ -98,6 +99,7 @@ function collectForm(){
   data[name]=v;
  }
  if(moduleName==="products"&&(data.price===null||data.price<0||!Number.isSafeInteger(data.brandId)))throw new Error("Preço e ID de marca válidos são obrigatórios.");
+ if(moduleName==="products")validateProductImages(data.images,data.published);
  if(moduleName==="offerings"&&data.price===null)delete data.price;
  return data;
 }
