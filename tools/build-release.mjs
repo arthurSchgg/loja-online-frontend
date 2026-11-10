@@ -1,6 +1,7 @@
 /** Explicit public release build. A production artifact cannot silently be demo. */
 import {readFileSync,existsSync} from "node:fs";
 import {resolve,join} from "node:path";
+import {fileURLToPath} from "node:url";
 
 const raw=String(process.env.API_BASE_URL??"").trim();
 if(!raw)throw new Error("API_BASE_URL é obrigatório para build:release.");
