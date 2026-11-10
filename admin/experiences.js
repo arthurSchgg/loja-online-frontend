@@ -35,6 +35,19 @@ export function validateExperienceDraft(draft) {
  });
  return {title,description,published:draft.published===true,questions,results};
 }
+/** Accept only a complete admin DTO before populating an editable form. */
+export function normalizeAdminExperience(data) {
+ if(!data||!Number.isSafeInteger(data.id)||data.id<1||typeof data.published!=="boolean"||
+  !Array.isArray(data.results)||!Array.isArray(data.questions))
+  throw new Error("A API não retornou um quiz completo; edição cancelada.");
+ const results=data.results.map(x=>({key:x.key,title:x.title,description:x.description||""}));
+ const questions=data.questions.map(q=>({title:q.title,options:Array.isArray(q.options)?
+  q.options.map(o=>({label:o.label,resultKey:o.resultKey})):null}));
+ if(questions.some(q=>!q.options||q.options.some(o=>typeof o.resultKey!=="string")))
+  throw new Error("Faltam chaves das alternativas; edição cancelada.");
+ return {id:data.id,...validateExperienceDraft({title:data.title,description:data.description||"",
+  published:data.published,results,questions})};
+}
 export function validateRecommendations({experienceId,resultKey,ids}) {
  const id=Number(experienceId),key=String(resultKey||"").trim();
  if(!Number.isSafeInteger(id)||id<1||!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(key))
@@ -47,6 +60,7 @@ export function validateRecommendations({experienceId,resultKey,ids}) {
  return {experienceId:id,resultKey:key,productIds};
 }
 const api=new AdminApi(),$=selector=>document.querySelector(selector);
+let editingId=null;
 function notify(message,error=false){
  const el=$("#experiences-status");if(el){el.textContent=message;el.classList.toggle("error",error);}
 }
@@ -91,6 +105,45 @@ function draftFromDom(){
   published:form.elements.published.checked,questions,results
  });
 }
+function resetEditor(){
+ editingId=null;
+ $("#quiz-editor").reset();
+ $("#quiz-results").replaceChildren(resultRow());
+ $("#quiz-questions").replaceChildren(questionRow());
+ $("#submit-quiz").textContent="Cadastrar experiência";
+ $("#cancel-edit").hidden=true;
+ $("#create-heading").textContent="Criar experiência";
+}
+function fillEditor(data){
+ const draft=normalizeAdminExperience(data),form=$("#quiz-editor");
+ form.elements.title.value=draft.title;
+ form.elements.description.value=draft.description;
+ form.elements.published.checked=draft.published;
+ $("#quiz-results").replaceChildren();
+ for(const result of draft.results){
+  const row=resultRow();
+  for(const name of ["key","title","description"])row.querySelector('[name="'+name+'"]').value=result[name];
+  $("#quiz-results").append(row);
+ }
+ $("#quiz-questions").replaceChildren();
+ for(const question of draft.questions){
+  const row=questionRow(),options=row.querySelector("[data-options]");
+  row.querySelector('[name="title"]').value=question.title;
+  options.replaceChildren();
+  for(const option of question.options){
+   const item=optionRow();
+   item.querySelector('[name="label"]').value=option.label;
+   item.querySelector('[name="resultKey"]').value=option.resultKey;
+   options.append(item);
+  }
+  $("#quiz-questions").append(row);
+ }
+ editingId=draft.id;
+ $("#submit-quiz").textContent="Salvar alterações";
+ $("#cancel-edit").hidden=false;
+ $("#create-heading").textContent="Editar experiência #"+draft.id;
+ $("#quiz-editor").scrollIntoView({behavior:"smooth",block:"start"});
+}
 async function refresh(){
  const list=$("#available-experiences");list.replaceChildren();
  const entries=await api.get("/admin/experiences");
@@ -102,7 +155,14 @@ async function refresh(){
   const button=document.createElement("button");button.type="button";button.className="btn btn--secondary";
   button.textContent="Usar ID nas recomendações";
   button.addEventListener("click",()=>{$("#recs-experience-id").value=String(item.id);$("#recs-result-key").focus();});
-  article.append(heading,sub,button);list.append(article);
+  const edit=document.createElement("button");edit.type="button";edit.className="btn btn--secondary";
+  edit.textContent="Editar quiz";edit.addEventListener("click",async()=>{
+   edit.disabled=true;notify("Carregando quiz completo...");
+   try{fillEditor(await api.get("/admin/experiences/"+item.id));notify("Quiz carregado para edição.");}
+   catch(error){notify(error?.message||"Não foi possível carregar o quiz.",true);}
+   finally{edit.disabled=false;}
+  });
+  article.append(heading,sub,button,edit);list.append(article);
  }
 }
 function init() {
@@ -115,13 +175,17 @@ function init() {
   if(remove)remove.closest("[data-option-row], [data-result-row], [data-question-row]")?.remove();
  });
  $("#quiz-results").append(resultRow());$("#quiz-questions").append(questionRow());
+ $("#cancel-edit").addEventListener("click",()=>{resetEditor();notify("Edição cancelada.");});
  $("#quiz-editor").addEventListener("submit",async e=>{
   e.preventDefault();const btn=$("#submit-quiz");btn.disabled=true;notify("Salvando experiência...");
   try{
-   const payload=draftFromDom(),created=await api.write("POST","/admin/experiences",payload);
-   $("#recs-experience-id").value=String(created.id);$("#recs-result-key").value=payload.results[0].key;
-   $("#quiz-editor").reset();$("#quiz-results").replaceChildren(resultRow());$("#quiz-questions").replaceChildren(questionRow());
-   notify("Experiência cadastrada. Revise a disponibilidade e as recomendações.");
+   const payload=draftFromDom(),id=editingId;
+   const saved=id===null?await api.write("POST","/admin/experiences",payload):
+    await api.write("PUT","/admin/experiences/"+id,payload);
+   $("#recs-experience-id").value=String(saved.id);$("#recs-result-key").value=payload.results[0].key;
+   resetEditor();
+   notify(id===null?"Experiência cadastrada. Revise a disponibilidade e as recomendações.":
+    "Experiência atualizada. Recomendações dos perfis mantidos foram preservadas.");
    await refresh();
   }catch(error){notify(error?.message||"Não foi possível salvar a experiência.",true);}
   finally{btn.disabled=false;}
