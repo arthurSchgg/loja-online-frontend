@@ -1,6 +1,7 @@
 import {cpSync,existsSync,rmSync,mkdirSync,readFileSync,writeFileSync} from "node:fs";
+import {fileURLToPath} from "node:url";
 import {join,resolve,dirname} from "node:path";
-const root=resolve(new URL("..",import.meta.url).pathname);
+const root=resolve(fileURLToPath(new URL("..",import.meta.url)));
 const dist=join(root,"dist");rmSync(dist,{recursive:true,force:true});mkdirSync(dist,{recursive:true});
 const pages=["index.html","catalogo.html","produto.html","privacidade.html"];
 for(const file of pages)cpSync(join(root,file),join(dist,file));
