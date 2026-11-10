@@ -24,7 +24,7 @@ for(const page of pages){
  const paths=[...html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g)].map(m=>m[1]);
  for(const path of paths)if(!existsSync(join(dist,path)))throw Error("Missing public asset: "+path+" in "+page);
 }
-for(const forbidden of ["admin.html","reset-password.html","confirm-email.html","admin","assets/admin.js","assets/js/admin.js"]){
+for(const forbidden of ["admin.html","admin-experiences.html","reset-password.html","confirm-email.html","admin","assets/admin.js","assets/js/admin.js"]){
  if(existsSync(join(dist,forbidden)))throw Error("Admin content found in public artifact: "+forbidden);
 }
 console.log("Public static build PASS: "+pages.join(", ")+"; admin excluded; no checkout.");

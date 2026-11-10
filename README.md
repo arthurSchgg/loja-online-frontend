@@ -42,6 +42,8 @@ No modo live, o site oculta a sacola fictícia (inclusive itens antigos de sess�
 
 ## Administração e recuperação de acesso
 
+A administração de quizzes e recomendações fica em `admin-experiences.html` (build administrativo), com criação visual e vínculo de até três produtos por perfil. A leitura administrativa atual da API não devolve todas as definições de resultado; por isso a edição integral de quizzes existentes permanece bloqueada para evitar perda de dados.
+
 O painel possui formulário de mudança de senha e confirmação de novo e-mail.
 O build administrativo `npm run build:admin` inclui
 `reset-password.html` e `confirm-email.html`; essas páginas nunca

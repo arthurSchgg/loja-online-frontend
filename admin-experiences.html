@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<title>Experiências e quizzes · Lojinha da Kátia</title>
+<link rel="stylesheet" href="assets/css/tokens.css"><link rel="stylesheet" href="assets/css/base.css"><link rel="stylesheet" href="assets/css/components.css"><link rel="stylesheet" href="admin/admin.css"><link rel="stylesheet" href="admin/experiences.css"></head>
+<body class="admin-body"><a class="skip-link" href="#main">Pular para o conteúdo</a><header class="admin-header"><div class="container"><a href="admin.html" class="text-link">← Voltar ao painel</a></div></header>
+<main id="main" class="container admin-main"><div class="admin-heading"><div><span class="eyebrow">ADMINISTRAÇÃO · EXPERIÊNCIAS</span><h1>Quizzes e recomendações</h1><p>Gerencie as experiências da loja sem utilizar dados fictícios.</p></div></div>
+<p id="experiences-status" role="status" aria-live="polite">Verificando acesso...</p><p><a href="admin.html">Entrar no painel administrativo</a></p>
+<div id="experiences-workspace" hidden>
+<section class="admin-panel" aria-labelledby="create-heading"><h2 id="create-heading">Criar experiência</h2>
+<p class="muted">A API não fornece o modelo completo para editar resultados antigos. Para evitar perda de dados, esta interface permite criar experiências novas e editar recomendações sem sobrescrever quizzes existentes.</p>
+<form id="quiz-editor" class="admin-form">
+<label class="field">Título<input name="title" maxlength="180" required></label>
+<label class="field">Descrição<textarea name="description" rows="3" maxlength="2000"></textarea></label>
+<label class="field"><input name="published" type="checkbox"> Publicar após salvar (confirme o conteúdo previamente)</label>
+<h3>Perfis de resultado</h3><div id="quiz-results"></div><button id="add-result" type="button" class="btn btn--secondary">Adicionar perfil</button>
+<h3>Perguntas</h3><div id="quiz-questions"></div><button id="add-question" type="button" class="btn btn--secondary">Adicionar pergunta</button>
+<button id="submit-quiz" type="submit" class="btn btn--primary">Cadastrar experiência</button>
+</form></section>
+<div class="admin-columns">
+<section class="admin-panel" aria-labelledby="existing-heading"><div class="admin-section-heading"><h2 id="existing-heading">Experiências cadastradas</h2><button id="reload-experiences" type="button" class="btn btn--ghost">Atualizar</button></div><div id="available-experiences" class="experience-list" aria-live="polite"></div></section>
+<section class="admin-panel" aria-labelledby="rec-heading"><h2 id="rec-heading">Recomendações por perfil</h2>
+<p class="muted">Utilize a chave do perfil cadastrada. O backend publica somente produtos elegíveis.</p>
+<form id="recommendations-form" class="admin-form">
+<label class="field">ID da experiência<input name="experienceId" id="recs-experience-id" type="number" min="1" step="1" required></label>
+<label class="field">Chave do perfil<input name="resultKey" id="recs-result-key" maxlength="80" required placeholder="floral"></label>
+<label class="field">Até três IDs de produtos (separados por vírgula)<input name="ids" placeholder="12, 18, 21"></label>
+<button type="submit" id="save-recommendations" class="btn btn--primary">Atualizar recomendações</button>
+</form></section></div></div></main><script type="module" src="admin/experiences.js"></script>
+</body></html>
