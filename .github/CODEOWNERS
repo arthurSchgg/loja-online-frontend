@@ -1,0 +1,7 @@
+# Ownership policy. GitHub will request a review for matching files
+# only when branch protection/rulesets are enabled separately.
+# Do not confuse this documentation with an actual access-control change.
+* @arthurSchgg
+.github/workflows/ @arthurSchgg
+assets/js/admin/ @arthurSchgg
+docs/SECURITY-PERMISSIONS.md @arthurSchgg
