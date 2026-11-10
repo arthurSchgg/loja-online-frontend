@@ -31,6 +31,15 @@ Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módul
 
 Personalize cores em `tokens.css`, fontes em `--font-display` e `--font-body`, e o catálogo demonstrativo em `data.js`.
 
+## Integração com API
+O modo padrão em `assets/js/config.js` é `demo`. Para gerar a vitrine usando somente dados reais publicados:
+
+```bash
+SITE_MODE=live API_BASE_URL=/api/v1 npm run build
+```
+
+O site não usa automaticamente preços fictícios quando a API fica indisponível. Ver [contratos e limites](docs/API-INTEGRATION.md). A API pública usa `credentials: omit` (sem cookies de administração). O WhatsApp real exige confirmação e validação da URL entregue pelo backend.
+
 ## Segurança e escopo do backend
 
 O backend Spring Boot é o responsável por preços vigentes, estoque, opções de velas, mensagens de WhatsApp e autenticação administrativa. O frontend nunca deve criar pedidos ou aceitar compras sem esse contrato. A área administrativa precisa compartilhar **mesma origem HTTPS** com a API (sessão HTTP e CSRF); não publicar o admin dentro do build estático da vitrine.
