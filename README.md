@@ -40,6 +40,8 @@ SITE_MODE=live API_BASE_URL=/api/v1 npm run build
 
 No modo live, o site oculta a sacola fictícia (inclusive itens antigos de sessão) e não apresenta frascos conceituais como produtos reais. O catálogo mantém a página após falhas HTTP e permite nova tentativa. O site não usa automaticamente preços fictícios quando a API fica indisponível. Ver [contratos e limites](docs/API-INTEGRATION.md). A API pública usa `credentials: omit` (sem cookies de administração). O WhatsApp real exige confirmação e validação da URL entregue pelo backend.
 
+Em modo live, a busca textual e as categorias consultam a API em todas as páginas (sem limitar a pesquisa aos produtos já carregados). O seletor usa categorias reais; links `?familia=...` são resolvidos pelo nome cadastrado. O preço máximo e a ordenação por preço continuam locais aos itens carregados e são identificados como parciais até existir ordenação global por preço promocional no backend. Falhas de página são recuperáveis sem saltar resultados.
+
 ## Administração e recuperação de acesso
 
 A administração de quizzes e recomendações fica em `admin-experiences.html` (build administrativo), com criação e edição visual de quizzes existentes, e vínculo de até três produtos por perfil. A edição usa o DTO completo e restrito de `GET /api/v1/admin/experiences/{id}`; caso faltem chaves de resultado, a interface bloqueia a edição para impedir perda de dados. Ao remover ou renomear chaves de perfis, a interface solicita confirmação; recomendações dos perfis mantidos são preservadas pelo backend. Requer backend com PR #156 integrado e homologação full stack antes da produção.

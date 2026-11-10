@@ -32,6 +32,16 @@ CORS público aceita GET/POST estritamente definidos **sem cookies**. Painel adm
 ## Campos que a API não possui
 `ProductResponse` não expõe pirâmide olfativa, gênero ou volume. No modo live o frontend **não inventa** essas propriedades e oculta filtros inexistentes, enquanto modo demo exibe os oito conceitos. Os URLs das imagens reais passam por validação de protocolo HTTPS/same-origin.
 
+## Busca e categorias reais no catálogo
+
+Em `SITE_MODE=live`, a busca por nome/descrição e o filtro de categoria são **consultas no backend**, em vez de filtros sobre somente as 12 primeiras ofertas carregadas:
+- `GET /api/v1/categories` alimenta o seletor de categorias publicadas e resolve o parâmetro de links `?familia=Nome` (sem inventar categorias).
+- `GET /api/v1/products?q=...&categoryId=...&page=0&size=12` filtra no servidor; páginas seguintes preservam `q` e `categoryId`.
+- A mudança de busca ou categoria inicia nova paginação; respostas obsoletas são descartadas e falhas permitem repetir a **mesma** página.
+- `Preço máximo` e `Ordenar por preço` ainda são **operações locais sobre produtos carregados**, com aviso na UI enquanto existem mais páginas. Não representam ordenação/preço global sobre todo o banco até o backend disponibilizar contrato para preço promocional vigente e paginação consistente.
+
+A vitrine nunca substitui falha de API por perfumes/preços ilustrativos. CI cobre filtros, URLs, paginação, falha e requisições concorrentes; homologação real permanece necessária.
+
 ## Homologação pendente
 - [ ] Testar em navegador com API e PostgreSQL de homologação autorizados.
 - [ ] Conferir limites, paginação, filtros, promoção, indisponibilidade, preço e erro 409.

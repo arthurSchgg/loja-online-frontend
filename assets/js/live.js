@@ -2,9 +2,9 @@
  * All prices/availability in live mode originate from the backend.
  */
 import {isLive} from "./config.js";
-import {fetchProducts,fetchProduct,fetchOfferings,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,ApiError} from "./api.js";
+import {fetchProducts,fetchProduct,fetchOfferings,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
 import {money} from "./data.js";
-import {createPaginator} from "./pagination.js";
+import {createCatalogSearch} from "./catalog-search.js";
 import {escapeHtml} from "./layout.js";
 const safe=value=>escapeHtml(value??"");
 const numberId=id=>Number.isSafeInteger(Number(id))&&Number(id)>0?Number(id):null;
@@ -136,41 +136,84 @@ async function initHome(){
 async function initCatalog(){
  const grid=document.getElementById("catalog-grid"),form=document.getElementById("filters"),count=document.getElementById("result-count");
  if(!grid||!form)return;
- // Gender and bottle-volume are not attributes of ProductResponse.
+ // Attributes not exposed by ProductResponse cannot be used as live filters.
  for(const field of ["gender","size"]){const input=form.elements[field];if(input)input.closest(".field").hidden=true;}
- const heading=document.querySelector(".catalog-hero .lead");if(heading)heading.textContent="Produtos publicados e preços consultados da API. Confirme antes de abrir o WhatsApp.";
- const family=form.elements.family;family.innerHTML='<option value="">Todas as categorias</option>';
- const all=[];const pager=createPaginator(fetchProducts);let hasNext=true;
- const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
- function render(){
-  const data=new FormData(form),q=String(data.get("query")||"").toLocaleLowerCase("pt-BR"),category=String(data.get("family")||""),max=Number(data.get("max")||100000);
-  let list=all.filter(p=>(p.name+" "+(p.description||"")+" "+(p.brand?.name||"")).toLocaleLowerCase("pt-BR").includes(q)&&(!category||(p.categories||[]).some(c=>c.name===category))&&(currentPrice(p)===null||currentPrice(p)<=max));
-  const sort=data.get("sort");if(sort==="price-asc")list.sort((a,b)=>(currentPrice(a)??Infinity)-(currentPrice(b)??Infinity));
-  if(sort==="price-desc")list.sort((a,b)=>(currentPrice(b)??-Infinity)-(currentPrice(a)??-Infinity));
-  if(sort==="name")list.sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
-  grid.innerHTML=list.map(liveProductCard).join("")||'<p>Nenhum produto encontrado com estes filtros.</p>';
-  count.textContent=list.length+" produtos carregados"+(hasNext?" · mais páginas disponíveis":"");
-  loadMore.hidden=!hasNext;
+ const heading=document.querySelector(".catalog-hero .lead");
+ if(heading)heading.textContent="Busque produtos publicados e confira preços e disponibilidade atuais antes de consultar no WhatsApp.";
+ const queryField=form.elements.query,family=form.elements.family;
+ form.querySelector('label[for="search"]').textContent="Buscar nome ou descrição";
+ form.querySelector('label[for="family"]').textContent="Categoria";
+ form.querySelector('label[for="max"]').textContent="Preço máximo (produtos carregados)";
+ const search=createCatalogSearch((page,filters)=>fetchProducts(page,undefined,filters));
+ const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";
+ loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
+ let version=0,searchTimer=null,categoryWarning="";
+ const params=new URLSearchParams(location.search),familyName=params.get("familia");
+ try{
+  const categories=await fetchCategories();
+  family.replaceChildren();
+  const any=document.createElement("option");any.value="";any.textContent="Todas as categorias";family.append(any);
+  for(const category of categories){
+   const option=document.createElement("option");
+   option.value=String(category.id);option.textContent=category.name;family.append(option);
+  }
+  if(familyName){
+   const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
+   if(match)family.value=String(match.id);
+   else categoryWarning="A categoria indicada no link não consta do catálogo real. ";
+  }
+ }catch(error){
+  family.closest(".field").hidden=true;
+  categoryWarning="Não foi possível consultar as categorias; a busca por nome continua disponível. ";
  }
- async function next(){
+ if(params.has("q"))queryField.value=params.get("q").slice(0,180);
+ function render(){
+  const state=search.state,sort=String(form.elements.sort?.value||"featured");
+  const max=Number(form.elements.max?.value||100000);
+  let filtered=state.items.filter(p=>currentPrice(p)===null||currentPrice(p)<=max);
+  if(sort==="price-asc")filtered.sort((a,b)=>(currentPrice(a)??Infinity)-(currentPrice(b)??Infinity));
+  if(sort==="price-desc")filtered.sort((a,b)=>(currentPrice(b)??-Infinity)-(currentPrice(a)??-Infinity));
+  if(sort==="name")filtered.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+  if(sort==="new")filtered.sort((a,b)=>Number(b.id)-Number(a.id));
+  grid.innerHTML=filtered.map(liveProductCard).join("")||'<p>Nenhum produto encontrado entre as páginas carregadas.</p>';
+  count.textContent=categoryWarning+state.items.length+" produtos carregados"+
+    (state.hasNext?" · mais páginas disponíveis":" · fim dos resultados")+
+    (state.hasNext&&(sort!=="featured"||Number(form.elements.max?.value||100000)<100000)?
+      " · preço e ordem aplicados somente aos produtos carregados":"");
+  loadMore.hidden=!state.hasNext;
+  loadMore.textContent="Carregar mais produtos";
+ }
+ async function next(expectedVersion=version){
+  if(expectedVersion!==version)return;
   loadMore.disabled=true;status(grid,"Carregando produtos publicados...");
   try{
-   // Increment only after a successful response, so retry never skips a page.
-   const result=await pager.next();
-   hasNext=pager.hasNext;
-   all.push(...result.items.filter(p=>Number.isSafeInteger(Number(p.id))));currentProducts=all;
-   const categories=[...new Set(all.flatMap(p=>(p.categories||[]).map(c=>c.name)))].sort();
-   const selected=family.value;family.innerHTML='<option value="">Todas as categorias</option>'+categories.map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join("");family.value=selected;
-   render();loadMore.textContent="Carregar mais produtos";
-  }catch(err){
-   if(!all.length)grid.replaceChildren();
-   status(grid,"Não foi possível carregar esta página: "+err.message,true);
-   loadMore.textContent="Tentar novamente";
-   loadMore.hidden=false;
-  }
-  finally{loadMore.disabled=false;}
+   const state=await search.next();
+   if(expectedVersion!==version||state.stale)return;
+   currentProducts=state.items;render();
+  }catch(error){
+   if(expectedVersion!==version)return;
+   if(!search.state.items.length)grid.replaceChildren();
+   status(grid,"Não foi possível carregar esta página: "+(error?.message||"Tente novamente."),true);
+   loadMore.textContent="Tentar novamente";loadMore.hidden=false;
+  }finally{if(expectedVersion===version)loadMore.disabled=false;}
  }
- form.addEventListener("input",render);form.addEventListener("change",render);loadMore.addEventListener("click",next);await next();
+ function applyServerFilters(){
+  window.clearTimeout(searchTimer);
+  search.setFilters({q:queryField.value,categoryId:family.closest(".field").hidden?null:family.value});
+  version++;
+  currentProducts=[];grid.replaceChildren();
+  count.textContent="Buscando produtos no catálogo...";
+  loadMore.hidden=true;
+  void next(version);
+ }
+ queryField.addEventListener("input",()=>{
+  window.clearTimeout(searchTimer);
+  searchTimer=window.setTimeout(applyServerFilters,300);
+ });
+ family.addEventListener("change",applyServerFilters);
+ for(const field of ["sort","max"])form.elements[field]?.addEventListener("change",render);
+ loadMore.addEventListener("click",()=>void next());
+ applyServerFilters();
 }
 async function initProduct(){
  const host=document.getElementById("product-content");if(!host)return;
