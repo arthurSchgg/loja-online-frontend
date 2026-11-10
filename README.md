@@ -77,6 +77,18 @@ A integração precisa ser testada no staging autorizado. Veja
 
 Para conferir o contrato REST público contra um backend de staging com TLS validado, execute `npm run smoke:public -- https://staging.exemplo.com`. O script faz somente GET, sem cookies, escrita ou dados fictícios automáticos; valida endpoints públicos e ordenação global por preço efetivo. Consulte [docs/STAGING-PUBLIC-SMOKE.md](docs/STAGING-PUBLIC-SMOKE.md). Essa evidência complementa, mas **não substitui**, a homologação no navegador.
 
+## Build de release sem catálogo fictício
+
+O comando `npm run build` continua gerando o modo de demonstração para desenvolvimento. O comando **obrigatório para publicar a vitrine real** é:
+
+```bash
+API_BASE_URL=/api/v1 npm run build:release
+```
+
+Ele força `SITE_MODE=live`, exige `API_BASE_URL` explícito, valida URLs externas HTTPS e impede que o painel administrativo seja incluído no artefato `dist/`. Para consumir API pública de outra origem, configure também `ALLOW_EXTERNAL_PUBLIC_API=true` e CORS público restrito no backend. A administração deve permanecer **na mesma origem HTTPS da API**, com seu build `npm run build:admin` implantado separadamente e com autenticação Spring Security.
+
+O CI verifica que `build:release` **falha sem API_BASE_URL** e passa com caminho válido. O processo não implanta na AWS; HML-FE-001, identidade e dados oficiais continuam bloqueantes.
+
 ## Qualidade e produção
 
 CI executa `npm run check`, `npm test` e `npm run build`. A aprovação do CI não substitui a homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade ou AWS. `main` permanece reservada a releases aprovados.
