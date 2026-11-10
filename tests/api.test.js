@@ -33,3 +33,17 @@ test("product search URL applies backend filters before pagination",()=>{
  assert.throws(()=>productSearchPath(-1),/Página inválida/);
  assert.throws(()=>productSearchPath(0,{categoryId:"0"}),/Categoria inválida/);
 });
+
+test("server sorts on effective price and validates max price",()=>{
+ const path=productSearchPath(1,{q:"Vela",categoryId:7,sort:"price-asc",maxPrice:"99.90"});
+ const params=new URLSearchParams(path.split("?")[1]);
+ assert.equal(params.get("page"),"1");
+ assert.equal(params.get("sort"),"price-asc");
+ assert.equal(params.get("maxPrice"),"99.90");
+ assert.equal(params.get("categoryId"),"7");
+ assert.equal(new URLSearchParams(productSearchPath().split("?")[1]).get("sort"),"recent");
+ assert.equal(new URLSearchParams(productSearchPath(0,{maxPrice:null}).split("?")[1]).has("maxPrice"),false);
+ assert.throws(()=>productSearchPath(0,{sort:"id,desc"}),/Ordenação inválida/);
+ assert.throws(()=>productSearchPath(0,{maxPrice:"-1"}),/Preço máximo inválido/);
+ assert.throws(()=>productSearchPath(0,{maxPrice:"not a number"}),/Preço máximo inválido/);
+});

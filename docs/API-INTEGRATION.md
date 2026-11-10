@@ -38,7 +38,7 @@ Em `SITE_MODE=live`, a busca por nome/descrição e o filtro de categoria são *
 - `GET /api/v1/categories` alimenta o seletor de categorias publicadas e resolve o parâmetro de links `?familia=Nome` (sem inventar categorias).
 - `GET /api/v1/products?q=...&categoryId=...&page=0&size=12` filtra no servidor; páginas seguintes preservam `q` e `categoryId`.
 - A mudança de busca ou categoria inicia nova paginação; respostas obsoletas são descartadas e falhas permitem repetir a **mesma** página.
-- `Preço máximo` e `Ordenar por preço` ainda são **operações locais sobre produtos carregados**, com aviso na UI enquanto existem mais páginas. Não representam ordenação/preço global sobre todo o banco até o backend disponibilizar contrato para preço promocional vigente e paginação consistente.
+- `GET /api/v1/products?sort=recent|name|price-asc|price-desc&maxPrice=...` aplica ordem e teto de preço **no backend a todo o catálogo**, incluindo promoções vigentes, antes da paginação. A opção `Sem limite` não envia `maxPrice`. O frontend depende do contrato backend [PR #160](https://github.com/arthurSchgg/loja-online-backend/pull/160), ainda sujeito à homologação.
 
 A vitrine nunca substitui falha de API por perfumes/preços ilustrativos. CI cobre filtros, URLs, paginação, falha e requisições concorrentes; homologação real permanece necessária.
 

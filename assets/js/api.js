@@ -40,6 +40,15 @@ export function productSearchPath(page=0,filters={}){
   if(!Number.isSafeInteger(id)||id<1)throw new ApiError("Categoria inválida.");
   query.set("categoryId",String(id));
  }
+ const sort=String(filters?.sort??"recent");
+ if(!["recent","name","price-asc","price-desc"].includes(sort))throw new ApiError("Ordenação inválida.");
+ query.set("sort",sort);
+ const rawMax=filters?.maxPrice;
+ if(rawMax!==null&&rawMax!==undefined&&rawMax!==""){
+  const max=Number(rawMax);
+  if(!Number.isFinite(max)||max<0)throw new ApiError("Preço máximo inválido.");
+  query.set("maxPrice",String(rawMax));
+ }
  return "/products?"+query.toString();
 }
 export async function fetchProducts(page=0,signal,filters={}){
