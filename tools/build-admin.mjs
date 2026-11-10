@@ -1,6 +1,7 @@
 import {cpSync,rmSync,mkdirSync,existsSync,readFileSync} from "node:fs";
+import {fileURLToPath} from "node:url";
 import {join,resolve} from "node:path";
-const root=resolve(new URL("..",import.meta.url).pathname),dest=join(root,"dist-admin");
+const root=resolve(fileURLToPath(new URL("..",import.meta.url))),dest=join(root,"dist-admin");
 rmSync(dest,{recursive:true,force:true});mkdirSync(dest,{recursive:true});
 for(const page of ["admin.html","admin-experiences.html","reset-password.html","confirm-email.html"])cpSync(join(root,page),join(dest,page));
 cpSync(join(root,"admin"),join(dest,"admin"),{recursive:true});
