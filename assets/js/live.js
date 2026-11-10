@@ -31,10 +31,12 @@ function status(target,message,error=false){
  region.textContent=message;region.style.color=error?"#a13023":"#6d625b";
 }
 function liveProductCard(p){
+ const id=numberId(p?.id);
+ if(id===null)return ""; // API data must never become unescaped HTML attributes.
  const img=safe(imageFromProduct(p)),price=currentPrice(p),available=!!p.available;
  const label=price===null?"Valor sob consulta":money(price);
- const action=available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+p.id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
- return '<article class="product-card"><a href="produto.html?productId='+Number(p.id)+'"><div class="product-visual" style="--card-theme:#efe0d8"><img src="'+img+'" loading="lazy" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+Number(p.id)+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div></div></article>';
+ const action=available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
+ return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#efe0d8"><img src="'+img+'" loading="lazy" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div></div></article>';
 }
 const confirmationGate=createConfirmationGate();
 let requestConfirmation=null;
@@ -311,7 +313,7 @@ async function initProduct(){
  try{
   const p=await fetchProduct(id);currentProducts=[p];
   const price=currentPrice(p),image=safe(imageFromProduct(p));
-  host.innerHTML='<section class="container product-view"><div class="product-main-art"><img src="'+image+'" width="400" height="530" alt="'+safe(p.images?.[0]?.altText||p.name)+'"></div><div class="product-detail"><span class="eyebrow">Catálogo real da loja</span><h1>'+productTitle(p)+'</h1><p class="lead">'+safe(p.description||"")+'</p><p>'+safe((p.categories||[]).map(c=>c.name).join(" · "))+'</p><p><strong>'+(price===null?"Valor sob consulta":money(price))+'</strong></p><p class="muted">Volumes e pirâmide olfativa não constam no contrato de produtos desta API; não serão inventados.</p>'+(p.available?'<button class="btn btn--primary" data-confirm-product="'+p.id+'">Confirmar e consultar no WhatsApp</button>':'<span class="badge">Indisponível</span>')+'</div></section>';
+  host.innerHTML='<section class="container product-view"><div class="product-main-art"><img src="'+image+'" width="400" height="530" alt="'+safe(p.images?.[0]?.altText||p.name)+'"></div><div class="product-detail"><span class="eyebrow">Catálogo real da loja</span><h1>'+productTitle(p)+'</h1><p class="lead">'+safe(p.description||"")+'</p><p>'+safe((p.categories||[]).map(c=>c.name).join(" · "))+'</p><p><strong>'+(price===null?"Valor sob consulta":money(price))+'</strong></p><p class="muted">Volumes e pirâmide olfativa não constam no contrato de produtos desta API; não serão inventados.</p>'+(p.available?'<button class="btn btn--primary" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':'<span class="badge">Indisponível</span>')+'</div></section>';
   document.title=(p.name||"Produto")+" | Lojinha da Kátia";
  }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
 }
