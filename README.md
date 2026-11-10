@@ -40,7 +40,7 @@ SITE_MODE=live API_BASE_URL=/api/v1 npm run build
 
 No modo live, o site oculta a sacola fictícia (inclusive itens antigos de sessão) e não apresenta frascos conceituais como produtos reais. O catálogo mantém a página após falhas HTTP e permite nova tentativa. O site não usa automaticamente preços fictícios quando a API fica indisponível. Ver [contratos e limites](docs/API-INTEGRATION.md). A API pública usa `credentials: omit` (sem cookies de administração). O WhatsApp real exige confirmação e validação da URL entregue pelo backend.
 
-Em modo live, a busca textual e as categorias consultam a API em todas as páginas (sem limitar a pesquisa aos produtos já carregados). O seletor usa categorias reais; links `?familia=...` são resolvidos pelo nome cadastrado. O preço máximo e a ordenação por preço continuam locais aos itens carregados e são identificados como parciais até existir ordenação global por preço promocional no backend. Falhas de página são recuperáveis sem saltar resultados.
+Em modo live, a busca textual e as categorias consultam a API em todas as páginas (sem limitar a pesquisa aos produtos já carregados). O seletor usa categorias reais; links `?familia=...` são resolvidos pelo nome cadastrado. A ordenação e o filtro de preço são feitos no backend em todo o catálogo, inclusive promoções vigentes, quando a API contém o contrato do backend PR #160. Não publique este frontend sobre versões antigas da API. Falhas de página são recuperáveis sem saltar resultados.
 
 ## Administração e recuperação de acesso
 
