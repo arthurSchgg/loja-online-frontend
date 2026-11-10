@@ -28,8 +28,24 @@ export function normalizePage(data){
  if(!data||!Array.isArray(data.content))throw new ApiError("Formato de catálogo inesperado.");
  return {items:data.content,hasNext:typeof data.last==="boolean"?!data.last:false};
 }
-export async function fetchProducts(page=0,signal){
- return normalizePage(await publicRequest("/products?page="+encodeURIComponent(page)+"&size=12",{signal}));
+export async function fetchProducts(page=0,signal,filters={}){
+ const number=Number(page);
+ if(!Number.isSafeInteger(number)||number<0)throw new ApiError("Página inválida.");
+ const query=new URLSearchParams({page:String(number),size:"12"});
+ const q=String(filters?.q??"").trim();
+ if(q)query.set("q",q);
+ const category=filters?.categoryId;
+ if(category!==null&&category!==undefined&&category!==""){
+  const id=Number(category);
+  if(!Number.isSafeInteger(id)||id<1)throw new ApiError("Categoria inválida.");
+  query.set("categoryId",String(id));
+ }
+ return normalizePage(await publicRequest("/products?"+query.toString(),{signal}));
+}
+export async function fetchCategories(signal){
+ const categories=await publicRequest("/categories",{signal});
+ if(!Array.isArray(categories))throw new ApiError("Categorias indisponíveis.");
+ return categories.filter(c=>Number.isSafeInteger(Number(c?.id))&&Number(c.id)>0&&typeof c.name==="string");
 }
 export async function fetchProduct(id,signal){
  if(!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new ApiError("ID de produto inválido.");
