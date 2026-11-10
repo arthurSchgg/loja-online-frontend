@@ -29,6 +29,15 @@ Marcas, categorias, produtos (galeria/brand/categories, publicar/indisponibiliza
 - GitHub Actions: `contents: read` e sem secrets de produção; não aprova HML ou provisiona AWS.
 - CODEOWNERS sugere revisão, não é proteção efetiva de branch. Configurar rulesets para main/develop na UI do GitHub.
 
+## Gestão da conta
+
+Alteração de senha e solicitação de troca de e-mail ficam na seção
+"Segurança da conta" do painel. Recuperação e confirmação de links são
+realizadas em `reset-password.html` e `confirm-email.html`, **somente
+no build administrativo** e na mesma origem HTTPS da API.
+Consultar [procedimento de conta](ADMIN-ACCOUNT-SECURITY.md) e configurar
+as URLs de SMTP no backend antes do uso real.
+
 ## Homologação ainda exigida
 - [ ] Acesso com HTTPS válido e domínio final.
 - [ ] Fluxo CSRF, sessão, login/logout, senha errada, inatividade, mudança de senha e sessão revogada.
