@@ -48,3 +48,12 @@ as URLs de SMTP no backend antes do uso real.
 - [ ] CRUD com dados fictícios e banco staging autorizado, validação de imagens, estoque e promoções.
 - [ ] Administração por teclado, screen reader, avisos e estados vazios.
 - [ ] Revisão de operações críticas, auditoria, política de privacidade e HML-006 por responsável técnico.
+
+
+## Edição segura das experiências (contrato backend #156)
+
+A tela `admin-experiences.html` permite abrir uma experiência já cadastrada, buscar o DTO completo em `GET /api/v1/admin/experiences/{id}` e enviar `PUT` para o mesmo recurso. O endpoint administrativo deve devolver `id`, `published`, `title`, `description`, `questions[]` com `options[].resultKey` e `results[]` com `key`, além dos `productIds` associados. Sem essas informações, o formulário **não tenta editar**, pois não é seguro reconstituir resultados a partir do DTO público.
+
+A API pública `GET /api/v1/experiences/{id}` não expõe regras de votação. O backend preserva recomendações apenas para perfis cujas keys permanecem iguais no update; a remoção de um perfil também remove seus vínculos. A administradora deve revisar as consequências antes de mudar uma key. Login, sessão, role e CSRF são validados **no backend**; build/admin continua fora da vitrine pública.
+
+Esta alteração não libera produção por si só. Exigir CI de ambos os repositórios e E2E com PostgreSQL, HTTPS, restauração de dados e revisão técnica no staging (HML-FE-001).
