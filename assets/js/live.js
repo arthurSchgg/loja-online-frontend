@@ -154,12 +154,19 @@ async function initCatalog(){
  async function next(){
   loadMore.disabled=true;status(grid,"Carregando produtos publicados...");
   try{
-   const result=await fetchProducts(page++);
+   // Increment only after a successful response, so retry never skips a page.
+   const result=await fetchProducts(page);
+   page++;
    all.push(...result.items.filter(p=>Number.isSafeInteger(Number(p.id))));currentProducts=all;hasNext=result.hasNext;
    const categories=[...new Set(all.flatMap(p=>(p.categories||[]).map(c=>c.name)))].sort();
    const selected=family.value;family.innerHTML='<option value="">Todas as categorias</option>'+categories.map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join("");family.value=selected;
-   render();
-  }catch(err){grid.replaceChildren();status(grid,err.message,true);loadMore.hidden=true;}
+   render();loadMore.textContent="Carregar mais produtos";
+  }catch(err){
+   if(!all.length)grid.replaceChildren();
+   status(grid,"Não foi possível carregar esta página: "+err.message,true);
+   loadMore.textContent="Tentar novamente";
+   loadMore.hidden=false;
+  }
   finally{loadMore.disabled=false;}
  }
  form.addEventListener("input",render);form.addEventListener("change",render);loadMore.addEventListener("click",next);await next();
@@ -177,6 +184,15 @@ async function initProduct(){
  }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
 }
 if(isLive){
+ // The hero can keep its editorial layout, but must not present a fictitious
+ // product bottle as a published real item.
+ const heroBottle=document.querySelector("[data-hero-bottle]");
+ if(heroBottle){
+  heroBottle.src="assets/images/brand/logo-katia.svg";
+  heroBottle.alt="Símbolo floral da Lojinha da Kátia";
+ }
+ const heroDisclaimer=document.querySelector(".hero-copy > p.muted");
+ if(heroDisclaimer)heroDisclaimer.textContent="Consulte valores e disponibilidade atualizados no catálogo.";
  if(document.getElementById("catalog-grid"))initCatalog();
  else if(document.getElementById("product-content"))initProduct();
  else if(document.getElementById("featured-grid"))initHome();
