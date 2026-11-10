@@ -1,0 +1,16 @@
+import {cpSync,rmSync,mkdirSync,existsSync,readFileSync} from "node:fs";
+import {join,resolve} from "node:path";
+const root=resolve(new URL("..",import.meta.url).pathname),dest=join(root,"dist-admin");
+rmSync(dest,{recursive:true,force:true});mkdirSync(dest,{recursive:true});
+cpSync(join(root,"admin.html"),join(dest,"admin.html"));
+cpSync(join(root,"admin"),join(dest,"admin"),{recursive:true});
+mkdirSync(join(dest,"assets/css"),{recursive:true});
+for(const file of ["tokens.css","base.css","components.css"])cpSync(join(root,"assets/css",file),join(dest,"assets/css",file));
+mkdirSync(join(dest,"assets/images"),{recursive:true});
+cpSync(join(root,"assets/images/brand"),join(dest,"assets/images/brand"),{recursive:true});
+const html=readFileSync(join(dest,"admin.html"),"utf8");
+const entries=[...html.matchAll(/(?:src|href)="((?:assets|admin)\/[^"]+)"/g)].map(x=>x[1]);
+for(const entry of entries)if(!existsSync(join(dest,entry)))throw Error("Missing admin asset "+entry);
+if(existsSync(join(dest,"assets/js/live.js")))throw Error("Public catalog copied into admin artifact");
+if(existsSync(join(dest,"catalogo.html")))throw Error("Public catalog page in admin artifact");
+console.log("Admin bundle PASS — only same-origin protected deployment; never CDN on separate host.");
