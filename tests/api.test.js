@@ -14,7 +14,7 @@ test("HTTP failures are typed and do not disclose raw server bodies",async()=>{
 });
 test("real price and null offering price normalization",()=>{
  assert.equal(currentPrice({price:89,effectivePrice:75}),75);
- assert.equal(currentPrice({price:null}),0); // price under consulta is represented as null by the API layer caller
+ assert.equal(currentPrice({price:null}),null);
 });
 test("WhatsApp URLs validated by allowlist and explicit confirmation",async()=>{
  // This method uses publicRequest's fetchImpl; without fetch mock we just assert request validation.
