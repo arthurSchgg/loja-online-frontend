@@ -13,6 +13,12 @@ export function revealDelay(index = 0) {
  return Math.min(Math.max(0, index) * 65, 260);
 }
 
+/** Small transform-only image movement tied to the viewport, never the document layout. */
+export function imageScrollOffset(centerY, viewportHeight, limit = 14) {
+ if(!Number.isFinite(centerY)||!Number.isFinite(viewportHeight)||viewportHeight<=0) return 0;
+ return Math.max(-limit,Math.min(limit,(viewportHeight / 2 - centerY) / viewportHeight * limit * 2));
+}
+
 export function setupMotion({win = globalThis.window, doc = globalThis.document} = {}) {
  if (!win || !doc) return () => {};
  const preference = win.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -20,8 +26,38 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
  const animationAvailable = typeof win.Element?.prototype?.animate === "function" ||
   typeof doc.documentElement?.animate === "function";
  const cleanups = [];
- let revealObserver, stageObserver, mutationObserver, raf = 0;
+ let revealObserver, stageObserver, mutationObserver, imageObserver, raf = 0;
  const once = new WeakSet();
+ const observedImages = new WeakSet();
+ const visibleImages = new Set();
+ const imageSelector = "[data-parallax], .product-visual img, .collection-tile img, .editorial-visual img";
+ const imageMotion = canAnimate && win.matchMedia?.("(min-width: 769px)")?.matches &&
+  "IntersectionObserver" in win;
+ const observeImages = node => {
+  if(!imageObserver || !(node instanceof win.Element)) return;
+  const candidates = [
+   ...(node.matches(imageSelector) ? [node] : []),
+   ...node.querySelectorAll(imageSelector)
+  ];
+  for(const image of candidates){
+   if(observedImages.has(image)) continue;
+   observedImages.add(image);
+   imageObserver.observe(image);
+  }
+ };
+ if(imageMotion){
+  imageObserver = new win.IntersectionObserver(entries=>{
+   for(const entry of entries){
+    if(entry.isIntersecting) visibleImages.add(entry.target);
+    else {
+     visibleImages.delete(entry.target);
+     entry.target.style.removeProperty("--motion-shift");
+    }
+   }
+   schedule();
+  }, {rootMargin:"60px 0px 60px 0px", threshold:0});
+  observeImages(doc.body);
+ }
 
  // Native Web Animations only run for elements in view; nothing is hidden by default.
  const revealSelector = "[data-reveal], .section-heading, .product-card, .family-tile, .collection-tile, .editorial-copy, .quiz-box";
@@ -52,7 +88,10 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
   if ("MutationObserver" in win) {
    mutationObserver = new win.MutationObserver(changes => {
     for (const change of changes)
-     for (const child of change.addedNodes) observe(child);
+     for (const child of change.addedNodes) {
+      observe(child);
+      observeImages(child);
+     }
    });
    mutationObserver.observe(doc.body, {childList: true, subtree: true});
   }
@@ -88,20 +127,19 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
  progress.className = "scroll-progress";
  progress.setAttribute("aria-hidden", "true");
  doc.body.append(progress);
- const parallax = canAnimate && win.matchMedia?.("(min-width: 769px)")?.matches
-  ? [...doc.querySelectorAll("[data-parallax]")] : [];
+
  const tick = () => {
   raf = 0;
   if (doc.visibilityState === "hidden") return;
   const scrollable = Math.max(1, doc.documentElement.scrollHeight - win.innerHeight);
   const ratio = Math.min(1, Math.max(0, win.scrollY / scrollable));
   progress.style.transform = "scaleX(" + ratio + ")";
-  for (const el of parallax) {
-   const bounds = el.getBoundingClientRect();
-   if (bounds.bottom < 0 || bounds.top > win.innerHeight) continue;
-   const relative = (win.innerHeight / 2 - (bounds.top + bounds.height / 2)) /
-    Math.max(win.innerHeight, 1);
-   el.style.transform = "translate3d(0," + Math.max(-18, Math.min(18, relative * 24)).toFixed(2) + "px,0)";
+  if(preference?.matches) return;
+  for(const el of visibleImages){
+   if(!el.isConnected){visibleImages.delete(el);continue;}
+   const bounds=el.getBoundingClientRect();
+   const offset=imageScrollOffset(bounds.top+bounds.height/2,win.innerHeight);
+   el.style.setProperty("--motion-shift",offset.toFixed(2)+"px");
   }
  };
  const schedule = () => {if (!raf) raf = win.requestAnimationFrame(tick);};
@@ -118,6 +156,9 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
   if (raf) win.cancelAnimationFrame(raf);
   mutationObserver?.disconnect();
   revealObserver?.disconnect();
+  imageObserver?.disconnect();
+  for(const el of visibleImages)el.style.removeProperty("--motion-shift");
+  visibleImages.clear();
   stageObserver?.disconnect();
   for (const cleanup of cleanups) cleanup();
   progress.remove();
