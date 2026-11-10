@@ -4,6 +4,7 @@
 import {isLive} from "./config.js";
 import {fetchProducts,fetchProduct,fetchOfferings,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,ApiError} from "./api.js";
 import {money} from "./data.js";
+import {createPaginator} from "./pagination.js";
 import {escapeHtml} from "./layout.js";
 const safe=value=>escapeHtml(value??"");
 const numberId=id=>Number.isSafeInteger(Number(id))&&Number(id)>0?Number(id):null;
@@ -139,7 +140,7 @@ async function initCatalog(){
  for(const field of ["gender","size"]){const input=form.elements[field];if(input)input.closest(".field").hidden=true;}
  const heading=document.querySelector(".catalog-hero .lead");if(heading)heading.textContent="Produtos publicados e preços consultados da API. Confirme antes de abrir o WhatsApp.";
  const family=form.elements.family;family.innerHTML='<option value="">Todas as categorias</option>';
- const all=[];let page=0,hasNext=true;
+ const all=[];const pager=createPaginator(fetchProducts);let hasNext=true;
  const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
  function render(){
   const data=new FormData(form),q=String(data.get("query")||"").toLocaleLowerCase("pt-BR"),category=String(data.get("family")||""),max=Number(data.get("max")||100000);
@@ -154,12 +155,19 @@ async function initCatalog(){
  async function next(){
   loadMore.disabled=true;status(grid,"Carregando produtos publicados...");
   try{
-   const result=await fetchProducts(page++);
-   all.push(...result.items.filter(p=>Number.isSafeInteger(Number(p.id))));currentProducts=all;hasNext=result.hasNext;
+   // Increment only after a successful response, so retry never skips a page.
+   const result=await pager.next();
+   hasNext=pager.hasNext;
+   all.push(...result.items.filter(p=>Number.isSafeInteger(Number(p.id))));currentProducts=all;
    const categories=[...new Set(all.flatMap(p=>(p.categories||[]).map(c=>c.name)))].sort();
    const selected=family.value;family.innerHTML='<option value="">Todas as categorias</option>'+categories.map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join("");family.value=selected;
-   render();
-  }catch(err){grid.replaceChildren();status(grid,err.message,true);loadMore.hidden=true;}
+   render();loadMore.textContent="Carregar mais produtos";
+  }catch(err){
+   if(!all.length)grid.replaceChildren();
+   status(grid,"Não foi possível carregar esta página: "+err.message,true);
+   loadMore.textContent="Tentar novamente";
+   loadMore.hidden=false;
+  }
   finally{loadMore.disabled=false;}
  }
  form.addEventListener("input",render);form.addEventListener("change",render);loadMore.addEventListener("click",next);await next();
@@ -177,6 +185,15 @@ async function initProduct(){
  }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
 }
 if(isLive){
+ // The hero can keep its editorial layout, but must not present a fictitious
+ // product bottle as a published real item.
+ const heroBottle=document.querySelector("[data-hero-bottle]");
+ if(heroBottle){
+  heroBottle.src="assets/images/brand/logo-katia.svg";
+  heroBottle.alt="Símbolo floral da Lojinha da Kátia";
+ }
+ const heroDisclaimer=document.querySelector(".hero-copy > p.muted");
+ if(heroDisclaimer)heroDisclaimer.textContent="Consulte valores e disponibilidade atualizados no catálogo.";
  if(document.getElementById("catalog-grid"))initCatalog();
  else if(document.getElementById("product-content"))initProduct();
  else if(document.getElementById("featured-grid"))initHome();
