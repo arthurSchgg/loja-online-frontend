@@ -35,3 +35,19 @@ a:hover{color:var(--color-accent)}.sr-only{position:absolute;width:1px;height:1p
 @media(prefers-reduced-motion:reduce){
  ::view-transition-old(root),::view-transition-new(root){animation:none!important}
 }
+
+
+html{scroll-padding-top:100px}
+section[id]{scroll-margin-top:98px}
+.mobile-links a{padding:10px 4px;min-height:44px;display:flex;align-items:center}
+@media(min-width:1025px){.mobile-links{display:none!important}}
+@media(max-width:560px){
+ .header-inner{gap:9px}
+ .header-actions{gap:2px}
+ .header-actions .icon-button{width:42px;height:44px}
+ .brand strong{font-size:1rem;line-height:1.2}
+ .brand small{font-size:.58rem;letter-spacing:.08em}
+ .brand-mark{width:40px;height:40px}
+ .announcement{font-size:.58rem;letter-spacing:.08em}
+ .container{width:min(calc(100% - 36px),var(--container))}
+}
