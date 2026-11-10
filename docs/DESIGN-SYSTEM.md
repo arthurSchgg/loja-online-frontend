@@ -18,7 +18,7 @@ Cada perfume define `theme`; cards e seções usam `--card-theme`/`--theme-wash`
 - Estados de erro, vazio, aviso de demonstração.
 
 ## Movimento
-`assets/js/animations.js`: GSAP + ScrollTrigger e Lenis quando disponíveis; fallback de navegação nativa, com `prefers-reduced-motion` respeitado. Nunca impedir foco, rolagem ou interação na ausência da CDN.
+`assets/js/animations.js`: Web Animations API, IntersectionObserver e transformações discretas em CSS, com rolagem nativa. Respeita `prefers-reduced-motion` e Save-Data; sem dependência de scripts executáveis por CDN. A animação deve ser complementar, nunca impedir foco, rolagem ou interação.
 
 ## Acessibilidade
 WCAG 2.2 AA como alvo a homologar; foco visível, skip link, HTML semântico, labels, botões reais, contraste e validação responsiva nas larguras 375/768/1024/1440. Avaliação assistiva real e Core Web Vitals ainda pendentes.
