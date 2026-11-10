@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" role="img" aria-label="Ilustração de perfume Íris de Inverno">
+<defs><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".94"/><stop offset=".48" stop-color="#c8dfe8" stop-opacity=".8"/><stop offset="1" stop-color="#fff9f4" stop-opacity=".83"/></linearGradient><linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4cbb0"/><stop offset=".38" stop-color="#a85d42"/><stop offset=".75" stop-color="#e8b18f"/><stop offset="1" stop-color="#80503a"/></linearGradient><filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="20"/></filter></defs>
+<ellipse cx="240" cy="530" rx="125" ry="25" fill="#473025" opacity=".18" filter="url(#shadow)"/>
+<g opacity=".27" fill="none" stroke="#69849d" stroke-width="3"><path d="M74 460Q108 330 90 220Q130 260 137 319"/><path d="M380 445Q342 328 372 225Q329 267 326 328"/></g>
+<g opacity=".25" fill="#69849d"><ellipse cx="103" cy="293" rx="22" ry="56" transform="rotate(-25 103 293)"/><ellipse cx="348" cy="326" rx="20" ry="57" transform="rotate(29 348 326)"/></g>
+<rect x="184" y="95" width="112" height="62" rx="14" fill="url(#metal)" stroke="#8a513c" stroke-width="4"/><rect x="197" y="145" width="86" height="44" rx="4" fill="#b78f7b"/>
+<path d="M142 182Q140 172 155 172H325Q340 172 338 188L364 447Q368 472 345 476H135Q112 472 116 447Z" fill="url(#glass)" stroke="#c19b88" stroke-width="6"/>
+<path d="M140 342H340L350 444Q352 453 337 454H145Q130 454 130 442Z" fill="#c8dfe8" opacity=".55"/>
+<rect x="159" y="271" width="162" height="144" rx="4" fill="#fffaf4" stroke="#d4b8a7" stroke-width="2"/>
+<path d="M158 274H322" stroke="url(#metal)" stroke-width="4"/>
+<text x="240" y="298" text-anchor="middle" fill="#a55e4b" font-size="14" letter-spacing="3" font-family="Arial,sans-serif">LK</text>
+<path d="M217 315Q231 295 241 316Q255 299 267 316Q259 337 241 350Q222 339 217 315Z" fill="none" stroke="#69849d" stroke-width="3"/>
+<text x="240" y="370" text-anchor="middle" fill="#443029" font-size="19" font-family="Georgia,serif">Íris de Inverno</text>
+<text x="240" y="395" text-anchor="middle" fill="#9b7a68" font-size="9" letter-spacing="2" font-family="Arial,sans-serif">LOJINHA DA KÁTIA</text>
+<path d="M163 196Q149 233 155 262" fill="none" stroke="#fff" stroke-width="12" opacity=".55"/>
+<circle cx="354" cy="183" r="4" fill="#fff" opacity=".75"/>
+</svg>
