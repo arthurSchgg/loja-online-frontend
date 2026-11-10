@@ -1,26 +1,40 @@
-# Lojinha da Kátia · Frontend
+# Lojinha da Kátia — Perfumaria de Luxo (Frontend)
 
-Frontend independente em **HTML, CSS e JavaScript puro** para a Lojinha da Kátia.
+Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem frameworks de interface. Identidade rosé/cobre, tipografia editorial, frascos vetoriais originais e animações GSAP/ScrollTrigger + Lenis com fallback.
 
-> **Repositório privado em implantação.** A `main` é a linha estável; `develop` recebe apenas PRs com CI. Nenhuma versão foi aprovada para produção.
+> **MODO DEMONSTRAÇÃO:** os oito perfumes, preços e pirâmides olfativas são fictícios. A sacola é uma lista de interesse, sem checkout, pedido, pagamento ou reservas. Contato real via WhatsApp exige confirmação no backend.
 
-## Fluxo de desenvolvimento
+## Como executar
 
-- `main`: somente releases homologados.
-- `develop`: integração de alterações revisadas.
-- `feature/US-xxx-descricao`: funcionalidades.
-- `fix/BUG-xxx-descricao`: correções.
-- `release/vX.Y.Z`: preparação da versão; `hotfix/*` para correções urgentes.
-- Commits semânticos: `feat(scope): ...`, `fix(scope): ...`, `test(scope): ...`, `docs(scope): ...`, `chore(scope): ...`.
+```bash
+npm run dev      # Python 3 HTTP server, porta 5500
+npm run check    # Verifica sintaxe do JavaScript
+npm test         # Testes Node 22
+npm run build    # Gera dist/ público e garante exclusão de admin
+```
 
-Não desenvolver nem mesclar diretamente na `main`. A política completa fica em `docs/GIT-FLOW.md` na `develop`.
+Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módulos ES6.
 
-## Escopo
+## Estrutura e personalização
 
-Vitrine editorial rosé/cobre baseada na logo original, catálogo de perfumes demonstrativo, quiz, produtos, sacola de **consulta** sem checkout, contatos via WhatsApp e painel administrativo integrado ao backend Spring Boot na **mesma origem HTTPS**. Dados fictícios não representam produtos reais da loja.
+- `index.html`: hero, coleções, famílias olfativas, best-sellers, quiz, experiência, newsletter demonstrativa.
+- `catalogo.html`: filtros de família, perfil, volume, preço e ordem.
+- `produto.html?id=aurora-de-petalas`: zoom, pirâmide de notas, volume 30/50/100 ml, recomendações e sacola.
+- `privacidade.html`: aviso de demonstração e uso de dados.
+- `assets/css/tokens.css`: seis cores centrais, tipografia, escala 4/8px, sombras, raios, movimento.
+- `assets/css/base.css`, `components.css`, `pages.css`: base, componentes e layouts.
+- `assets/js/data.js`: somente catálogo fictício; substituir por API depois de homologação.
+- `assets/js/animations.js`: GSAP, ScrollTrigger, Lenis, parallax, reveal e fallback `prefers-reduced-motion`.
+- `assets/images/perfumes/`: ilustrações SVG autorais sem imagens de terceiros.
+- `docs/DESIGN-SYSTEM.md`: componentes e acessibilidade.
+- `docs/GIT-FLOW.md` e `docs/SECURITY-PERMISSIONS.md`: branches, revisões, proteção e privilégios.
 
-## Segurança
+Personalize cores em `tokens.css`, fontes em `--font-display` e `--font-body`, e o catálogo demonstrativo em `data.js`.
 
-Nunca versionar senhas, tokens, dados de clientes ou chaves AWS. A API valida preços, estoque e opções na confirmação de contato. O frontend não realiza pagamentos nem armazena pedidos.
+## Segurança e escopo do backend
 
-**Status:** preparação; não homologado nem publicado.
+O backend Spring Boot é o responsável por preços vigentes, estoque, opções de velas, mensagens de WhatsApp e autenticação administrativa. O frontend nunca deve criar pedidos ou aceitar compras sem esse contrato. A área administrativa precisa compartilhar **mesma origem HTTPS** com a API (sessão HTTP e CSRF); não publicar o admin dentro do build estático da vitrine.
+
+## Qualidade e produção
+
+CI executa `npm run check`, `npm test` e `npm run build`. A aprovação do CI não substitui a homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade ou AWS. `main` permanece reservada a releases aprovados.
