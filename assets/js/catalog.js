@@ -1,7 +1,8 @@
 import {FAMILIES,PERFUMES,filterPerfumes} from "./data.js";
+import {isLive} from "./config.js";
 import {productCard} from "./layout.js";
 const form=document.getElementById("filters"),grid=document.getElementById("catalog-grid"),result=document.getElementById("result-count");
-if(form&&grid){
+if(!isLive&&form&&grid){
  const params=new URLSearchParams(location.search);if(FAMILIES.includes(params.get("familia")))form.elements.family.value=params.get("familia");
  function render(){
  const data=new FormData(form),filters=Object.fromEntries(data.entries());
