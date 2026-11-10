@@ -44,6 +44,18 @@ O site não usa automaticamente preços fictícios quando a API fica indisponív
 
 O backend Spring Boot é o responsável por preços vigentes, estoque, opções de velas, mensagens de WhatsApp e autenticação administrativa. O frontend nunca deve criar pedidos ou aceitar compras sem esse contrato. A área administrativa precisa compartilhar **mesma origem HTTPS** com a API (sessão HTTP e CSRF); não publicar o admin dentro do build estático da vitrine.
 
+## Painel administrativo
+
+`admin.html` e `admin/` são mantidos fora do build público. O comando
+`npm run build:admin` cria `dist-admin/` para **mesma origem HTTPS** da API.
+O painel usa sessão HttpOnly, CSRF em memória e acesso exclusivamente controlado
+pelo Spring Security. Não abra um painel real em origem diferente da API.
+
+O painel oferece CRUD de marcas, categorias, produtos, ofertas, banners,
+conteúdo e dados institucionais; estoque, promoções, opções de velas e auditoria.
+A integração precisa ser testada no staging autorizado. Veja
+[docs/ADMIN-OPERATIONS.md](docs/ADMIN-OPERATIONS.md).
+
 ## Qualidade e produção
 
 CI executa `npm run check`, `npm test` e `npm run build`. A aprovação do CI não substitui a homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade ou AWS. `main` permanece reservada a releases aprovados.
