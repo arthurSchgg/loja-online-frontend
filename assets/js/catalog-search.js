@@ -3,7 +3,7 @@
  */
 export function createCatalogSearch(fetchPage) {
  if(typeof fetchPage!=="function")throw new TypeError("Uma função de busca é obrigatória.");
- let version=0,page=0,hasNext=true,items=[],filters={q:"",categoryId:null},pending=null;
+ let version=0,page=0,hasNext=true,items=[],filters={q:"",categoryId:null,sort:"recent",maxPrice:null},pending=null;
  const snapshot=(stale=false)=>({version,page,hasNext,items:[...items],stale});
  return {
   get state(){return snapshot();},
@@ -11,7 +11,13 @@ export function createCatalogSearch(fetchPage) {
    const q=String(next.q??"").trim(),raw=next.categoryId;
    const id=raw===null||raw===undefined||raw===""?null:Number(raw);
    if(id!==null&&(!Number.isSafeInteger(id)||id<1))throw new TypeError("Categoria inválida.");
-   filters={q,categoryId:id};
+   const sort=String(next.sort??"recent");
+   if(!["recent","name","price-asc","price-desc"].includes(sort))throw new TypeError("Ordenação inválida.");
+   const rawPrice=next.maxPrice;
+   const maxPrice=rawPrice===null||rawPrice===undefined||rawPrice===""?null:Number(rawPrice);
+   if(maxPrice!==null&&(!Number.isFinite(maxPrice)||maxPrice<0))
+    throw new TypeError("Preço máximo inválido.");
+   filters={q,categoryId:id,sort,maxPrice};
    items=[];page=0;hasNext=true;version++;
    return version;
   },
