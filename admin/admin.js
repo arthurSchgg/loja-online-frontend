@@ -191,4 +191,8 @@ async function openTool(id,kind){
   toolInfo("");
  }catch(error){toolInfo(error.message,true);}
 }
+setupSecurityPanel(api,{
+ onPasswordChanged:()=>{showLogin();info("Credenciais alteradas. Faça login novamente.");},
+ onSessionExpired:()=>{showLogin();info("Sessão encerrada. Faça login novamente.",true);}
+});
 bootstrap();
