@@ -7,6 +7,7 @@ import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
 import {escapeHtml} from "./layout.js";
 import {officialStoreLinks} from "./official-contact.js";
+import {createConfirmationGate} from "./confirmation-gate.js";
 const safe=value=>escapeHtml(value??"");
 const numberId=id=>Number.isSafeInteger(Number(id))&&Number(id)>0?Number(id):null;
 const productTitle=p=>safe(p.name||"Produto sem nome");
@@ -35,6 +36,7 @@ function liveProductCard(p){
  const action=available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+p.id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
  return '<article class="product-card"><a href="produto.html?productId='+Number(p.id)+'"><div class="product-visual" style="--card-theme:#efe0d8"><img src="'+img+'" loading="lazy" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+Number(p.id)+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div></div></article>';
 }
+const confirmationGate=createConfirmationGate();
 let requestConfirmation=null;
 function ensureDialog(){
  let dlg=document.getElementById("whatsapp-confirm-dialog");
@@ -43,24 +45,41 @@ function ensureDialog(){
  dlg.innerHTML='<div class="drawer-inner"><div class="drawer-head"><h2 id="confirm-heading">Confirme sua consulta</h2><button type="button" class="icon-button" id="close-confirm" aria-label="Fechar">✕</button></div><div class="drawer-items"><p id="confirm-details"></p><div id="confirm-options"></div><p id="confirm-feedback" role="status" aria-live="polite"></p></div><div class="drawer-footer"><button type="button" class="btn btn--primary btn--full" id="send-confirm">Validar preço e disponibilidade</button><p id="confirmed-link"></p><small>O backend confirma a informação atual. A mensagem só é aberta quando você clicar no link validado.</small></div></div>';
  document.body.append(dlg);dlg.querySelector("#close-confirm").addEventListener("click",()=>dlg.close());
  dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close();});
+ dlg.addEventListener("close",()=>{confirmationGate.invalidate();requestConfirmation=null;});
+ dlg.querySelector("#confirm-options").addEventListener("change",()=>{
+  // A link confirmed for previous options is no longer valid for the current selection.
+  confirmationGate.invalidate();
+  dlg.querySelector("#confirmed-link").replaceChildren();
+  dlg.querySelector("#send-confirm").disabled=false;
+  dlg.querySelector("#confirm-feedback").textContent="Opções alteradas. Confirme novamente antes de abrir o WhatsApp.";
+ });
  dlg.querySelector("#send-confirm").addEventListener("click",async()=>{
   if(!requestConfirmation)return;
   const btn=dlg.querySelector("#send-confirm"),feedback=dlg.querySelector("#confirm-feedback"),link=dlg.querySelector("#confirmed-link");
+  const revision=confirmationGate.begin();
+  const selection={...requestConfirmation};
   btn.disabled=true;feedback.textContent="Validando com a loja...";link.replaceChildren();
   try{
-   let customizations={};
+   const customizations={};
    for(const el of dlg.querySelectorAll("[data-option-kind]")){if(el.value)customizations[el.dataset.optionKind]=el.value;}
-   const response=await confirmWhatsApp({...requestConfirmation,customizations});
+   const response=await confirmWhatsApp({...selection,customizations});
+   if(!confirmationGate.isCurrent(revision)||!dlg.open)return;
    const a=document.createElement("a");a.href=response.url;a.target="_blank";a.rel="noopener noreferrer";a.className="btn btn--secondary btn--full";a.textContent="Abrir WhatsApp com informações confirmadas ↗";link.append(a);
    feedback.textContent="Informações atualizadas confirmadas. Revise o resumo no WhatsApp antes de enviar.";
-  }catch(err){feedback.textContent=err instanceof ApiError?err.message:"Não foi possível validar. Tente novamente.";}
-  finally{btn.disabled=false;}
+  }catch(err){
+   if(confirmationGate.isCurrent(revision)&&dlg.open)
+    feedback.textContent=err instanceof ApiError?err.message:"Não foi possível validar. Tente novamente.";
+  }finally{
+   if(confirmationGate.isCurrent(revision))btn.disabled=false;
+  }
  });
  return dlg;
 }
 function showConfirmation({type,item}){
  if(!item||!item.available)return;
  const dlg=ensureDialog(),price=currentPrice(item),name=item.name||item.title;
+ confirmationGate.invalidate();
+ dlg.querySelector("#send-confirm").disabled=false;
  requestConfirmation={type,id:Number(item.id),expectedPrice:price};
  dlg.querySelector("#confirm-details").textContent="Você deseja consultar "+name+"? "+(price===null?"Valor sob consulta.":"Preço vigente exibido: "+money(price)+".")+" Confirme antes de abrir uma conversa.";
  dlg.querySelector("#confirm-feedback").textContent="";
