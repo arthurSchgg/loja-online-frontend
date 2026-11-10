@@ -19,9 +19,9 @@ Necessita Node.js 22+, Python 3 e Playwright Chromium.
 npm install
 npx playwright install chromium
 npm run build
-npm run test:browser -- --grep "^demo"
+npm run test:browser -- --grep "demo"
 API_BASE_URL=/api/v1 npm run build:release
-npm run test:browser -- --grep "^live"
+npm run test:browser -- --grep "live"
 ```
 
 O runner Playwright inicia um servidor HTTP local somente em `127.0.0.1:5500`; utiliza URLs e produtos de teste. Não depende do backend online. O CI instala Chromium em runner isolado, executa os dois modos e retém screenshot/trace apenas quando ocorrer falha.
