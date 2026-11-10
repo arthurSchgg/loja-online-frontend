@@ -1,0 +1,30 @@
+/* Six primary semantic color tokens; per-fragrance colors are separate themes. */
+:root {
+  --color-background: #faf7f3;
+  --color-surface: #fffdf9;
+  --color-text: #29231f;
+  --color-text-muted: #6d625b;
+  --color-accent: #925d50;
+  --color-highlight: #efd5cc;
+  --color-border: #ded2ca;
+  --color-deep: #352621;
+  --color-cream: #f4e9df;
+  --theme-wash: #f1d9d6;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "DM Sans", Arial, sans-serif;
+  --font-xs: .78rem;
+  --font-sm: .89rem;
+  --font-base: 1rem;
+  --font-lg: clamp(1.1rem, 1.6vw, 1.22rem);
+  --font-h2: clamp(2.8rem, 5.2vw, 5.8rem);
+  --font-h1: clamp(4.3rem, 11vw, 11rem);
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-6:24px; --space-8:32px; --space-10:40px; --space-12:48px;
+  --space-16:64px; --space-20:80px; --space-24:96px;
+  --radius-sm:8px; --radius-md:16px; --radius-lg:24px; --radius-pill:999px;
+  --shadow-soft:0 18px 70px rgba(59,35,29,.10);
+  --duration-fast:180ms; --duration-normal:420ms; --duration-slow:900ms;
+  --ease-lux:cubic-bezier(.22,1,.36,1);
+  --page-gutter:clamp(20px,4.6vw,88px);
+  --container:1400px;
+}
