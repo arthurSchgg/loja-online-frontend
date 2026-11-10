@@ -54,7 +54,10 @@ $("#login-form").addEventListener("submit",async event=>{
 });
 $("#logout").addEventListener("click",async()=>{
  try{await api.logout();showLogin();info("Sessão encerrada.");}
- catch(error){info("Não foi possível confirmar o encerramento. Atualize a página e tente novamente.",true);}
+ catch(error){
+  showLogin();
+  info("Dados ocultados localmente; não foi possível confirmar a saída no servidor. Recarregue a página antes de continuar.",true);
+ }
 });
 function fieldValue(field,values){
  const name=field[0],v=values[name];
@@ -140,6 +143,7 @@ async function loadRecords(){
  const requestedModule=moduleName,requestedPage=recordsPage,requestedSession=sessionUser;
  if(!requestedSession)return;
  const ticket=recordsGate.begin(),endpoint=endMap[requestedModule];
+ const moreButton=$("#admin-more");moreButton.disabled=true;
  let result,items;
  try{
  if(requestedModule==="store"){
@@ -149,11 +153,15 @@ async function loadRecords(){
   result=await api.get("/admin/"+endpoint+suffix);items=Array.isArray(result)?result:result?.content||[];
  }
  }catch(error){
-  if(recordsGate.isCurrent(ticket)&&sessionUser===requestedSession&&error.status===401)showLogin();
+  if(recordsGate.isCurrent(ticket)&&sessionUser===requestedSession){
+   if(error.status===401)showLogin();
+   else moreButton.disabled=false;
+  }
   throw error;
  }
  if(!recordsGate.isCurrent(ticket)||sessionUser!==requestedSession||
     moduleName!==requestedModule||recordsPage!==requestedPage)return;
+ moreButton.disabled=false;
  if(requestedModule==="store"&&!dirty)buildForm(result);
  const list=$("#admin-records");if(requestedPage===0)list.replaceChildren();
  if(!items.length&&requestedPage===0)list.append(el("p","Nenhum registro disponível.","muted"));
@@ -183,6 +191,7 @@ async function loadRecords(){
  }
 }
 const tool=$("#record-tool-dialog");$("#close-record-tool").addEventListener("click",()=>tool.close());
+tool.addEventListener("close",()=>toolGate.invalidate());
 tool.addEventListener("click",e=>{if(e.target===tool)tool.close();});
 function field(parent,name,label,type="text"){
  const wrap=el("label",label,"field"),input=document.createElement("input");
@@ -190,12 +199,16 @@ function field(parent,name,label,type="text"){
  wrap.append(input);parent.append(wrap);return input;
 }
 async function openTool(id,kind){
+ if(!sessionUser)return;
+ const requestedSession=sessionUser,ticket=toolGate.begin();
+ const isActive=()=>toolGate.isCurrent(ticket)&&sessionUser===requestedSession&&tool.open;
  const root=$("#record-tool-body");root.replaceChildren();
  $("#record-tool-heading").textContent=(kind==="stock"?"Movimentação de estoque":kind==="promotions"?"Promoções":"Personalização de velas")+" · #"+id;
  if(!tool.open)tool.showModal();toolInfo("Carregando...");
  try{
   if(kind==="stock"){
    const [balance,history]=await Promise.all([api.get("/admin/products/"+id+"/stock"),api.get("/admin/products/"+id+"/stock/movements?page=0&size=10")]);
+   if(!isActive())return;
    root.append(el("p","Saldo: "+balance.quantity+" · Disponível: "+(balance.available?"Sim":"Não")));
    const form=el("form","","admin-form"),wrap=el("label","Tipo","field"),sel=document.createElement("select");
    sel.name="type";for(const t of ["ENTRY","EXIT","ADJUSTMENT"]){const o=el("option",t);o.value=t;sel.append(o);}wrap.append(sel);form.append(wrap);
@@ -207,13 +220,16 @@ async function openTool(id,kind){
    for(const h of history.content||[]){root.append(el("p",(h.createdAt||"")+" · "+h.type+" "+h.quantity+" · saldo "+h.resultingQuantity+" · "+(h.reason||""),"tool-entry"));}
   }else if(kind==="promotions"){
    const all=await api.get("/admin/products/"+id+"/promotions");
+   if(!isActive())return;
    for(const p of all){const row=el("div","","tool-entry");row.append(el("p","Promoção #"+p.id+" · R$ "+p.promotionalPrice+" · "+p.startsAt+" até "+p.endsAt));addAction(row,"Excluir",async()=>{if(!confirm("Excluir promoção?"))return;try{await api.write("DELETE","/admin/products/"+id+"/promotions/"+p.id);await openTool(id,kind);}catch(e){toolInfo(e.message,true);}});root.append(row);}
    const form=el("form","","admin-form"),value=field(form,"promotionalPrice","Preço promocional","number"),start=field(form,"startsAt","Início","datetime-local"),end=field(form,"endsAt","Fim","datetime-local");value.step=".01";
    const button=el("button","Criar promoção","btn btn--primary");button.type="submit";form.append(button);
    form.addEventListener("submit",async e=>{e.preventDefault();button.disabled=true;try{const begins=new Date(start.value),ends=new Date(end.value),amount=Number(value.value);if(!Number.isFinite(begins.valueOf())||!Number.isFinite(ends.valueOf())||begins>=ends||amount<=0)throw new Error("Datas ou preço inválidos.");await api.write("POST","/admin/products/"+id+"/promotions",{promotionalPrice:amount,startsAt:begins.toISOString(),endsAt:ends.toISOString()});await openTool(id,kind);toolInfo("Promoção registrada.");}catch(e){toolInfo(e.message,true);}finally{button.disabled=false;}});
    root.append(form);
   }else{
-   const offering=await api.get("/admin/offerings/"+id),form=el("form","","admin-form"),editors={};
+   const offering=await api.get("/admin/offerings/"+id);
+   if(!isActive())return;
+   const form=el("form","","admin-form"),editors={};
    root.append(el("p","Uma opção por linha; prefixe com ! para desativar. Salvar substitui todas as opções do modelo."));
    for(const kind of ["AROMA","COLOR","PACKAGING"]){
     const wrap=el("label",kind,"field wide"),area=document.createElement("textarea");area.rows=4;area.value=(offering.options||[]).filter(o=>o.kind===kind).map(o=>(o.active?"":"!")+o.label).join("\n");wrap.append(area);form.append(wrap);editors[kind]=area;
@@ -222,8 +238,12 @@ async function openTool(id,kind){
    form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;try{const options=[];for(const [kind,area] of Object.entries(editors)){for(const raw of area.value.split("\n").map(x=>x.trim()).filter(Boolean)){const active=!raw.startsWith("!"),label=(active?raw:raw.slice(1)).trim();if(!label||label.length>120)throw new Error("Rótulo inválido.");options.push({kind,label,position:options.length,active});}}if(options.length>48)throw new Error("Limite de 48 opções.");await api.write("PUT","/admin/offerings/"+id+"/options",{options});await openTool(id,kind);toolInfo("Personalizações atualizadas.");}catch(e){toolInfo(e.message,true);}finally{btn.disabled=false;}});
    root.append(form);
   }
-  toolInfo("");
- }catch(error){toolInfo(error.message,true);}
+  if(isActive())toolInfo("");
+ }catch(error){
+  if(!isActive())return;
+  if(error.status===401){showLogin();info("Sessão expirada. Entre novamente.",true);}
+  else toolInfo(error.message,true);
+ }
 }
 setupSecurityPanel(api,{
  onPasswordChanged:()=>{showLogin();info("Credenciais alteradas. Faça login novamente.");},
