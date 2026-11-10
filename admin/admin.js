@@ -81,7 +81,7 @@ function buildForm(values={}){
   input.name=name;input.required=required;
   if(type==="checkbox")input.checked=values[name]===undefined?(moduleName==="offerings"&&name==="available"):Boolean(values[name]);
   else input.value=String(fieldValue(field,values));
-  input.addEventListener("input",()=>dirty=true);
+  input.addEventListener("input",()=>{dirty=true;saveGate.invalidate();});
   wrapper.append(input);root.append(wrapper);
  }
  $("#reset-form").hidden=moduleName==="store";
@@ -130,7 +130,7 @@ async function save(event){
 $("#edit-form").addEventListener("submit",save);
 $("#reset-form").addEventListener("click",()=>{
  if(dirty&&!confirm("Descartar alterações não salvas?"))return;
- editing=null;buildForm();
+ saveGate.invalidate();editing=null;buildForm();
 });
 $("#admin-module").addEventListener("change",()=>{if(dirty&&!confirm("Descartar alterações não salvas?")){$("#admin-module").value=moduleName;return;}changeModule(true);});
 $("#reload-records").addEventListener("click",()=>{recordsPage=0;loadRecords().catch(e=>info(e.message,true));});
@@ -188,7 +188,7 @@ async function loadRecords(){
    const actions=el("div","","admin-record__actions");
    if(requestedModule==="products"){addAction(actions,"Estoque",()=>openTool(item.id,"stock"));addAction(actions,"Promoções",()=>openTool(item.id,"promotions"));}
    if(requestedModule==="offerings"&&item.type==="CANDLE")addAction(actions,"Aromas / cores",()=>openTool(item.id,"options"));
-   addAction(actions,"Editar",()=>{editing=item.id;buildForm(item);window.scrollTo({top:0,behavior:"smooth"});});
+   addAction(actions,"Editar",()=>{saveGate.invalidate();editing=item.id;buildForm(item);window.scrollTo({top:0,behavior:"smooth"});});
    addAction(actions,"Excluir",async()=>{
     if(!confirm("Confirmar exclusão/arquivamento definitivo deste cadastro?"))return;
     try{await api.write("DELETE","/admin/"+endpoint+"/"+Number(item.id));info("Operação concluída.");recordsPage=0;await loadRecords();}
