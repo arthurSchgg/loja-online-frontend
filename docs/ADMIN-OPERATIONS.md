@@ -29,6 +29,10 @@ Marcas, categorias, produtos (galeria/brand/categories, publicar/indisponibiliza
 - GitHub Actions: `contents: read` e sem secrets de produção; não aprova HML ou provisiona AWS.
 - CODEOWNERS sugere revisão, não é proteção efetiva de branch. Configurar rulesets para main/develop na UI do GitHub.
 
+## Experiências e recomendações
+
+`admin-experiences.html` permite criar quizzes completos com perguntas, opções e perfis, além de configurar até três produtos por perfil. O backend não disponibiliza a leitura administrativa **completa** de `resultKey`/`results`; a interface não realiza atualização integral com resposta incompleta para evitar perda de dados. A edição segura dos quizzes existentes requer ampliação do contrato pelo backend e homologação independente.
+
 ## Gestão da conta
 
 Alteração de senha e solicitação de troca de e-mail ficam na seção
