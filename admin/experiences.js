@@ -7,7 +7,9 @@ export function validateExperienceDraft(draft) {
  if(!draft||typeof draft!=="object")throw new Error("Quiz inválido.");
  const title=String(draft.title||"").trim(),description=String(draft.description||"").trim();
  if(!title||title.length>180||description.length>2000)throw new Error("Confira título e descrição.");
- if(!Array.isArray(draft.results)||!draft.results.length||draft.results.length>20)throw new Error("Cadastre de 1 a 20 perfis.");
+ const published=draft.published===true;
+ if(!Array.isArray(draft.results)||draft.results.length>20||(published&&!draft.results.length))
+  throw new Error("Experiências publicadas precisam de 1 a 20 perfis; rascunhos podem estar vazios.");
  const results=draft.results.map(x=>({
   key:String(x.key||"").trim(),title:String(x.title||"").trim(),
   description:String(x.description||"").trim()
@@ -19,12 +21,12 @@ export function validateExperienceDraft(draft) {
    throw new Error("Chaves dos perfis devem ser únicas, válidas e conter títulos.");
   keys.add(x.key);
  }
- if(!Array.isArray(draft.questions)||!draft.questions.length||draft.questions.length>20)
-  throw new Error("Cadastre de 1 a 20 perguntas.");
+ if(!Array.isArray(draft.questions)||draft.questions.length>30||(published&&!draft.questions.length))
+  throw new Error("Experiências publicadas precisam de 1 a 30 perguntas; rascunhos podem estar vazios.");
  const questions=draft.questions.map((q,position)=>{
   const heading=String(q.title||"").trim();
-  if(!heading||heading.length>350||!Array.isArray(q.options)||q.options.length<2||q.options.length>8)
-   throw new Error("Cada pergunta precisa de título e 2 a 8 alternativas.");
+  if(!heading||heading.length>350||!Array.isArray(q.options)||q.options.length>20||(published&&q.options.length<2))
+   throw new Error("Cada pergunta publicada precisa de 2 a 20 alternativas e título válido.");
   const options=q.options.map((o,index)=>{
    const label=String(o.label||"").trim(),resultKey=String(o.resultKey||"").trim();
    if(!label||label.length>300||!keys.has(resultKey))
@@ -33,7 +35,7 @@ export function validateExperienceDraft(draft) {
   });
   return {title:heading,position,options};
  });
- return {title,description,published:draft.published===true,questions,results};
+ return {title,description,published,questions,results};
 }
 /** Accept only a complete admin DTO before populating an editable form. */
 export function normalizeAdminExperience(data) {
@@ -194,7 +196,7 @@ function init() {
    }
    const saved=id===null?await api.write("POST","/admin/experiences",payload):
     await api.write("PUT","/admin/experiences/"+id,payload);
-   $("#recs-experience-id").value=String(saved.id);$("#recs-result-key").value=payload.results[0].key;
+   $("#recs-experience-id").value=String(saved.id);$("#recs-result-key").value=payload.results[0]?.key||"";
    resetEditor();
    notify(id===null?"Experiência cadastrada. Revise a disponibilidade e as recomendações.":
     "Experiência atualizada. Recomendações dos perfis mantidos foram preservadas.");

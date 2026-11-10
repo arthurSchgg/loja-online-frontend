@@ -20,8 +20,8 @@ test("quiz rejects unknown profile, duplicate profile and missing options",()=>{
  assert.throws(()=>validateExperienceDraft(x),/perfil cadastrado/);
  const y=draft();y.results.push(y.results[0]);
  assert.throws(()=>validateExperienceDraft(y),/Chaves/);
- const z=draft();z.questions[0].options.pop();
- assert.throws(()=>validateExperienceDraft(z),/2 a 8/);
+ const z=draft();z.published=true;z.questions[0].options.pop();
+ assert.throws(()=>validateExperienceDraft(z),/2 a 20/);
 });
 test("recommendations accept up to 3 distinct product IDs",()=>{
  assert.deepEqual(validateRecommendations({experienceId:2,resultKey:"floral",ids:"3, 5, 7"}),
@@ -49,4 +49,33 @@ test("removing or renaming result keys requires a destructive-change confirmatio
  assert.deepEqual(removedResultKeys(["floral","wood"],["floral"]),["wood"]);
  assert.deepEqual(removedResultKeys(["floral"],["flowers"]),["floral"]);
  assert.deepEqual(removedResultKeys(["floral"],["floral","wood"]),[]);
+});
+
+
+test("unpublished quizzes permit empty question and result lists, while publishing requires both",()=>{
+ const empty={title:"Rascunho para completar",description:"",published:false,questions:[],results:[]};
+ assert.deepEqual(validateExperienceDraft(empty),empty);
+ assert.throws(()=>validateExperienceDraft({...empty,published:true}),/publicadas/);
+ assert.deepEqual(normalizeAdminExperience({id:42,...empty}).questions,[]);
+ assert.deepEqual(normalizeAdminExperience({id:42,...empty}).results,[]);
+});
+test("drafts with one or zero options can be edited, but require two before publishing",()=>{
+ const one=draft();one.questions[0].options.pop();
+ assert.equal(validateExperienceDraft(one).questions[0].options.length,1);
+ assert.throws(()=>validateExperienceDraft({...one,published:true}),/2 a 20/);
+ const none={...one,questions:[{...one.questions[0],options:[]}]};
+ assert.deepEqual(normalizeAdminExperience({id:7,...none}).questions[0].options,[]);
+});
+test("frontend accepts backend's maxima of thirty questions and twenty options",()=>{
+ const full=draft();
+ full.published=true;
+ full.questions=Array.from({length:30},(_,i)=>({
+  title:"Pergunta "+i,options:Array.from({length:20},(_,j)=>({label:"Opção "+j,resultKey:"floral"}))
+ }));
+ const result=validateExperienceDraft(full);
+ assert.equal(result.questions.length,30);
+ assert.equal(result.questions[0].options.length,20);
+ assert.equal(result.questions[29].position,29);
+ assert.throws(()=>validateExperienceDraft({...full,questions:[...full.questions,full.questions[0]]}),/1 a 30/);
+ assert.throws(()=>validateExperienceDraft({...full,questions:[{...full.questions[0],options:[...full.questions[0].options,full.questions[0].options[0]]}]}),/2 a 20/);
 });
