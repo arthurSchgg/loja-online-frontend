@@ -71,11 +71,30 @@ export async function evaluateExperience(id,answers){
  return publicRequest("/experiences/"+Number(id)+"/evaluate",{method:"POST",payload:{answers}});
 }
 export function currentPrice(dto){const raw=dto?.effectivePrice??dto?.price;if(raw===null||raw===undefined)return null;const val=Number(raw);return Number.isFinite(val)&&val>=0?val:null;}
+/** Accept only WhatsApp's documented click-to-chat destinations.
+ * Never open links with credentials, alternate ports or a malformed phone.
+ */
+export function validateWhatsAppUrl(raw){
+ let url;
+ try{
+  if(typeof raw!=="string"||raw.length>12000)throw new Error("Invalid URL");
+  url=new URL(raw);
+ }catch{throw new ApiError("Link de WhatsApp não autorizado.");}
+ if(url.protocol!=="https:"||url.username||url.password||url.port||url.hash)
+  throw new ApiError("Link de WhatsApp não autorizado.");
+ const phonePattern=/^[0-9]{10,15}$/;
+ if(url.hostname==="wa.me"){
+  if(!phonePattern.test(url.pathname.slice(1))||url.pathname.split("/").length!==2)
+   throw new ApiError("Link de WhatsApp não autorizado.");
+ }else if(url.hostname==="api.whatsapp.com"){
+  if(url.pathname!=="/send"||!phonePattern.test(url.searchParams.get("phone")||""))
+   throw new ApiError("Link de WhatsApp não autorizado.");
+ }else throw new ApiError("Link de WhatsApp não autorizado.");
+ return url.href;
+}
 export async function confirmWhatsApp({type,id,expectedPrice,customizations={}}){
  if(!["PRODUCT","OFFERING"].includes(type)||!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new ApiError("Seleção inválida.");
  const payload={type,id:Number(id),expectedPrice:expectedPrice===null?null:expectedPrice,customizations};
  const result=await publicRequest("/whatsapp/confirm",{method:"POST",payload});
- const url=new URL(result?.url||"https://invalid.invalid");
- if(url.protocol!=="https:"||!["wa.me","api.whatsapp.com"].includes(url.hostname))throw new ApiError("Link de WhatsApp não autorizado.");
- return {url:url.href,message:String(result.message||"")};
+ return {url:validateWhatsAppUrl(result?.url),message:String(result.message||"")};
 }
