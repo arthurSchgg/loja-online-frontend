@@ -1,6 +1,7 @@
 import {AdminApi,AdminApiError,adminOriginAllowed} from "./api.js";
 import {setupSecurityPanel} from "./security.js";
 import {validateProductImages} from "./product-validation.js";
+import {createRequestGuard} from "./request-guard.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
@@ -9,6 +10,7 @@ const $=q=>document.querySelector(q),el=(tag,text="",className="")=>{
  const e=document.createElement(tag);e.textContent=String(text??"");if(className)e.className=className;return e;
 };
 let moduleName="brands",editing=null,recordsPage=0,dirty=false,sessionUser=null;
+const recordsGate=createRequestGuard(),toolGate=createRequestGuard();
 const formDefs={
  brands:[["name","Nome da marca","text",true]],
  categories:[["name","Nome da categoria","text",true]],
@@ -22,6 +24,7 @@ const endMap={brands:"brands",categories:"categories",products:"products",offeri
 function info(message,isError=false){const p=$("#admin-status");p.textContent=message;p.classList.toggle("error",!!isError);}
 function toolInfo(message,isError=false){const p=$("#record-tool-status");p.textContent=message;p.classList.toggle("error",!!isError);}
 function showLogin(){
+ recordsGate.invalidate();toolGate.invalidate();
  sessionUser=null;editing=null;dirty=false;recordsPage=0;
  $("#admin-workspace").hidden=true;$("#login-panel").hidden=false;
  // The panel is hidden, not destroyed, so clear private records and unsaved form data.
@@ -121,36 +124,53 @@ $("#admin-module").addEventListener("change",()=>{if(dirty&&!confirm("Descartar 
 $("#reload-records").addEventListener("click",()=>{recordsPage=0;loadRecords().catch(e=>info(e.message,true));});
 $("#admin-more").addEventListener("click",async()=>{recordsPage++;try{await loadRecords();}catch(e){recordsPage--;info(e.message,true);}});
 function changeModule(reset=false){
- moduleName=$("#admin-module").value;if(reset)recordsPage=0;editing=null;buildForm();loadRecords().catch(e=>info(e.message,true));
+ recordsGate.invalidate();toolGate.invalidate();
+ if(tool.open)tool.close();
+ $("#admin-records").replaceChildren();
+ $("#admin-more").hidden=true;
+ moduleName=$("#admin-module").value;
+ if(reset)recordsPage=0;
+ editing=null;buildForm();
+ loadRecords().catch(error=>{if(error.status!==401)info(error.message,true);});
 }
 function addAction(parent,label,handler){
  const button=el("button",label,"btn btn--secondary");button.type="button";button.addEventListener("click",handler);parent.append(button);return button;
 }
 async function loadRecords(){
- const endpoint=endMap[moduleName];
+ const requestedModule=moduleName,requestedPage=recordsPage,requestedSession=sessionUser;
+ if(!requestedSession)return;
+ const ticket=recordsGate.begin(),endpoint=endMap[requestedModule];
  let result,items;
- if(moduleName==="store"){
-  result=await api.get("/store");items=[result];buildForm(result);
+ try{
+ if(requestedModule==="store"){
+  result=await api.get("/store");items=[result];
  }else{
-  const suffix=moduleName==="products"?"?page="+recordsPage+"&size=12":moduleName==="audit"?"?page="+recordsPage+"&size=20":"";
+  const suffix=requestedModule==="products"?"?page="+requestedPage+"&size=12":requestedModule==="audit"?"?page="+requestedPage+"&size=20":"";
   result=await api.get("/admin/"+endpoint+suffix);items=Array.isArray(result)?result:result?.content||[];
  }
- const list=$("#admin-records");if(recordsPage===0)list.replaceChildren();
- if(!items.length&&recordsPage===0)list.append(el("p","Nenhum registro disponível.","muted"));
- $("#admin-more").hidden=!["products","audit"].includes(moduleName)||result?.last!==false;
+ }catch(error){
+  if(recordsGate.isCurrent(ticket)&&sessionUser===requestedSession&&error.status===401)showLogin();
+  throw error;
+ }
+ if(!recordsGate.isCurrent(ticket)||sessionUser!==requestedSession||
+    moduleName!==requestedModule||recordsPage!==requestedPage)return;
+ if(requestedModule==="store"&&!dirty)buildForm(result);
+ const list=$("#admin-records");if(requestedPage===0)list.replaceChildren();
+ if(!items.length&&requestedPage===0)list.append(el("p","Nenhum registro disponível.","muted"));
+ $("#admin-more").hidden=!["products","audit"].includes(requestedModule)||result?.last!==false;
  for(const item of items){
   const card=el("article","","admin-record"),desc=el("div","","admin-record__info");
-  if(moduleName==="audit"){
+  if(requestedModule==="audit"){
    desc.append(el("strong",(item.method||"HTTP")+" · "+(item.routePattern||"Rota")+" · "+(item.status??"?")));
    desc.append(el("small",(item.occurredAt?new Date(item.occurredAt).toLocaleString("pt-BR"):"")+" · "+(item.actor||"Administrador")));
    card.append(desc);list.append(card);continue;
   }
   desc.append(el("strong",item.name||item.title||item.displayName||"Registro #"+(item.id||"")));
   desc.append(el("small",item.id?"ID "+item.id+" · "+(item.published===true?"Publicado":item.published===false?"Rascunho":"Cadastro"):"Configuração única"));card.append(desc);
-  if(moduleName!=="store"){
+  if(requestedModule!=="store"){
    const actions=el("div","","admin-record__actions");
-   if(moduleName==="products"){addAction(actions,"Estoque",()=>openTool(item.id,"stock"));addAction(actions,"Promoções",()=>openTool(item.id,"promotions"));}
-   if(moduleName==="offerings"&&item.type==="CANDLE")addAction(actions,"Aromas / cores",()=>openTool(item.id,"options"));
+   if(requestedModule==="products"){addAction(actions,"Estoque",()=>openTool(item.id,"stock"));addAction(actions,"Promoções",()=>openTool(item.id,"promotions"));}
+   if(requestedModule==="offerings"&&item.type==="CANDLE")addAction(actions,"Aromas / cores",()=>openTool(item.id,"options"));
    addAction(actions,"Editar",()=>{editing=item.id;buildForm(item);window.scrollTo({top:0,behavior:"smooth"});});
    addAction(actions,"Excluir",async()=>{
     if(!confirm("Confirmar exclusão/arquivamento definitivo deste cadastro?"))return;
