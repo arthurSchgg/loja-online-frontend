@@ -143,7 +143,12 @@ async function initCatalog(){
  const queryField=form.elements.query,family=form.elements.family;
  form.querySelector('label[for="search"]').textContent="Buscar nome ou descrição";
  form.querySelector('label[for="family"]').textContent="Categoria";
- form.querySelector('label[for="max"]').textContent="Preço máximo (produtos carregados)";
+ form.querySelector('label[for="max"]').textContent="Preço máximo (catálogo completo)";
+ const noLimit=form.elements.max?.querySelector('option[value="1000"]');
+ if(noLimit)noLimit.value=""; // Demo uses 1000 as a placeholder; live must mean no price cap.
+ const featured=form.elements.sort?.querySelector('option[value="featured"]');
+ if(featured){featured.value="recent";featured.textContent="Mais recentes";}
+ form.elements.sort?.querySelector('option[value="new"]')?.remove();
  const search=createCatalogSearch((page,filters)=>fetchProducts(page,undefined,filters));
  const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";
  loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
@@ -168,18 +173,10 @@ async function initCatalog(){
  }
  if(params.has("q"))queryField.value=params.get("q").slice(0,180);
  function render(){
-  const state=search.state,sort=String(form.elements.sort?.value||"featured");
-  const max=Number(form.elements.max?.value||100000);
-  let filtered=state.items.filter(p=>currentPrice(p)===null||currentPrice(p)<=max);
-  if(sort==="price-asc")filtered.sort((a,b)=>(currentPrice(a)??Infinity)-(currentPrice(b)??Infinity));
-  if(sort==="price-desc")filtered.sort((a,b)=>(currentPrice(b)??-Infinity)-(currentPrice(a)??-Infinity));
-  if(sort==="name")filtered.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
-  if(sort==="new")filtered.sort((a,b)=>Number(b.id)-Number(a.id));
-  grid.innerHTML=filtered.map(liveProductCard).join("")||'<p>Nenhum produto encontrado entre as páginas carregadas.</p>';
+  const state=search.state;
+  grid.innerHTML=state.items.map(liveProductCard).join("")||'<p>Nenhum produto encontrado com estes filtros.</p>';
   count.textContent=categoryWarning+state.items.length+" produtos carregados"+
-    (state.hasNext?" · mais páginas disponíveis":" · fim dos resultados")+
-    (state.hasNext&&(sort!=="featured"||Number(form.elements.max?.value||100000)<100000)?
-      " · preço e ordem aplicados somente aos produtos carregados":"");
+    (state.hasNext?" · mais páginas disponíveis":" · fim dos resultados");
   loadMore.hidden=!state.hasNext;
   loadMore.textContent="Carregar mais produtos";
  }
@@ -199,7 +196,8 @@ async function initCatalog(){
  }
  function applyServerFilters(){
   window.clearTimeout(searchTimer);
-  search.setFilters({q:queryField.value,categoryId:family.closest(".field").hidden?null:family.value});
+  search.setFilters({q:queryField.value,categoryId:family.closest(".field").hidden?null:family.value,
+   sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value||null});
   version++;
   currentProducts=[];grid.replaceChildren();
   count.textContent="Buscando produtos no catálogo...";
@@ -211,7 +209,7 @@ async function initCatalog(){
   searchTimer=window.setTimeout(applyServerFilters,300);
  });
  family.addEventListener("change",applyServerFilters);
- for(const field of ["sort","max"])form.elements[field]?.addEventListener("change",render);
+ for(const field of ["sort","max"])form.elements[field]?.addEventListener("change",applyServerFilters);
  loadMore.addEventListener("click",()=>void next());
  applyServerFilters();
 }
