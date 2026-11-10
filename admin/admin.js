@@ -10,7 +10,7 @@ const $=q=>document.querySelector(q),el=(tag,text="",className="")=>{
  const e=document.createElement(tag);e.textContent=String(text??"");if(className)e.className=className;return e;
 };
 let moduleName="brands",editing=null,recordsPage=0,dirty=false,sessionUser=null;
-const recordsGate=createRequestGuard(),toolGate=createRequestGuard();
+const recordsGate=createRequestGuard(),toolGate=createRequestGuard(),saveGate=createRequestGuard();
 const formDefs={
  brands:[["name","Nome da marca","text",true]],
  categories:[["name","Nome da categoria","text",true]],
@@ -24,7 +24,7 @@ const endMap={brands:"brands",categories:"categories",products:"products",offeri
 function info(message,isError=false){const p=$("#admin-status");p.textContent=message;p.classList.toggle("error",!!isError);}
 function toolInfo(message,isError=false){const p=$("#record-tool-status");p.textContent=message;p.classList.toggle("error",!!isError);}
 function showLogin(){
- recordsGate.invalidate();toolGate.invalidate();
+ recordsGate.invalidate();toolGate.invalidate();saveGate.invalidate();
  sessionUser=null;editing=null;dirty=false;recordsPage=0;
  $("#admin-workspace").hidden=true;$("#login-panel").hidden=false;
  // The panel is hidden, not destroyed, so clear private records and unsaved form data.
@@ -111,11 +111,20 @@ function collectForm(){
 }
 async function save(event){
  event.preventDefault();const button=$("#save-button");button.disabled=true;
- const endpoint=endMap[moduleName],path=moduleName==="store"?"/admin/store":"/admin/"+endpoint+(editing===null?"":"/"+Number(editing));
- const method=moduleName==="store"||editing!==null?"PUT":"POST";
+ const submittedModule=moduleName,submittedSession=sessionUser,token=saveGate.begin();
+ const isCurrent=()=>saveGate.isCurrent(token)&&sessionUser===submittedSession&&moduleName===submittedModule;
+ const endpoint=endMap[submittedModule],path=submittedModule==="store"?"/admin/store":"/admin/"+endpoint+(editing===null?"":"/"+Number(editing));
+ const method=submittedModule==="store"||editing!==null?"PUT":"POST";
  try{
-  const body=collectForm();await api.write(method,path,body);info("Dados salvos. Revise publicação e disponibilidade.");editing=null;dirty=false;buildForm();recordsPage=0;await loadRecords();
- }catch(error){info(error.message,true);if(error.status===401)showLogin();}
+  const body=collectForm();
+  await api.write(method,path,body);
+  if(!isCurrent())return;
+  info("Dados salvos. Revise publicação e disponibilidade.");editing=null;dirty=false;buildForm();recordsPage=0;await loadRecords();
+ }catch(error){
+  if(!isCurrent())return;
+  info(error.message,true);
+  if(error.status===401)showLogin();
+ }
  finally{button.disabled=false;}
 }
 $("#edit-form").addEventListener("submit",save);
@@ -127,7 +136,7 @@ $("#admin-module").addEventListener("change",()=>{if(dirty&&!confirm("Descartar 
 $("#reload-records").addEventListener("click",()=>{recordsPage=0;loadRecords().catch(e=>info(e.message,true));});
 $("#admin-more").addEventListener("click",async()=>{recordsPage++;try{await loadRecords();}catch(e){recordsPage--;info(e.message,true);}});
 function changeModule(reset=false){
- recordsGate.invalidate();toolGate.invalidate();
+ recordsGate.invalidate();toolGate.invalidate();saveGate.invalidate();
  if(tool.open)tool.close();
  $("#admin-records").replaceChildren();
  $("#admin-more").hidden=true;
