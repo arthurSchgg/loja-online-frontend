@@ -4,6 +4,7 @@ import {validateProductImages} from "./product-validation.js";
 import {parseCategoryIds,validateProductFields,validateStockMovement,validatePromotion} from "./catalog-validation.js";
 import {createRequestGuard} from "./request-guard.js";
 import {captureEditorDraft,restoreEditorDraft} from "./editor-draft.js";
+import {promotionStatus,promotionClosePayload} from "./promotion-lifecycle.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
@@ -250,7 +251,25 @@ async function openTool(id,kind,basePrice=null){
   }else if(kind==="promotions"){
    const all=await api.get("/admin/products/"+id+"/promotions");
    if(!isActive())return;
-   for(const p of all){const row=el("div","","tool-entry");row.append(el("p","Promoção #"+p.id+" · R$ "+p.promotionalPrice+" · "+p.startsAt+" até "+p.endsAt));addAction(row,"Excluir",async()=>{if(!confirm("Excluir promoção?"))return;try{await api.write("DELETE","/admin/products/"+id+"/promotions/"+p.id);await openTool(id,kind,basePrice);}catch(e){toolInfo(e.message,true);}});root.append(row);}
+   for(const p of all){
+    const row=el("div","","tool-entry"),status=promotionStatus(p);
+    const labels={active:"Ativa",future:"Programada",ended:"Encerrada por prazo",closed:"Encerrada manualmente",unknown:"Status desconhecido"};
+    row.append(el("p","Promoção #"+p.id+" · R$ "+p.promotionalPrice+" · "+p.startsAt+" até "+p.endsAt+" · "+labels[status]));
+    if(status==="closed"){
+     row.append(el("p","Motivo: "+(p.closedReason||"Não informado")+" · Responsável: "+(p.closedBy||"Não informado")));
+    }
+    if(status==="active"){
+     addAction(row,"Encerrar promoção",async()=>{
+      const reason=prompt("Informe o motivo do encerramento desta promoção ativa:");
+      if(reason===null)return;
+      let payload;try{payload=promotionClosePayload(reason);}catch(error){toolInfo(error.message,true);return;}
+      if(!confirm("Confirmar encerramento? A promoção ficará no histórico e perderá vigência imediatamente."))return;
+      try{await api.write("POST","/admin/products/"+id+"/promotions/"+p.id+"/close",payload);await openTool(id,kind,basePrice);toolInfo("Promoção encerrada; histórico preservado.");}
+      catch(error){toolInfo(error.message,true);}
+     });
+    }
+    root.append(row);
+   }
    const form=el("form","","admin-form"),value=field(form,"promotionalPrice","Preço promocional","number"),start=field(form,"startsAt","Início","datetime-local"),end=field(form,"endsAt","Fim","datetime-local");value.step=".01";
    root.append(el("p","Preço base do produto: R$ "+String(basePrice??"não informado"),"muted"));
    const button=el("button","Criar promoção","btn btn--primary");button.type="submit";form.append(button);
