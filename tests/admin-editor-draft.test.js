@@ -16,9 +16,9 @@ test("captures only unsaved, non-secret editor fields",()=>{
 test("restores editor selections but never passwords",()=>{
  const values=form([input("name",""),input("published",false,"checkbox"),input("password","","password")]);
  assert.equal(restoreEditorDraft({moduleName:"products",fields:{name:"Produto editado",published:true,password:"unsafe"}},values),true);
- assert.equal(values[0].value,"Produto editado");
- assert.equal(values[1].checked,true);
- assert.equal(values[2].value,"");
+ assert.equal(values.elements[0].value,"Produto editado");
+ assert.equal(values.elements[1].checked,true);
+ assert.equal(values.elements[2].value,"");
  assert.equal(restoreEditorDraft({moduleName:"unknown",fields:{}},values),false);
 });
 test("session expiry preserves draft; voluntary logout discards it",()=>{
