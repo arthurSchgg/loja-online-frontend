@@ -55,7 +55,9 @@ export function validateRecommendations({experienceId,resultKey,ids}) {
  const id=Number(experienceId),key=String(resultKey||"").trim();
  if(!Number.isSafeInteger(id)||id<1||!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(key))
   throw new Error("Informe ID de experiência e chave de resultado válidos.");
- const parts=String(ids||"").split(",").map(x=>x.trim()).filter(Boolean);
+ const raw=String(ids??"").trim();
+ const parts=raw?raw.split(",").map(x=>x.trim()):[];
+ if(parts.some(x=>!x))throw new Error("Informe IDs separados por vírgula sem valores vazios.");
  if(parts.length>3)throw new Error("É permitido recomendar no máximo 3 produtos.");
  const productIds=parts.map(Number);
  if(productIds.some(x=>!Number.isSafeInteger(x)||x<=0)||new Set(productIds).size!==productIds.length)
