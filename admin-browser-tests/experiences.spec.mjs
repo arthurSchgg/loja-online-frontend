@@ -23,7 +23,7 @@ test("admin | anonymous session keeps quiz workspace hidden",async({page})=>{
  await mockAdmin(page,{authenticated:false});
  await page.goto("/admin-experiences.html");
  await expect(page.locator("#experiences-workspace")).toBeHidden();
- await expect(page.locator("#experiences-status")).toContainText("Sessão");
+ await expect(page.locator("#experiences-status")).toContainText(/sessão/i);
 });
 test("admin | authenticated user loads complete quiz without leaking result keys on public UI",async({page})=>{
  await mockAdmin(page);
