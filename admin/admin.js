@@ -1,6 +1,7 @@
 import {AdminApi,AdminApiError,adminOriginAllowed} from "./api.js";
 import {setupSecurityPanel} from "./security.js";
 import {validateProductImages} from "./product-validation.js";
+import {parseCategoryIds,validateProductFields,validateStockMovement,validatePromotion} from "./catalog-validation.js";
 import {createRequestGuard} from "./request-guard.js";
 import {captureEditorDraft,restoreEditorDraft} from "./editor-draft.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
@@ -113,7 +114,7 @@ function collectForm(){
   let v=type==="checkbox"?input.checked:input.value.trim();
   if(type==="number")v=v===""?null:Number(v);
   if(type==="datetime-local")v=v?new Date(v).toISOString():null;
-  if(name==="categoryIds")v=v?v.split(",").map(s=>Number(s.trim())).filter(Number.isSafeInteger):[];
+  if(name==="categoryIds")v=parseCategoryIds(v);
   if(name==="whatsapp"&&v==="")v=null;
   if(name==="images")v=v?v.split("\n").map((line,i)=>{const [url, ...rest]=line.split("|");return {url:url.trim(),altText:rest.join("|").trim(),position:i};}).filter(x=>x.url):[];
 
@@ -123,7 +124,7 @@ function collectForm(){
   }
   data[name]=v;
  }
- if(moduleName==="products"&&(data.price===null||data.price<0||!Number.isSafeInteger(data.brandId)))throw new Error("Preço e ID de marca válidos são obrigatórios.");
+ if(moduleName==="products")validateProductFields(data);
  if(moduleName==="products")validateProductImages(data.images,data.published);
  if(moduleName==="offerings"&&data.price===null)delete data.price;
  return data;
@@ -205,7 +206,7 @@ async function loadRecords(){
   desc.append(el("small",item.id?"ID "+item.id+" · "+(item.published===true?"Publicado":item.published===false?"Rascunho":"Cadastro"):"Configuração única"));card.append(desc);
   if(requestedModule!=="store"){
    const actions=el("div","","admin-record__actions");
-   if(requestedModule==="products"){addAction(actions,"Estoque",()=>openTool(item.id,"stock"));addAction(actions,"Promoções",()=>openTool(item.id,"promotions"));}
+   if(requestedModule==="products"){addAction(actions,"Estoque",()=>openTool(item.id,"stock"));addAction(actions,"Promoções",()=>openTool(item.id,"promotions",item.price));}
    if(requestedModule==="offerings"&&item.type==="CANDLE")addAction(actions,"Aromas / cores",()=>openTool(item.id,"options"));
    addAction(actions,"Editar",()=>{saveGate.invalidate();editing=item.id;buildForm(item);window.scrollTo({top:0,behavior:"smooth"});});
    addAction(actions,"Excluir",async()=>{
@@ -226,7 +227,7 @@ function field(parent,name,label,type="text"){
  input.name=name;input.type=type;input.required=true;if(type==="number"){input.min="0";input.step="1";}
  wrap.append(input);parent.append(wrap);return input;
 }
-async function openTool(id,kind){
+async function openTool(id,kind,basePrice=null){
  if(!sessionUser)return;
  const requestedSession=sessionUser,ticket=toolGate.begin();
  const isActive=()=>toolGate.isCurrent(ticket)&&sessionUser===requestedSession&&tool.open;
@@ -243,16 +244,17 @@ async function openTool(id,kind){
    const qty=field(form,"quantity","Quantidade / novo saldo","number");qty.min="0";
    const reason=field(form,"reason","Justificativa");reason.maxLength=500;
    const btn=el("button","Registrar movimentação","btn btn--primary");btn.type="submit";form.append(btn);
-   form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;try{const amount=Number(qty.value);if(!Number.isSafeInteger(amount)||amount<0||(sel.value!=="ADJUSTMENT"&&amount===0))throw new Error("Quantidade inválida.");await api.write("POST","/admin/products/"+id+"/stock/movements",{type:sel.value,quantity:amount,reason:reason.value.trim()});await openTool(id,kind);toolInfo("Movimentação registrada.");}catch(e){toolInfo(e.message,true);}finally{btn.disabled=false;}});
+   form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;try{const movement=validateStockMovement({type:sel.value,quantity:qty.value,reason:reason.value});await api.write("POST","/admin/products/"+id+"/stock/movements",movement);await openTool(id,kind);toolInfo("Movimentação registrada.");}catch(e){toolInfo(e.message,true);}finally{btn.disabled=false;}});
    root.append(form,el("h3","Últimas movimentações"));
    for(const h of history.content||[]){root.append(el("p",(h.createdAt||"")+" · "+h.type+" "+h.quantity+" · saldo "+h.resultingQuantity+" · "+(h.reason||""),"tool-entry"));}
   }else if(kind==="promotions"){
    const all=await api.get("/admin/products/"+id+"/promotions");
    if(!isActive())return;
-   for(const p of all){const row=el("div","","tool-entry");row.append(el("p","Promoção #"+p.id+" · R$ "+p.promotionalPrice+" · "+p.startsAt+" até "+p.endsAt));addAction(row,"Excluir",async()=>{if(!confirm("Excluir promoção?"))return;try{await api.write("DELETE","/admin/products/"+id+"/promotions/"+p.id);await openTool(id,kind);}catch(e){toolInfo(e.message,true);}});root.append(row);}
+   for(const p of all){const row=el("div","","tool-entry");row.append(el("p","Promoção #"+p.id+" · R$ "+p.promotionalPrice+" · "+p.startsAt+" até "+p.endsAt));addAction(row,"Excluir",async()=>{if(!confirm("Excluir promoção?"))return;try{await api.write("DELETE","/admin/products/"+id+"/promotions/"+p.id);await openTool(id,kind,basePrice);}catch(e){toolInfo(e.message,true);}});root.append(row);}
    const form=el("form","","admin-form"),value=field(form,"promotionalPrice","Preço promocional","number"),start=field(form,"startsAt","Início","datetime-local"),end=field(form,"endsAt","Fim","datetime-local");value.step=".01";
+   root.append(el("p","Preço base do produto: R$ "+String(basePrice??"não informado"),"muted"));
    const button=el("button","Criar promoção","btn btn--primary");button.type="submit";form.append(button);
-   form.addEventListener("submit",async e=>{e.preventDefault();button.disabled=true;try{const begins=new Date(start.value),ends=new Date(end.value),amount=Number(value.value);if(!Number.isFinite(begins.valueOf())||!Number.isFinite(ends.valueOf())||begins>=ends||amount<=0)throw new Error("Datas ou preço inválidos.");await api.write("POST","/admin/products/"+id+"/promotions",{promotionalPrice:amount,startsAt:begins.toISOString(),endsAt:ends.toISOString()});await openTool(id,kind);toolInfo("Promoção registrada.");}catch(e){toolInfo(e.message,true);}finally{button.disabled=false;}});
+   form.addEventListener("submit",async e=>{e.preventDefault();button.disabled=true;try{const promotion=validatePromotion({price:value.value,basePrice,startsAt:start.value,endsAt:end.value});await api.write("POST","/admin/products/"+id+"/promotions",promotion);await openTool(id,kind,basePrice);toolInfo("Promoção registrada.");}catch(e){toolInfo(e.message,true);}finally{button.disabled=false;}});
    root.append(form);
   }else{
    const offering=await api.get("/admin/offerings/"+id);
