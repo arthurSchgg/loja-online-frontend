@@ -133,3 +133,37 @@ test("live | failed public API never falls back to fictitious products",async({p
  await expect(page.locator("#catalog-grid [data-api-status]")).toContainText("Não foi possível");
  expect(errors).toEqual([]);
 });
+
+
+for(const width of [375,1440]){
+ test("motion | visible scroll-linked imagery at "+width+"px",async({page})=>{
+  await page.setViewportSize({width,height:850});
+  const errors=collectPageErrors(page);
+  await page.goto("/index.html");
+  const hero=page.locator("[data-hero-bottle]");
+  await expect(hero).toHaveCSS("animation-name",/hero-bottle-float/);
+  const image=page.locator("#experiencias img[data-parallax]");
+  await image.scrollIntoViewIfNeeded();
+  await expect.poll(()=>image.evaluate(el=>el.style.getPropertyValue("--motion-shift"))).toMatch(/px$/);
+  const before=Number.parseFloat(await image.evaluate(el=>el.style.getPropertyValue("--motion-shift")));
+  await page.evaluate(()=>window.scrollBy({top:180,behavior:"instant"}));
+  await expect.poll(async()=>{
+   const after=Number.parseFloat(await image.evaluate(el=>el.style.getPropertyValue("--motion-shift")));
+   return Math.abs(after-before);
+  }).toBeGreaterThan(2);
+  expect(errors).toEqual([]);
+ });
+}
+
+test("motion | reduced-motion preference disables floating hero and scroll-linked imagery",async({page})=>{
+ await page.emulateMedia({reducedMotion:"reduce"});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ await expect(page.locator("[data-hero-bottle]")).toHaveCSS("animation-name","none");
+ const image=page.locator("#experiencias img[data-parallax]");
+ await image.scrollIntoViewIfNeeded();
+ await page.evaluate(()=>window.scrollBy({top:180,behavior:"instant"}));
+ await expect(image).toHaveCSS("transform","none");
+ expect(await image.evaluate(el=>el.style.getPropertyValue("--motion-shift"))).toBe("");
+ expect(errors).toEqual([]);
+});

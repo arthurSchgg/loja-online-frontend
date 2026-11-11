@@ -45,3 +45,14 @@ npm run check:security
 ```
 
 Esses testes não comprovam WCAG 2.2 AA, Core Web Vitals em p75 ou segurança do domínio real. Registrar testes manuais de teclado, tela pequena, redução de movimento, conexão lenta, navegação, formulários e comportamento do cache na issue HML-FE-001 antes de liberar `main` e AWS.
+
+
+## Ajuste de movimento perceptível na develop (10/11/2026)
+
+- Na implementação anterior, as animações de entrada eram **executadas só uma vez** e o deslocamento de imagens era limitado a 14 px e **desativado em larguras de até 768 px**. O código existia, mas podia parecer estático depois dos segundos iniciais.
+- O hero agora mantém um **movimento flutuante contínuo** do frasco conceitual, após a animação de entrada; cartões/elementos que aparecem na rolagem entram com elevação mais perceptível.
+- Imagens de produtos, coleções e editoriais têm deslocamento associado à rolagem limitado a **±28 px no desktop** ou **±12 px em telas pequenas**, calculado apenas para imagens próximas da viewport por IntersectionObserver e um requestAnimationFrame passivo.
+- A opção `prefers-reduced-motion: reduce` elimina esses efeitos. O modo `Save-Data` impede o movimento extra das imagens e a animação contínua da imagem do hero.
+- O CI Playwright agora **verifica movimento de verdade** no navegador em 375 e 1440 px e confirma sua ausência com preferência de movimento reduzido; antes a suíte só testava interação e layout.
+
+**Como conferir:** utilize um servidor HTTP (`npm run dev` ou o build `npm run build` com `python3 -m http.server --directory dist 5500`), e não abra `index.html` diretamente com `file://`, pois os scripts são módulos ES. Se o sistema/navegador estiver em “reduzir movimento”, as animações decorativas serão omitidas de propósito. Um site publicado ainda pode servir uma versão em cache: valide o commit e o bundle carregado no navegador.

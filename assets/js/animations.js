@@ -22,7 +22,10 @@ export function imageScrollOffset(centerY, viewportHeight, limit = 14) {
 export function setupMotion({win = globalThis.window, doc = globalThis.document} = {}) {
  if (!win || !doc) return () => {};
  const preference = win.matchMedia?.("(prefers-reduced-motion: reduce)");
- const canAnimate = motionAllowed(preference?.matches === true, win.navigator?.connection?.saveData === true);
+ const saveData = win.navigator?.connection?.saveData === true;
+ const canAnimate = motionAllowed(preference?.matches === true, saveData);
+ // CSS motion also respects the user's data-saving preference.
+ if (saveData) doc.documentElement.dataset.motion = "off";
  const animationAvailable = typeof win.Element?.prototype?.animate === "function" ||
   typeof doc.documentElement?.animate === "function";
  const cleanups = [];
@@ -31,8 +34,9 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
  const observedImages = new WeakSet();
  const visibleImages = new Set();
  const imageSelector = "[data-parallax], .product-visual img, .collection-tile img, .editorial-visual img";
- const imageMotion = canAnimate && win.matchMedia?.("(min-width: 769px)")?.matches &&
-  "IntersectionObserver" in win;
+ // Gentle image depth is available on mobile too. Previously it was entirely
+ // disabled below 769px, which made touch devices look static.
+ const imageMotion = canAnimate && "IntersectionObserver" in win;
  const observeImages = node => {
   if(!imageObserver || !(node instanceof win.Element)) return;
   const candidates = [
@@ -70,9 +74,9 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
     if (!el.isConnected || el.closest("[hidden]")) continue;
     const index = [...(el.parentElement?.children ?? [])].indexOf(el);
     el.animate([
-     {opacity: 0, transform: "translate3d(0, 24px, 0)"},
-     {opacity: 1, transform: "translate3d(0, 0, 0)"}
-    ], {duration: 760, delay: revealDelay(index), easing: "cubic-bezier(.22,1,.36,1)"});
+     {opacity: 0, transform: "translate3d(0, 44px, 0) scale(.975)"},
+     {opacity: 1, transform: "translate3d(0, 0, 0) scale(1)"}
+    ], {duration: 980, delay: revealDelay(index), easing: "cubic-bezier(.22,1,.36,1)"});
    }
   }, {threshold: 0.12, rootMargin: "0px 0px -4% 0px"});
   const observe = node => {
@@ -134,11 +138,16 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
   const scrollable = Math.max(1, doc.documentElement.scrollHeight - win.innerHeight);
   const ratio = Math.min(1, Math.max(0, win.scrollY / scrollable));
   progress.style.transform = "scaleX(" + ratio + ")";
-  if(preference?.matches) return;
+  if(preference?.matches || saveData){
+   for(const el of visibleImages)el.style.removeProperty("--motion-shift");
+   return;
+  }
   for(const el of visibleImages){
    if(!el.isConnected){visibleImages.delete(el);continue;}
    const bounds=el.getBoundingClientRect();
-   const offset=imageScrollOffset(bounds.top+bounds.height/2,win.innerHeight);
+   // Intentionally perceptible on desktop, softer on narrow touch viewports.
+   const limit=win.innerWidth<=768?12:28;
+   const offset=imageScrollOffset(bounds.top+bounds.height/2,win.innerHeight,limit);
    el.style.setProperty("--motion-shift",offset.toFixed(2)+"px");
   }
  };
