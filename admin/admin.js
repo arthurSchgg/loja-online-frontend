@@ -5,6 +5,7 @@ import {parseCategoryIds,validateProductFields,validateStockMovement,validatePro
 import {createRequestGuard} from "./request-guard.js";
 import {captureEditorDraft,restoreEditorDraft} from "./editor-draft.js";
 import {promotionStatus,promotionClosePayload} from "./promotion-lifecycle.js";
+import {validateOfferingFields} from "./offering-validation.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
@@ -127,7 +128,7 @@ function collectForm(){
  }
  if(moduleName==="products")validateProductFields(data);
  if(moduleName==="products")validateProductImages(data.images,data.published);
- if(moduleName==="offerings"&&data.price===null)delete data.price;
+ if(moduleName==="offerings"){validateOfferingFields(data);if(data.price===null)delete data.price;}
  return data;
 }
 async function save(event){
