@@ -63,3 +63,19 @@ test("unexpected CSRF header names and empty tokens are rejected",async()=>{
   await assert.rejects(()=>api.refreshCsrf(),/CSRF/);
  }
 });
+
+test("native fetch is invoked with Window/global context when no mock is injected",async()=>{
+ const original=globalThis.fetch;
+ let called=false;
+ globalThis.fetch=function(path,opts){
+  called=true;
+  assert.equal(this,globalThis);
+  assert.equal(path,"/api/v1/auth/me");
+  return Promise.resolve({ok:true,status:200,json:async()=>({authenticated:true})});
+ };
+ try{
+  const api=new AdminApi();
+  assert.equal((await api.me()).authenticated,true);
+  assert.equal(called,true);
+ }finally{globalThis.fetch=original;}
+});

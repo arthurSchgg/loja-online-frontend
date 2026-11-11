@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
 import {validateExperienceDraft,validateRecommendations,normalizeAdminExperience,removedResultKeys} from "../admin/experiences.js";
 const draft=()=>({
  title:"Qual sua essência?",description:"Quiz",published:false,
@@ -78,4 +79,18 @@ test("frontend accepts backend's maxima of thirty questions and twenty options",
  assert.equal(result.questions[29].position,29);
  assert.throws(()=>validateExperienceDraft({...full,questions:[...full.questions,full.questions[0]]}),/1 a 30/);
  assert.throws(()=>validateExperienceDraft({...full,questions:[{...full.questions[0],options:[...full.questions[0].options,full.questions[0].options[0]]}]}),/2 a 20/);
+});
+
+test("recommendation input rejects empty tokens rather than silently dropping them",()=>{
+ for(const ids of ["1,,2",",1","1,","1, ,2"])
+  assert.throws(()=>validateRecommendations({experienceId:2,resultKey:"floral",ids}),/valores vazios/);
+});
+test("admin quiz guards stale edits and hides private workspace on authorization failure",()=>{
+ const source=readFileSync(new URL("../admin/experiences.js",import.meta.url),"utf8");
+ assert.match(source,/if\(!user\?\.authenticated\)throw new AdminApiError/);
+ assert.match(source,/function lockWorkspace\(\)/);
+ assert.match(source,/listGate\.invalidate\(\);editGate\.invalidate\(\);mutationGate\.invalidate\(\)/);
+ assert.match(source,/\$\("#experiences-workspace"\)\.hidden=true/);
+ assert.match(source,/if\(!sessionActive\|\|!editGate\.isCurrent\(ticket\)\)return/);
+ assert.match(source,/if\(!sessionActive\|\|!listGate\.isCurrent\(ticket\)\)return/);
 });

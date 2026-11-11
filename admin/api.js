@@ -21,7 +21,7 @@ export function validateAdminPath(path){
 }
 export class AdminApi{
  #csrf=null;
- constructor(fetchImpl=globalThis.fetch){this.fetchImpl=fetchImpl;}
+ constructor(fetchImpl){this.fetchImpl=fetchImpl??globalThis.fetch.bind(globalThis);}
  async #fetch(path,{method="GET",body,csrf=false}={}){
   validateAdminPath(path);
   if(typeof globalThis.location!=="undefined"&&!adminOriginAllowed(globalThis.location))

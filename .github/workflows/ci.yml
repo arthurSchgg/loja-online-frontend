@@ -88,6 +88,10 @@ jobs:
         run: |
           API_BASE_URL=/api/v1 npm run build:release
           npm run test:browser -- --grep "live"
+      - name: Test isolated administrative quiz flows against a mock same-origin API
+        run: |
+          npm run build:admin
+          npm run test:admin-browser
       - name: Save browser screenshots and traces only on failure
         if: failure()
         uses: actions/upload-artifact@v4
