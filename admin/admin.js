@@ -70,6 +70,8 @@ $("#login-form").addEventListener("submit",async event=>{
  btn.disabled=true;info("Autenticando...");
  try{
   const user=await api.login(username,password);$("#admin-password").value="";
+  if(user?.authenticated!==true||typeof user.username!=="string"||!user.username.trim())
+   throw new AdminApiError("Não foi possível confirmar a sessão administrativa.",401);
   showWorkspace(user.username);info("Acesso confirmado.");
  }catch(error){$("#admin-password").value="";info(error.message,true);}
  finally{btn.disabled=false;}
