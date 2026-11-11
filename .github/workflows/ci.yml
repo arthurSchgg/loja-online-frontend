@@ -45,6 +45,13 @@ jobs:
             API_BASE_URL=/api/v1 npm run build:release
             grep -q 'mode:"live"' dist/assets/js/config.js
             npm run build:admin
+            # Combine live public and administrative artifacts for isolated local HML only.
+            npm run build:hml
+            test -f dist-hml/index.html
+            test -f dist-hml/admin.html
+            test -f dist-hml/admin-experiences.html
+            grep -q 'mode:"live"' dist-hml/assets/js/config.js
+            test ! -e dist/admin.html
             # Harden both public and restricted bundles before release.
             npm run check:security
           else
