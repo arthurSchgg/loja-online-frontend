@@ -13,7 +13,7 @@ export function validateStoreFields(data){
    throw new Error(label+" deve ter até "+max+" caracteres.");
  }
  const phone=String(data.whatsapp??"").trim();
- if(phone&&!/^\\+?[0-9]{10,15}$/.test(phone))
+ if(phone&&!/^\+?[0-9]{10,15}$/.test(phone))
   throw new Error("WhatsApp deve conter DDI, DDD e telefone com apenas dígitos.");
  const social=String(data.instagramUrl??"").trim();
  if(social){
@@ -24,7 +24,7 @@ export function validateStoreFields(data){
    throw new Error("Informe uma URL HTTPS válida do Instagram oficial.");
  }
  const email=String(data.email??"").trim();
- if(email&&(email.length>254||! /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)))
+ if(email&&(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))
   throw new Error("E-mail de contato inválido.");
  return true;
 }
