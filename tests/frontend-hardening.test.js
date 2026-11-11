@@ -30,7 +30,7 @@ test("API identifiers are safe integers before being inserted into the catalog D
   assert.equal(safeNumericId(raw),null);
 });
 test("every public and admin page restricts scripts and API origin via CSP",()=>{
- for(const page of ["index.html","catalogo.html","produto.html","privacidade.html",
+ for(const page of ["index.html","catalogo.html","produto.html","conheca-a-loja.html","espaco-das-velas.html","privacidade.html",
   "admin.html","admin-experiences.html","reset-password.html","confirm-email.html"]){
   const html=source(page);
   assert.match(html,/http-equiv="Content-Security-Policy"/,page);
