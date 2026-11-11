@@ -2,6 +2,7 @@ import {AdminApi,AdminApiError,adminOriginAllowed} from "./api.js";
 import {setupSecurityPanel} from "./security.js";
 import {validateProductImages} from "./product-validation.js";
 import {createRequestGuard} from "./request-guard.js";
+import {captureEditorDraft,restoreEditorDraft} from "./editor-draft.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
@@ -9,7 +10,7 @@ const api=new AdminApi();
 const $=q=>document.querySelector(q),el=(tag,text="",className="")=>{
  const e=document.createElement(tag);e.textContent=String(text??"");if(className)e.className=className;return e;
 };
-let moduleName="brands",editing=null,recordsPage=0,dirty=false,sessionUser=null;
+let moduleName="brands",editing=null,recordsPage=0,dirty=false,sessionUser=null,pendingDraft=null;
 const recordsGate=createRequestGuard(),toolGate=createRequestGuard(),saveGate=createRequestGuard();
 const formDefs={
  brands:[["name","Nome da marca","text",true]],
@@ -23,7 +24,11 @@ const formDefs={
 const endMap={brands:"brands",categories:"categories",products:"products",offerings:"offerings",content:"content-sections",campaigns:"campaigns",audit:"audit-events",store:"store"};
 function info(message,isError=false){const p=$("#admin-status");p.textContent=message;p.classList.toggle("error",!!isError);}
 function toolInfo(message,isError=false){const p=$("#record-tool-status");p.textContent=message;p.classList.toggle("error",!!isError);}
-function showLogin(){
+function showLogin({preserveDraft=true}={}){
+ if(preserveDraft&&sessionUser){
+  const draft=captureEditorDraft({moduleName,editing,dirty,form:$("#edit-form")});
+  if(draft)pendingDraft=draft;
+ }else if(!preserveDraft)pendingDraft=null;
  recordsGate.invalidate();toolGate.invalidate();saveGate.invalidate();
  sessionUser=null;editing=null;dirty=false;recordsPage=0;
  $("#admin-workspace").hidden=true;$("#login-panel").hidden=false;
@@ -37,7 +42,21 @@ function showLogin(){
  $("#security-email-form")?.reset();
  const dialog=$("#record-tool-dialog");if(dialog?.open)dialog.close();
 }
-function showWorkspace(name){sessionUser=name;$("#admin-user").textContent="Sessão: "+name;$("#login-panel").hidden=true;$("#admin-workspace").hidden=false;changeModule(true);}
+function showWorkspace(name){
+ sessionUser=name;$("#admin-user").textContent="Sessão: "+name;
+ $("#login-panel").hidden=true;$("#admin-workspace").hidden=false;
+ const draft=pendingDraft;pendingDraft=null;
+ if(draft){
+  $("#admin-module").value=draft.moduleName;
+  changeModule(true);
+  editing=draft.editing;
+  buildForm();
+  if(restoreEditorDraft(draft,$("#edit-form"))){
+   dirty=true;
+   info("Edição não salva recuperada na aba. Revise os campos e salve novamente.");
+  }
+ }else changeModule(true);
+}
 async function bootstrap(){
  if(!adminOriginAllowed(window.location)){info("Painel exige HTTPS e API sob a mesma origem. Bloqueado neste endereço.",true);$("#login-form").querySelector("button").disabled=true;return;}
  try{await api.refreshCsrf();const user=await api.me();if(user?.authenticated)showWorkspace(user.username);else showLogin();}
@@ -53,9 +72,9 @@ $("#login-form").addEventListener("submit",async event=>{
  finally{btn.disabled=false;}
 });
 $("#logout").addEventListener("click",async()=>{
- try{await api.logout();showLogin();info("Sessão encerrada.");}
+ try{await api.logout();showLogin({preserveDraft:false});info("Sessão encerrada.");}
  catch(error){
-  showLogin();
+  showLogin({preserveDraft:false});
   info("Dados ocultados localmente; não foi possível confirmar a saída no servidor. Recarregue a página antes de continuar.",true);
  }
 });
