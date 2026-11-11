@@ -75,3 +75,32 @@
 @media(prefers-reduced-motion:reduce){
  .collection-tile img,.editorial-visual img{--motion-shift:0px!important;--image-hover-lift:0px!important;--image-hover-scale:1!important;transform:none!important}
 }
+
+
+/* Motion refinement: visibly floating hero art plus subtle scroll depth in
+ * editorial/product imagery; transform-only to avoid layout shifts.
+ * The JS stage still handles per-image scroll offsets without scroll hijacking. */
+@keyframes hero-bottle-float {
+  0% { transform:translate3d(0,8px,0) rotate(-1.1deg); }
+  100% { transform:translate3d(0,-19px,0) rotate(1.1deg); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-image img[data-hero-bottle] {
+    animation:hero-bottle-float 6.4s ease-in-out infinite alternate;
+    will-change:transform;
+  }
+  .editorial-visual img, .collection-tile img {
+    transition:transform .24s ease-out;
+  }
+}
+@media (max-width:768px) and (prefers-reduced-motion: no-preference) {
+  .hero-image img[data-hero-bottle] {animation-duration:8s;}
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-image img[data-hero-bottle] {animation:none!important;transform:none!important;}
+}
+html[data-motion="off"] .hero-image img[data-hero-bottle],
+html[data-motion="off"] .hero-image::before,
+html[data-motion="off"] .hero-watermark {
+  animation:none!important;
+}
