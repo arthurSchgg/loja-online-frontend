@@ -1,7 +1,7 @@
 import {test,expect} from "@playwright/test";
 function errorsOn(page){const errors=[];page.on("pageerror",e=>errors.push(e.message));return errors;}
 for(const width of [320,375,768,1440]){
- test("public | pages and links work at "+width+"px",async({page})=>{
+ test("demo | public pages and links work at "+width+"px",async({page})=>{
   await page.setViewportSize({width,height:850});const errors=errorsOn(page);
   for(const path of ["/viva-sua-experiencia.html","/contato.html"]){
    await page.goto(path);await expect(page.locator("main h1")).toBeVisible();
