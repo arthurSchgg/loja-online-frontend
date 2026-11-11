@@ -98,7 +98,7 @@ test("live | candles display published services, filter and confirm WhatsApp",as
  await expect(page.locator("#confirmed-link a")).toHaveAttribute("href",/^https:\/\/wa\.me\/5547999999999/);
  expect(errors).toEqual([]);
 });
-test("live | API failure or empty catalog never exposes demonstration offerings",async({page})=>{
+test("live | API failure or empty catalog hides illustrative offerings",async({page})=>{
  const errors=errorsOn(page);
  await routeInstitutional(page,{broken:true});
  await page.goto("/espaco-das-velas.html");
