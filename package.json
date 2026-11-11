@@ -16,7 +16,8 @@
     "smoke:public": "node scripts/public-api-smoke.mjs",
     "build:release": "node tools/build-release.mjs",
     "check:security": "node tools/check-security-output.mjs",
-    "test:browser": "playwright test --config playwright.config.mjs"
+    "test:browser": "playwright test --config playwright.config.mjs",
+    "test:admin-browser": "playwright test --config playwright.admin.config.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1"
