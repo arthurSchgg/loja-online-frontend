@@ -161,6 +161,8 @@ async function initCandles(){
  }
 }
 if(isLive && typeof document!=="undefined"){
+ // Hide all illustrative labels immediately, even when the live API fails.
+ document.querySelectorAll("[data-demo-only]").forEach(el=>el.remove());
  if(host("official-story"))void initAbout();
  else if(host("candle-offerings"))void initCandles();
 }
