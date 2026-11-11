@@ -29,12 +29,14 @@ test("live | experience submits questions and displays recommendations",async({p
  await page.locator('input[name="q-1"][value="2"]').check();
  await page.getByRole("button",{name:"Ver meu resultado"}).click();
  await expect(page.locator("#experience-result")).toContainText("Sereno");
- await expect(page.locator('#experience-result a[href="produto.html?id=5"]')).toBeVisible();
+ await expect(page.locator('#experience-result a[href="produto.html?productId=5"]')).toBeVisible();
  expect(errors).toEqual([]);
 });
 test("live | contact only displays official valid links",async({page})=>{
- await page.route("**/api/v1/store",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({whatsapp:"5547999999999",instagramUrl:"https://www.instagram.com/exemplo/",email:"contato@exemplo.com",openingHours:"Seg-Sex"})}));
+ await page.route("**/api/v1/store",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({whatsapp:"5547999999999",instagramUrl:"https://www.instagram.com/exemplo/",email:"contato@exemplo.com",openingHours:"Seg-Sex",address:"Rua exemplo, 100",region:"Santa Catarina"})}));
  await page.goto("/contato.html");
  await expect(page.locator("#contact-links a")).toHaveCount(3);
  await expect(page.locator("#contact-info")).toContainText("Seg-Sex");
+ await expect(page.locator("#contact-info")).toContainText("Rua exemplo, 100");
+ await expect(page.locator("#contact-info")).toContainText("Santa Catarina");
 });
