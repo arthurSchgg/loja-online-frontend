@@ -1,4 +1,5 @@
 import {AdminApi,AdminApiError,adminOriginAllowed} from "./api.js";
+import {createRequestGuard} from "./request-guard.js";
 
 /** The backend's list DTO intentionally omits result keys and edit metadata.
  * Never reconstruct a PUT from that incomplete DTO: it could erase data.
@@ -64,12 +65,29 @@ export function validateRecommendations({experienceId,resultKey,ids}) {
 const api=new AdminApi(),$=selector=>document.querySelector(selector);
 let editingId=null;
 let originalResultKeys=[];
+let sessionActive=false;
+const listGate=createRequestGuard(),editGate=createRequestGuard(),mutationGate=createRequestGuard();
 export function removedResultKeys(originalKeys,nextKeys){
  const next=new Set(nextKeys);
  return originalKeys.filter(key=>!next.has(key));
 }
 function notify(message,error=false){
  const el=$("#experiences-status");if(el){el.textContent=message;el.classList.toggle("error",error);}
+}
+function lockWorkspace(){
+ sessionActive=false;
+ listGate.invalidate();editGate.invalidate();mutationGate.invalidate();
+ $("#experiences-workspace").hidden=true;
+ $("#available-experiences").replaceChildren();
+ $("#recs-experience-id").value="";
+ $("#recs-result-key").value="";
+ $("#recommendations-form").reset();
+ resetEditor();
+ notify("Sessão expirada ou sem autorização. Entre novamente no painel.",true);
+}
+function handleSessionError(error){
+ if(error?.status===401){lockWorkspace();return true;}
+ return false;
 }
 function resultRow() {
  const el=document.createElement("fieldset");el.dataset.resultRow="";el.className="experience-card";
@@ -113,6 +131,7 @@ function draftFromDom(){
  });
 }
 function resetEditor(){
+ editGate.invalidate();
  editingId=null;
  originalResultKeys=[];
  $("#quiz-editor").reset();
@@ -154,8 +173,13 @@ function fillEditor(data){
  $("#quiz-editor").scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function refresh(){
+ if(!sessionActive)return;
+ const ticket=listGate.begin();
  const list=$("#available-experiences");list.replaceChildren();
- const entries=await api.get("/admin/experiences");
+ let entries;
+ try{entries=await api.get("/admin/experiences");}
+ catch(error){if(listGate.isCurrent(ticket)&&!handleSessionError(error))notify(error.message,true);return;}
+ if(!sessionActive||!listGate.isCurrent(ticket))return;
  if(!Array.isArray(entries)||!entries.length){list.textContent="Nenhuma experiência cadastrada.";return;}
  for(const item of entries){
   const article=document.createElement("article");article.className="experience-card";
@@ -166,10 +190,16 @@ async function refresh(){
   button.addEventListener("click",()=>{$("#recs-experience-id").value=String(item.id);$("#recs-result-key").focus();});
   const edit=document.createElement("button");edit.type="button";edit.className="btn btn--secondary";
   edit.textContent="Editar quiz";edit.addEventListener("click",async()=>{
+   const ticket=editGate.begin();
    edit.disabled=true;notify("Carregando quiz completo...");
-   try{fillEditor(await api.get("/admin/experiences/"+item.id));notify("Quiz carregado para edição.");}
-   catch(error){notify(error?.message||"Não foi possível carregar o quiz.",true);}
-   finally{edit.disabled=false;}
+   try{
+    const loaded=await api.get("/admin/experiences/"+item.id);
+    if(!sessionActive||!editGate.isCurrent(ticket))return;
+    fillEditor(loaded);notify("Quiz carregado para edição.");
+   }catch(error){
+    if(editGate.isCurrent(ticket)&&!handleSessionError(error))
+     notify(error?.message||"Não foi possível carregar o quiz.",true);
+   }finally{edit.disabled=false;}
   });
   article.append(heading,sub,button,edit);list.append(article);
  }
@@ -188,7 +218,8 @@ function init() {
  $("#quiz-editor").addEventListener("submit",async e=>{
   e.preventDefault();const btn=$("#submit-quiz");btn.disabled=true;notify("Salvando experiência...");
   try{
-   const payload=draftFromDom(),id=editingId;
+   if(!sessionActive)throw new Error("Sessão administrativa não confirmada.");
+   const ticket=mutationGate.begin(),payload=draftFromDom(),id=editingId;
    const removed=id===null?[]:removedResultKeys(originalResultKeys,payload.results.map(x=>x.key));
    if(removed.length && !window.confirm("Remover ou renomear os perfis "+removed.join(", ")+
     "? Recomendações e vínculos desses perfis serão apagados.")){
@@ -197,30 +228,37 @@ function init() {
    const saved=id===null?await api.write("POST","/admin/experiences",payload):
     await api.write("PUT","/admin/experiences/"+id,payload);
    $("#recs-experience-id").value=String(saved.id);$("#recs-result-key").value=payload.results[0]?.key||"";
+   if(!sessionActive||!mutationGate.isCurrent(ticket))return;
    resetEditor();
    notify(id===null?"Experiência cadastrada. Revise a disponibilidade e as recomendações.":
     "Experiência atualizada. Recomendações dos perfis mantidos foram preservadas.");
    await refresh();
-  }catch(error){notify(error?.message||"Não foi possível salvar a experiência.",true);}
+  }catch(error){if(!handleSessionError(error))notify(error?.message||"Não foi possível salvar a experiência.",true);}
   finally{btn.disabled=false;}
  });
  $("#recommendations-form").addEventListener("submit",async e=>{
   e.preventDefault();const btn=$("#save-recommendations");btn.disabled=true;notify("Atualizando recomendações...");
   try{
+   if(!sessionActive)throw new Error("Sessão administrativa não confirmada.");
+   const ticket=mutationGate.begin();
    const form=new FormData(e.currentTarget),request=validateRecommendations({
     experienceId:form.get("experienceId"),resultKey:form.get("resultKey"),ids:form.get("ids")
    });
    await api.write("PUT","/admin/experiences/"+request.experienceId+
      "/results/"+encodeURIComponent(request.resultKey)+"/recommendations",{productIds:request.productIds});
-   notify("Recomendações salvas. A API só exibe produtos elegíveis.");
-  }catch(error){notify(error?.message||"Não foi possível atualizar recomendações.",true);}
+   if(sessionActive&&mutationGate.isCurrent(ticket))notify("Recomendações salvas. A API só exibe produtos elegíveis.");
+  }catch(error){if(!handleSessionError(error))notify(error?.message||"Não foi possível atualizar recomendações.",true);}
   finally{btn.disabled=false;}
  });
- $("#reload-experiences").addEventListener("click",()=>refresh().catch(e=>notify(e.message,true)));
+ $("#reload-experiences").addEventListener("click",()=>refresh());
  if(!adminOriginAllowed(location)){notify("Use HTTPS na mesma origem da API.",true);return;}
- api.me().then(()=>{$("#experiences-workspace").hidden=false;return refresh();}).catch(error=>{
-  notify(error instanceof AdminApiError&&error.status===401?
-    "Faça login no painel administrativo antes de continuar.":"Não foi possível validar a sessão.",true);
+ api.me().then(user=>{
+  if(!user?.authenticated)throw new AdminApiError("Sessão não autenticada.",401);
+  sessionActive=true;
+  $("#experiences-workspace").hidden=false;
+  return refresh();
+ }).catch(error=>{
+  if(!handleSessionError(error))notify("Não foi possível validar a sessão.",true);
  });
 }
 if(typeof document!=="undefined")init();
