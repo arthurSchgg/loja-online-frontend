@@ -88,7 +88,7 @@ async function initExperiences(){
      const list=document.createElement("ul");
      for(const product of evaluation.recommendations){
       const li=document.createElement("li"),id=validId(product.id);
-      if(id){const a=tag("a",product.name||"Ver produto");a.href="produto.html?id="+id;li.append(a);}
+      if(id){const a=tag("a",product.name||"Ver produto");a.href="produto.html?productId="+id;li.append(a);}
       else li.textContent=String(product.name||"Produto recomendado");
       list.append(li);
      }result.append(list);
