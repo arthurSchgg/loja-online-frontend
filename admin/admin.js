@@ -6,6 +6,7 @@ import {createRequestGuard} from "./request-guard.js";
 import {captureEditorDraft,restoreEditorDraft} from "./editor-draft.js";
 import {promotionStatus,promotionClosePayload} from "./promotion-lifecycle.js";
 import {validateOfferingFields} from "./offering-validation.js";
+import {validateStoreFields} from "./store-validation.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
@@ -22,7 +23,7 @@ const formDefs={
  offerings:[["title","Título","text",true],["description","Descrição","textarea"],["type","Tipo de serviço","select",true,["CANDLE","WORKSHOP","RENTAL"]],["price","Preço (vazio = sob consulta)","number"],["imageUrl","URL HTTPS da imagem","text"],["published","Publicado","checkbox"],["available","Disponível","checkbox"]],
  content:[["slug","Identificador","text",true],["title","Título","text",true],["body","Conteúdo","textarea"],["imageUrl","URL HTTPS da imagem","text"],["position","Ordem","number"],["published","Publicado","checkbox"]],
  campaigns:[["title","Título","text",true],["subtitle","Subtítulo","text"],["imageUrl","URL HTTPS da imagem","text"],["linkUrl","Destino","text"],["position","Ordem","number"],["startsAt","Data início","datetime-local"],["endsAt","Data fim","datetime-local"],["published","Publicado","checkbox"]],
- store:[["displayName","Nome público","text",true],["slogan","Slogan","text"],["description","Descrição da loja","textarea"],["whatsapp","WhatsApp DDI+DDD (somente dígitos)","text"],["instagramUrl","Instagram URL","text"],["email","E-mail de contato","email"]]
+ store:[["displayName","Nome público","text",true],["slogan","Slogan","text"],["description","Descrição da loja","textarea"],["whatsapp","WhatsApp DDI+DDD (somente dígitos)","text"],["instagramUrl","Instagram URL","text"],["email","E-mail de contato","email"],["openingHours","Horários de atendimento","textarea"],["address","Endereço (se publicado)","textarea"],["region","Região de atendimento","text"]]
 };
 const endMap={brands:"brands",categories:"categories",products:"products",offerings:"offerings",content:"content-sections",campaigns:"campaigns",audit:"audit-events",store:"store"};
 function info(message,isError=false){const p=$("#admin-status");p.textContent=message;p.classList.toggle("error",!!isError);}
@@ -131,6 +132,7 @@ function collectForm(){
  if(moduleName==="products")validateProductFields(data);
  if(moduleName==="products")validateProductImages(data.images,data.published);
  if(moduleName==="offerings"){validateOfferingFields(data);if(data.price===null)delete data.price;}
+ if(moduleName==="store")validateStoreFields(data);
  return data;
 }
 async function save(event){
