@@ -44,7 +44,7 @@ for(const width of [320,375,768,1024,1440]){
   const errors=errorsOn(page);
   await page.goto("/conheca-a-loja.html");
   await expect(page.locator("main h1")).toBeVisible();
-  await expect(page.locator('nav a[href="conheca-a-loja.html"][aria-current="page"]').first()).toBeVisible();
+  await expect(page.locator('nav a[href="conheca-a-loja.html"][aria-current="page"]')).toHaveCount(2);
   await expect(page.locator("#official-story [data-demo-only]")).toBeVisible();
   await assertNoOverflow(page,width);
   await page.goto("/espaco-das-velas.html");
