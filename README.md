@@ -18,15 +18,18 @@ Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módul
 ## Estrutura e personalização
 
 - `index.html`: hero, coleções, famílias olfativas, best-sellers, quiz, experiência, newsletter demonstrativa.
+- `conheca-a-loja.html`: página institucional, história publicada e contatos oficiais no modo live.
+- `espaco-das-velas.html`: apresentação editorial e filtros de velas, oficinas e locações publicados, com confirmação pelo WhatsApp.
 - `catalogo.html`: filtros de família, perfil, volume, preço e ordem.
 - `produto.html?id=aurora-de-petalas`: zoom, pirâmide de notas, volume 30/50/100 ml, recomendações e sacola.
 - `privacidade.html`: aviso de demonstração e uso de dados.
 - `assets/css/tokens.css`: seis cores centrais, tipografia, escala 4/8px, sombras, raios, movimento.
-- `assets/css/base.css`, `components.css`, `pages.css`: base, componentes e layouts.
+- `assets/css/base.css`, `components.css`, `pages.css`, `institutional.css`: base, componentes e layouts responsivos.
 - `assets/js/data.js`: somente catálogo fictício; substituir por API depois de homologação.
 - `assets/js/animations.js`: revelações ao rolar a página, parallax limitado, microinterações e indicador de leitura, respeitando `prefers-reduced-motion` e Save-Data.
 - `assets/images/perfumes/`: ilustrações SVG autorais sem imagens de terceiros.
 - `docs/DESIGN-SYSTEM.md`: componentes e acessibilidade.
+- `docs/INSTITUTIONAL-PAGES.md`: conteúdo oficial, contratos do backend e limites de publicação das duas páginas.
 - `docs/GIT-FLOW.md` e `docs/SECURITY-PERMISSIONS.md`: branches, revisões, proteção e privilégios.
 
 Personalize cores em `tokens.css`, fontes em `--font-display` e `--font-body`, e o catálogo demonstrativo em `data.js`.

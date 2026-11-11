@@ -64,6 +64,12 @@ export async function fetchProduct(id,signal){
  return publicRequest("/products/"+Number(id),{signal});
 }
 export async function fetchStore(signal){return publicRequest("/store",{signal});}
+export async function fetchContentSections(signal){
+ const sections=await publicRequest("/content-sections",{signal});
+ if(!Array.isArray(sections))throw new ApiError("Conteúdo institucional indisponível.");
+ return sections.filter(section=>section&&section.published===true&&
+  typeof section.slug==="string"&&typeof section.title==="string");
+}
 export async function fetchOfferings(signal){return publicRequest("/offerings",{signal});}
 export async function fetchExperiences(signal){return publicRequest("/experiences",{signal});}
 export async function fetchExperience(id,signal){return publicRequest("/experiences/"+Number(id),{signal});}

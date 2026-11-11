@@ -101,6 +101,10 @@ function showConfirmation({type,item}){
  dlg.showModal();
 }
 let currentProducts=[],currentOfferings=[];
+/** Enable the existing WhatsApp confirmation dialog on dedicated public service pages. */
+export function registerPublicOfferings(items){
+ currentOfferings=Array.isArray(items)?items.filter(x=>numberId(x?.id)!==null):[];
+}
 document.addEventListener("click",e=>{
  const item=e.target.closest("[data-confirm-product]");
  if(item){const p=currentProducts.find(x=>x.id===Number(item.dataset.confirmProduct));if(p)showConfirmation({type:"PRODUCT",item:p});}

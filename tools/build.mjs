@@ -3,7 +3,7 @@ import {fileURLToPath} from "node:url";
 import {join,resolve,dirname} from "node:path";
 const root=resolve(fileURLToPath(new URL("..",import.meta.url)));
 const dist=join(root,"dist");rmSync(dist,{recursive:true,force:true});mkdirSync(dist,{recursive:true});
-const pages=["index.html","catalogo.html","produto.html","privacidade.html"];
+const pages=["index.html","catalogo.html","produto.html","conheca-a-loja.html","espaco-das-velas.html","privacidade.html"];
 for(const file of pages)cpSync(join(root,file),join(dist,file));
 cpSync(join(root,"assets"),join(dist,"assets"),{recursive:true});
 // Build-time PUBLIC configuration, never secrets. Same-origin API is preferred.
