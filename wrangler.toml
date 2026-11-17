@@ -1,0 +1,8 @@
+# Cloudflare Pages — public storefront (never deploy dist-admin/).
+name = "lojinha-da-katia"
+compatibility_date = "2026-11-17"
+pages_build_output_dir = "./dist"
+
+[vars]
+# Public, NON-SECRET HTTPS Render API origin. No DB password or admin credentials.
+PUBLIC_API_ORIGIN = "https://lojinha-da-katia-api-rjvx.onrender.com"
