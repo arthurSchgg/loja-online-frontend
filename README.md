@@ -96,6 +96,12 @@ Ele força `SITE_MODE=live`, exige `API_BASE_URL` explícito, valida URLs extern
 
 O CI verifica que `build:release` **falha sem API_BASE_URL** e passa com caminho válido. O processo não implanta na AWS; HML-FE-001, identidade e dados oficiais continuam bloqueantes.
 
+## Hospedagem escolhida (Cloudflare Pages + Neon)
+
+A arquitetura de prévia gratuita será **Cloudflare Pages (vitrine pública)** + **Render Free (API Spring Boot)** + **Neon Free (PostgreSQL)**. A AWS não faz mais parte do plano. O build público dedicado é `npm run build:cloudflare`, configurando `API_BASE_URL` com o endpoint HTTPS da API (jamais dados do banco). O painel administrativo não pode ser colocado na origem estática pública; ele continua exigindo HTTPS na mesma origem da API.
+
+**Leia o [guia Cloudflare Pages e Neon](docs/CLOUDFLARE-NEON-DEPLOY.md)** para configurar os serviços, revisar os limites gratuitos e conferir o checklist de homologação. Nenhum recurso ou deploy é criado automaticamente por este repositório.
+
 ## Qualidade e produção
 
 CI executa `npm run check`, `npm test` e `npm run build`. A aprovação do CI não substitui a homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade ou AWS. `main` permanece reservada a releases aprovados.
