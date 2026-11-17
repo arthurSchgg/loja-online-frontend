@@ -96,6 +96,10 @@ Ele força `SITE_MODE=live`, exige `API_BASE_URL` explícito, valida URLs extern
 
 O CI verifica que `build:release` **falha sem API_BASE_URL** e passa com caminho válido. O processo não implanta na AWS; HML-FE-001, identidade e dados oficiais continuam bloqueantes.
 
+## Próxima entrega e homologação
+
+O frontend possui build público, build administrativo e build de homologação local com API Spring Boot e PostgreSQL. Para conferir o que já está implementado, preparar a validação no Windows e registrar pendências antes da publicação, consulte o [checklist de preparação da próxima entrega](docs/RELEASE-READINESS.md). A aprovação da CI e da homologação integrada ainda precisa ser comprovada; o merge anterior na `main` não é autorização para produção.
+
 ## Qualidade e produção
 
 CI executa `npm run check`, `npm test` e `npm run build`. A aprovação do CI não substitui a homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade ou AWS. `main` permanece reservada a releases aprovados.
