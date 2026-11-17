@@ -6,8 +6,8 @@
 
 1. Encerrar problemas de CI e homologação. Integrar o PR do catálogo Skelt e revisar as imagens provisórias.
 2. Disponibilizar o backend Spring Boot no Render em HTTPS e ligar ao Neon através de variáveis de ambiente protegidas, usando o Blueprint do repositório backend.
-3. No Cloudflare Dashboard, acesse Workers & Pages → Create → Pages → Connect to Git. Escolha o repositório **arthurSchgg/loja-online-frontend**.
-4. O arquivo `wrangler.toml` já configura o serviço em `lojinha-da-katia`, com o **endereço real** da API Render `https://lojinha-da-katia-api-rjvx.onrender.com` em `PUBLIC_API_ORIGIN`. O nome do projeto Pages precisa coincidir com o nome do arquivo Wrangler. Configure (sem inserir segredos no frontend):
+3. No Cloudflare Dashboard, acesse Workers & Pages → Create → Pages → Connect to Git. Escolha o repositório **arthurSchgg/loja-online-frontend** e use o nome de projeto Pages **loja-online-frontend**, que já corresponde ao arquivo Wrangler.
+4. O arquivo `wrangler.toml` configura o serviço em `loja-online-frontend`, com o **endereço real** da API Render `https://lojinha-da-katia-api-rjvx.onrender.com` em `PUBLIC_API_ORIGIN`. O nome do projeto Pages precisa coincidir com o nome do arquivo Wrangler. Configure (sem inserir segredos no frontend):
 
 | Campo Pages | Valor |
 |---|---|
