@@ -34,6 +34,12 @@ Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módul
 
 Personalize cores em `tokens.css`, fontes em `--font-display` e `--font-body`, e o catálogo demonstrativo em `data.js`.
 
+## Hospedagem escolhida (Cloudflare Pages + Neon)
+
+A arquitetura de prévia gratuita será **Cloudflare Pages (vitrine pública)** + **Render Free (API Spring Boot)** + **Neon Free (PostgreSQL)**. A AWS não faz mais parte do plano. O build público dedicado é `npm run build:cloudflare`, configurando `API_BASE_URL` com o endpoint HTTPS da API (jamais dados do banco). O painel administrativo não pode ser colocado na origem estática pública; ele continua exigindo HTTPS na mesma origem da API.
+
+**Leia o [guia Cloudflare Pages e Neon](docs/CLOUDFLARE-NEON-DEPLOY.md)** para configurar os serviços, revisar os limites gratuitos e conferir o checklist de homologação. Nenhum recurso ou deploy é criado automaticamente por este repositório.
+
 ## Integração com API
 O modo padrão em `assets/js/config.js` é `demo`. Para gerar a vitrine usando somente dados reais publicados:
 
@@ -95,12 +101,6 @@ API_BASE_URL=/api/v1 npm run build:release
 Ele força `SITE_MODE=live`, exige `API_BASE_URL` explícito, valida URLs externas HTTPS e impede que o painel administrativo seja incluído no artefato `dist/`. Para consumir API pública de outra origem, configure também `ALLOW_EXTERNAL_PUBLIC_API=true` e CORS público restrito no backend. A administração deve permanecer **na mesma origem HTTPS da API**, com seu build `npm run build:admin` implantado separadamente e com autenticação Spring Security.
 
 O CI verifica que `build:release` **falha sem API_BASE_URL** e passa com caminho válido. O processo não implanta na AWS; HML-FE-001, identidade e dados oficiais continuam bloqueantes.
-
-## Hospedagem escolhida (Cloudflare Pages + Neon)
-
-A arquitetura de prévia gratuita será **Cloudflare Pages (vitrine pública)** + **Render Free (API Spring Boot)** + **Neon Free (PostgreSQL)**. A AWS não faz mais parte do plano. O build público dedicado é `npm run build:cloudflare`, configurando `API_BASE_URL` com o endpoint HTTPS da API (jamais dados do banco). O painel administrativo não pode ser colocado na origem estática pública; ele continua exigindo HTTPS na mesma origem da API.
-
-**Leia o [guia Cloudflare Pages e Neon](docs/CLOUDFLARE-NEON-DEPLOY.md)** para configurar os serviços, revisar os limites gratuitos e conferir o checklist de homologação. Nenhum recurso ou deploy é criado automaticamente por este repositório.
 
 ## Qualidade e produção
 
