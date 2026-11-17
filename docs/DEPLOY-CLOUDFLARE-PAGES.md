@@ -18,7 +18,7 @@
 | Environment variable `API_BASE_URL` | `/api/v1` |
 | Environment variable `PUBLIC_API_ORIGIN` | `https://lojinha-da-katia-api-rjvx.onrender.com` (já definido em `wrangler.toml`) |
 
-A variável `API_BASE_URL=/api/v1` deve ser definida nas variáveis de build do projeto Cloudflare Pages; o `wrangler.toml` define a variável de runtime da Function e não substitui essa configuração.
+As duas variáveis públicas `API_BASE_URL=/api/v1` (necessária ao build) e `PUBLIC_API_ORIGIN` (necessária à Function) estão declaradas em `[vars]` do `wrangler.toml`. O log do Cloudflare Pages deve listar **ambas** em `Build environment variables`. Se houver outra configuração na interface, garanta que não sobrescreva os valores esperados. Não configure senhas nesse arquivo.
 
 O build de release força `SITE_MODE=live` e não inclui o painel/admin. **Não** configure `ALLOW_EXTERNAL_PUBLIC_API=true`: a vitrine chama o proxy same-origin em `/api/v1`. `PUBLIC_API_ORIGIN` é variável de runtime do Pages Functions, não segredo; pode ser alterada quando o endereço real do Render estiver pronto. A Function restringe o hostname à forma `lojinha-da-katia-api.onrender.com` ou `lojinha-da-katia-api-<sufixo>.onrender.com`; o host escolhido corresponde ao serviço já ativo da Lojinha.
 
