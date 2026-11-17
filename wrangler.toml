@@ -1,5 +1,5 @@
 # Cloudflare Pages — public storefront (never deploy dist-admin/).
-name = "lojinha-da-katia"
+name = "loja-online-frontend"
 compatibility_date = "2026-11-17"
 pages_build_output_dir = "./dist"
 
