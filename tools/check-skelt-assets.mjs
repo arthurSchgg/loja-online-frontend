@@ -17,7 +17,7 @@ export const skeltFiles=[
 const base=resolve("assets/images/catalogo/skelt");
 for(const file of skeltFiles){
  const pathname=resolve(base,file);
- if(!pathname.startsWith(base+"/"))throw Error("Caminho de imagem inválido: "+file);
+ if(!/^[a-z0-9-]+\\.webp$/.test(file))throw Error("Nome de imagem inválido: "+file);
  if(!existsSync(pathname))throw Error("Falta imagem Skelt: "+file);
  const bytes=readFileSync(pathname);
  if(bytes.length<400||bytes.subarray(0,4).toString()!=="RIFF"||
