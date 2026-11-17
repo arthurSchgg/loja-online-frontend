@@ -52,6 +52,12 @@ jobs:
             test -f dist-hml/admin-experiences.html
             grep -q 'mode:"live"' dist-hml/assets/js/config.js
             test ! -e dist/admin.html
+            # Build Cloudflare storefront with a synthetic public endpoint (no network or secrets).
+            API_BASE_URL=https://preview-api.onrender.com/api/v1 npm run build:cloudflare
+            test -f dist/_headers
+            grep -q 'mode:"live"' dist/assets/js/config.js
+            grep -q 'https://preview-api.onrender.com' dist/index.html
+            test ! -e dist/admin.html
             # Harden both public and restricted bundles before release.
             npm run check:security
           else
