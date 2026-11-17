@@ -36,7 +36,7 @@ O build:
 
 1. Integrar primeiro o PR do comando `build:cloudflare` à branch que será usada no projeto.
 2. Em **Workers & Pages → Create → Pages → Connect to Git**, selecionar `arthurSchgg/loja-online-frontend`.
-3. Usar *Framework preset: None*, *Root directory: /*, *Build command: `npm run build:cloudflare`*, *Build output directory: `dist`*.
+3. Usar *Framework preset: None*, *Root directory: raiz do repositório*, *Build command: `npm run build:cloudflare`*, *Build output directory: `dist`*.
 4. Adicionar `NODE_VERSION=22` e `API_BASE_URL=https://SEU-SERVICO.onrender.com/api/v1` em **Settings → Environment variables**.
 5. Para prévia privada/antes do aceite, manter a implantação automática de produção e branches de preview desativadas; a criação de um projeto Pages com URL pública requer autorização de publicação.
 6. Após aprovação da release, escolher a branch de produção `main` e ativar os deploys desejados.
