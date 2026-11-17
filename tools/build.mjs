@@ -24,7 +24,7 @@ if(mode==="live"){
  // Pages Functions run ONLY for API paths; static HTML/images remain free CDN assets.
  writeFileSync(join(dist,"_routes.json"),JSON.stringify({
   version:1,include:["/api/v1/*"],exclude:[]
- },null,2)+"\\n");
+ },null,2)+"\n");
 }
 for(const page of pages){
  let html=readFileSync(join(dist,page),"utf8");
