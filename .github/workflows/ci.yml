@@ -1,0 +1,109 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# Explicit minimal runner permissions; comments explain the reason.
+permissions:
+  contents: read # checkout only; no push, write-issues or cloud credentials
+  actions: read # CI can read its own workflow results; no admin permissions
+
+concurrency:
+  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check repository policy (secrets, generated assets, governance)
+        run: python3 scripts/verify_repo_policy.py
+      - name: Check JavaScript syntax and run tests when app is present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f package.json ]; then
+            npm run check
+            npm test
+            npm run build
+            # Verify the same source also builds in live mode without secrets.
+            SITE_MODE=live API_BASE_URL=/api/v1 npm run build
+            # Production must never silently ship the fictitious demo catalog.
+            if env -u API_BASE_URL -u ALLOW_EXTERNAL_PUBLIC_API npm run build:release; then
+              echo "::error::Release build succeeded without API_BASE_URL"
+              exit 1
+            fi
+            API_BASE_URL=/api/v1 npm run build:release
+            grep -q 'mode:"live"' dist/assets/js/config.js
+            npm run build:admin
+            # Combine live public and administrative artifacts for isolated local HML only.
+            npm run build:hml
+            test -f dist-hml/index.html
+            test -f dist-hml/admin.html
+            test -f dist-hml/admin-experiences.html
+            grep -q 'mode:"live"' dist-hml/assets/js/config.js
+            test ! -e dist/admin.html
+            # Harden both public and restricted bundles before release.
+            npm run check:security
+          else
+            echo "::notice::Governance-only baseline: app not imported yet; no app tests executed"
+          fi
+      - name: Verify output contains no administrative client bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d dist ]; then
+            test ! -f dist/admin.html
+            test ! -e dist/assets/js/admin.js
+            test ! -f dist/admin-experiences.html
+            test -f dist-admin/admin-experiences.html
+            test ! -f dist/reset-password.html
+            test ! -f dist/confirm-email.html
+            test ! -d dist/admin
+            test -f dist-admin/reset-password.html
+            test -f dist-admin/confirm-email.html
+          fi
+
+  browser-smoke:
+    # Playwright 1.56.1 supports Ubuntu 24.04; latest GitHub runner may be 26.04.
+    # No production accounts, cookies, external API data or cloud credentials.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned browser runner without executing package lifecycle scripts
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Install isolated Chromium for visual interaction smoke
+        run: npx playwright install --with-deps chromium
+      - name: Test demo UI, responsive breakpoints and reduced motion
+        run: |
+          npm run build
+          npm run test:browser -- --grep "demo|motion"
+      - name: Test live storefront against a local mocked public API
+        run: |
+          API_BASE_URL=/api/v1 npm run build:release
+          npm run test:browser -- --grep "live"
+      - name: Test isolated administrative quiz flows against a mock same-origin API
+        run: |
+          npm run build:admin
+          npm run test:admin-browser
+      - name: Save browser screenshots and traces only on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storefront-browser-failures
+          if-no-files-found: ignore
+          retention-days: 7
+          path: test-results/

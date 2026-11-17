@@ -1,26 +1,101 @@
-# Lojinha da Kátia · Frontend
+# Lojinha da Kátia — Perfumaria de Luxo (Frontend)
 
-Frontend independente em **HTML, CSS e JavaScript puro** para a Lojinha da Kátia.
+Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem frameworks de interface. Identidade rosé/cobre, tipografia editorial, frascos vetoriais originais e animações nativas com IntersectionObserver/Web Animations API, sem scripts de animação de terceiros.
 
-> **Repositório privado em implantação.** A `main` é a linha estável; `develop` recebe apenas PRs com CI. Nenhuma versão foi aprovada para produção.
+> **MODO DEMONSTRAÇÃO:** os oito perfumes, preços e pirâmides olfativas são fictícios. A sacola é uma lista de interesse, sem checkout, pedido, pagamento ou reservas. Contato real via WhatsApp exige confirmação no backend.
 
-## Fluxo de desenvolvimento
+## Como executar
 
-- `main`: somente releases homologados.
-- `develop`: integração de alterações revisadas.
-- `feature/US-xxx-descricao`: funcionalidades.
-- `fix/BUG-xxx-descricao`: correções.
-- `release/vX.Y.Z`: preparação da versão; `hotfix/*` para correções urgentes.
-- Commits semânticos: `feat(scope): ...`, `fix(scope): ...`, `test(scope): ...`, `docs(scope): ...`, `chore(scope): ...`.
+```bash
+npm run dev      # Python 3 HTTP server, porta 5500
+npm run check    # Verifica sintaxe do JavaScript
+npm test         # Testes Node 22
+npm run build    # Gera dist/ público e garante exclusão de admin
+```
 
-Não desenvolver nem mesclar diretamente na `main`. A política completa fica em `docs/GIT-FLOW.md` na `develop`.
+Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módulos ES6.
 
-## Escopo
+## Estrutura e personalização
 
-Vitrine editorial rosé/cobre baseada na logo original, catálogo de perfumes demonstrativo, quiz, produtos, sacola de **consulta** sem checkout, contatos via WhatsApp e painel administrativo integrado ao backend Spring Boot na **mesma origem HTTPS**. Dados fictícios não representam produtos reais da loja.
+- `index.html`: hero, coleções, famílias olfativas, best-sellers, quiz, experiência, newsletter demonstrativa.
+- `conheca-a-loja.html`: página institucional, história publicada e contatos oficiais no modo live.
+- `espaco-das-velas.html`: apresentação editorial e filtros de velas, oficinas e locações publicados, com confirmação pelo WhatsApp.
+- `catalogo.html`: filtros de família, perfil, volume, preço e ordem.
+- `produto.html?id=aurora-de-petalas`: zoom, pirâmide de notas, volume 30/50/100 ml, recomendações e sacola.
+- `privacidade.html`: aviso de demonstração e uso de dados.
+- `assets/css/tokens.css`: seis cores centrais, tipografia, escala 4/8px, sombras, raios, movimento.
+- `assets/css/base.css`, `components.css`, `pages.css`, `institutional.css`: base, componentes e layouts responsivos.
+- `assets/js/data.js`: somente catálogo fictício; substituir por API depois de homologação.
+- `assets/js/animations.js`: revelações ao rolar a página, parallax limitado, microinterações e indicador de leitura, respeitando `prefers-reduced-motion` e Save-Data.
+- `assets/images/perfumes/`: ilustrações SVG autorais sem imagens de terceiros.
+- `docs/DESIGN-SYSTEM.md`: componentes e acessibilidade.
+- `docs/INSTITUTIONAL-PAGES.md`: conteúdo oficial, contratos do backend e limites de publicação das duas páginas.
+- `docs/GIT-FLOW.md` e `docs/SECURITY-PERMISSIONS.md`: branches, revisões, proteção e privilégios.
 
-## Segurança
+Personalize cores em `tokens.css`, fontes em `--font-display` e `--font-body`, e o catálogo demonstrativo em `data.js`.
 
-Nunca versionar senhas, tokens, dados de clientes ou chaves AWS. A API valida preços, estoque e opções na confirmação de contato. O frontend não realiza pagamentos nem armazena pedidos.
+## Integração com API
+O modo padrão em `assets/js/config.js` é `demo`. Para gerar a vitrine usando somente dados reais publicados:
 
-**Status:** preparação; não homologado nem publicado.
+```bash
+SITE_MODE=live API_BASE_URL=/api/v1 npm run build
+```
+
+No modo live, o site oculta a sacola fictícia (inclusive itens antigos de sessão) e não apresenta frascos conceituais como produtos reais. O catálogo mantém a página após falhas HTTP e permite nova tentativa. O site não usa automaticamente preços fictícios quando a API fica indisponível. Ver [contratos e limites](docs/API-INTEGRATION.md). A API pública usa `credentials: omit` (sem cookies de administração). O WhatsApp real exige confirmação e validação da URL entregue pelo backend.
+
+Em modo live, a busca textual e as categorias consultam a API em todas as páginas (sem limitar a pesquisa aos produtos já carregados). O seletor usa categorias reais; links `?familia=...` são resolvidos pelo nome cadastrado. A ordenação e o filtro de preço são feitos no backend em todo o catálogo, inclusive promoções vigentes, quando a API contém o contrato do backend PR #160. Não publique este frontend sobre versões antigas da API. Falhas de página são recuperáveis sem saltar resultados.
+
+No modo live, a seção de contato consulta `GET /api/v1/store` e só mostra WhatsApp/Instagram/e-mail oficiais configurados no backend. O formulário de newsletter fictício é removido desse modo, sem armazenar dados de visitantes.
+
+Em modo live, a home **não apresenta coleções fictícias como produtos reais**: o bloco de coleções demonstrativas é ocultado, os destaques de categorias usam `GET /api/v1/categories`, e textos de quiz e avisos são coerentes com dados publicados. Os frascos ilustrativos são exclusivos do modo demo; a homologação visual com a identidade oficial ainda é obrigatória.
+
+## Administração e recuperação de acesso
+
+A administração de quizzes e recomendações fica em `admin-experiences.html` (build administrativo), com criação e edição visual de quizzes existentes, e vínculo de até três produtos por perfil. A edição usa o DTO completo e restrito de `GET /api/v1/admin/experiences/{id}`; caso faltem chaves de resultado, a interface bloqueia a edição para impedir perda de dados. Ao remover ou renomear chaves de perfis, a interface solicita confirmação; recomendações dos perfis mantidos são preservadas pelo backend. Requer backend com PR #156 integrado e homologação full stack antes da produção.
+
+O painel possui formulário de mudança de senha e confirmação de novo e-mail.
+O build administrativo `npm run build:admin` inclui
+`reset-password.html` e `confirm-email.html`; essas páginas nunca
+integram a vitrine pública. Links enviados pelo backend devem apontar
+para essas URLs na mesma origem HTTPS. Ver
+[documentação de segurança da conta](docs/ADMIN-ACCOUNT-SECURITY.md).
+
+## Animações e proteção do frontend
+
+O frontend usa recursos nativos para animações suaves e mantém a rolagem do navegador. As páginas possuem CSP com scripts restritos à própria origem; o build verifica a separação entre `dist/` e `dist-admin/`. O cliente administrativo utiliza sessão/CSRF com credenciais apenas na memória, e o backend continua responsável pela autorização. Consulte [movimento, CSP e checklist para HTTPS](docs/FRONTEND-MOTION-SECURITY.md). O deploy final exige cabeçalhos de segurança definidos no servidor/CDN, além de testes de acessibilidade e performance com navegador real.
+
+## Segurança e escopo do backend
+
+O backend Spring Boot é o responsável por preços vigentes, estoque, opções de velas, mensagens de WhatsApp e autenticação administrativa. O frontend nunca deve criar pedidos ou aceitar compras sem esse contrato. A área administrativa precisa compartilhar **mesma origem HTTPS** com a API (sessão HTTP e CSRF); não publicar o admin dentro do build estático da vitrine.
+
+## Painel administrativo
+
+`admin.html` e `admin/` são mantidos fora do build público. O comando
+`npm run build:admin` cria `dist-admin/` para **mesma origem HTTPS** da API.
+O painel usa sessão HttpOnly, CSRF em memória e acesso exclusivamente controlado
+pelo Spring Security. Não abra um painel real em origem diferente da API.
+
+O painel oferece CRUD de marcas, categorias, produtos, ofertas, banners,
+conteúdo e dados institucionais; estoque, promoções, opções de velas e auditoria.
+A integração precisa ser testada no staging autorizado. Veja
+[docs/ADMIN-OPERATIONS.md](docs/ADMIN-OPERATIONS.md).
+
+## Smoke de integração pública
+
+Para conferir o contrato REST público contra um backend de staging com TLS validado, execute `npm run smoke:public -- https://staging.exemplo.com`. O script faz somente GET, sem cookies, escrita ou dados fictícios automáticos; valida endpoints públicos e ordenação global por preço efetivo. Consulte [docs/STAGING-PUBLIC-SMOKE.md](docs/STAGING-PUBLIC-SMOKE.md). Essa evidência complementa, mas **não substitui**, a homologação no navegador.
+
+## Build de release sem catálogo fictício
+
+O comando `npm run build` continua gerando o modo de demonstração para desenvolvimento. O comando **obrigatório para publicar a vitrine real** é:
+
+```bash
+API_BASE_URL=/api/v1 npm run build:release
+```
+
+Ele força `SITE_MODE=live`, exige `API_BASE_URL` explícito, valida URLs externas HTTPS e impede que o painel administrativo seja incluído no artefato `dist/`. Para consumir API pública de outra origem, configure também `ALLOW_EXTERNAL_PUBLIC_API=true` e CORS público restrito no backend. A administração deve permanecer **na mesma origem HTTPS da API**, com seu build `npm run build:admin` implantado separadamente e com autenticação Spring Security.
+
+O CI verifica que `build:release` **falha sem API_BASE_URL** e passa com caminho válido. O processo não implanta na AWS; HML-FE-001, identidade e dados oficiais continuam bloqueantes.
+
+## Qualidade e produção
+
+CI executa `npm run check`, `npm test` e `npm run build`. A aprovação do CI não substitui a homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade ou AWS. `main` permanece reservada a releases aprovados.
