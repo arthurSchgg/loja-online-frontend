@@ -7,7 +7,7 @@
 1. Encerrar problemas de CI e homologação. Integrar o PR do catálogo Skelt e revisar as imagens provisórias.
 2. Disponibilizar o backend Spring Boot no Render em HTTPS e ligar ao Neon através de variáveis de ambiente protegidas, usando o Blueprint do repositório backend.
 3. No Cloudflare Dashboard, acesse Workers & Pages → Create → Pages → Connect to Git. Escolha o repositório **arthurSchgg/loja-online-frontend**.
-4. Configure (sem inserir segredos no frontend):
+4. O arquivo `wrangler.toml` já configura o serviço em `lojinha-da-katia`, com o **endereço real** da API Render `https://lojinha-da-katia-api-rjvx.onrender.com` em `PUBLIC_API_ORIGIN`. O nome do projeto Pages precisa coincidir com o nome do arquivo Wrangler. Configure (sem inserir segredos no frontend):
 
 | Campo Pages | Valor |
 |---|---|
@@ -16,9 +16,11 @@
 | Build output directory | `dist` |
 | Root directory | `/` (raiz do repo) |
 | Environment variable `API_BASE_URL` | `/api/v1` |
-| Environment variable `PUBLIC_API_ORIGIN` | `https://<nome-real-do-servico>.onrender.com` |
+| Environment variable `PUBLIC_API_ORIGIN` | `https://lojinha-da-katia-api-rjvx.onrender.com` (já definido em `wrangler.toml`) |
 
-O build de release força `SITE_MODE=live` e não inclui o painel/admin. **Não** configure `ALLOW_EXTERNAL_PUBLIC_API=true`: a vitrine chama o proxy same-origin em `/api/v1`. `PUBLIC_API_ORIGIN` é variável de runtime do Pages Functions, não segredo; pode ser alterada quando o endereço real do Render estiver pronto. A Function restringe o hostname à forma `lojinha-da-katia-api.onrender.com` ou `lojinha-da-katia-api-<sufixo>.onrender.com`.
+A variável `API_BASE_URL=/api/v1` deve ser definida nas variáveis de build do projeto Cloudflare Pages; o `wrangler.toml` define a variável de runtime da Function e não substitui essa configuração.
+
+O build de release força `SITE_MODE=live` e não inclui o painel/admin. **Não** configure `ALLOW_EXTERNAL_PUBLIC_API=true`: a vitrine chama o proxy same-origin em `/api/v1`. `PUBLIC_API_ORIGIN` é variável de runtime do Pages Functions, não segredo; pode ser alterada quando o endereço real do Render estiver pronto. A Function restringe o hostname à forma `lojinha-da-katia-api.onrender.com` ou `lojinha-da-katia-api-<sufixo>.onrender.com`; o host escolhido corresponde ao serviço já ativo da Lojinha.
 
 5. O Pages Functions captura somente `/api/v1/*` por meio de `dist/_routes.json`; as páginas e imagens continuam no CDN de arquivos estáticos.
 6. A rota `functions/api/v1/[[path]].js` permite:
