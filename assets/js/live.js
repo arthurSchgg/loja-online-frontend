@@ -179,7 +179,7 @@ async function initHome(){
  const quizLead=document.querySelector("#quiz p.lead");
  if(quizLead)quizLead.textContent="Responda às experiências da loja sem armazenar suas respostas.";
  const editorialImage=document.querySelector("#experiencias img[data-parallax]");
- if(editorialImage){editorialImage.src="assets/images/brand/logo-katia.svg";editorialImage.alt="Símbolo da Lojinha da Kátia";}
+ // The editorial uses the licensed photograph already declared in HTML. Do not replace it with a logo.
  void initLiveCategoryHighlights();
  void initContact();
  const grid=document.getElementById("featured-grid");
