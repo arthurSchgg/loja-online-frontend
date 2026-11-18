@@ -323,13 +323,8 @@ async function initProduct(){
  }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
 }
 if(isLive){
- // The hero can keep its editorial layout, but must not present a fictitious
- // product bottle as a published real item.
- const heroBottle=document.querySelector("[data-hero-bottle]");
- if(heroBottle){
-  heroBottle.src="assets/images/brand/logo-katia.svg";
-  heroBottle.alt="Símbolo floral da Lojinha da Kátia";
- }
+ // The hero uses a licensed editorial photograph, not a fictitious SKU or the logo.
+ // Do not override its accessible alt text, fetch priority or src in live mode.
  const heroDisclaimer=document.querySelector(".hero-copy > p.muted");
  if(heroDisclaimer)heroDisclaimer.textContent="Consulte valores e disponibilidade atualizados no catálogo.";
  if(document.getElementById("catalog-grid"))initCatalog();
