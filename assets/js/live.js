@@ -14,17 +14,17 @@ const safe=value=>escapeHtml(value??"");
 const productTitle=p=>safe(p.name||"Produto sem nome");
 function imageFromProduct(p){
  const raw=p?.images?.[0]?.url;
- if(typeof raw!=="string"||!raw.trim())return "assets/images/brand/logo-katia.svg";
+ if(typeof raw!=="string"||!raw.trim())return "assets/images/brand/product-photo-pending.svg";
  try{
   const url=new URL(raw,location.href);
   if(url.protocol==="https:"||(url.origin===location.origin&&["http:","https:"].includes(url.protocol)))return url.href;
  }catch{}
- return "assets/images/brand/logo-katia.svg";
+ return "assets/images/brand/product-photo-pending.svg";
 }
 const imageFromOffering=o=>{
- if(typeof o.imageUrl!=="string"||!o.imageUrl.trim())return "assets/images/brand/logo-katia.svg";
+ if(typeof o.imageUrl!=="string"||!o.imageUrl.trim())return "assets/images/brand/product-photo-pending.svg";
  try{const u=new URL(o.imageUrl,location.href);if(u.protocol==="https:"||u.origin===location.origin)return u.href;}catch{}
- return "assets/images/brand/logo-katia.svg";
+ return "assets/images/brand/product-photo-pending.svg";
 };
 function status(target,message,error=false){
  if(!target)return;let region=target.querySelector("[data-api-status]");
@@ -179,7 +179,7 @@ async function initHome(){
  const quizLead=document.querySelector("#quiz p.lead");
  if(quizLead)quizLead.textContent="Responda às experiências da loja sem armazenar suas respostas.";
  const editorialImage=document.querySelector("#experiencias img[data-parallax]");
- if(editorialImage){editorialImage.src="assets/images/brand/logo-katia.svg";editorialImage.alt="Símbolo da Lojinha da Kátia";}
+ // The editorial uses the licensed photograph already declared in HTML. Do not replace it with a logo.
  void initLiveCategoryHighlights();
  void initContact();
  const grid=document.getElementById("featured-grid");
@@ -323,13 +323,8 @@ async function initProduct(){
  }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
 }
 if(isLive){
- // The hero can keep its editorial layout, but must not present a fictitious
- // product bottle as a published real item.
- const heroBottle=document.querySelector("[data-hero-bottle]");
- if(heroBottle){
-  heroBottle.src="assets/images/brand/logo-katia.svg";
-  heroBottle.alt="Símbolo floral da Lojinha da Kátia";
- }
+ // The hero uses a licensed editorial photograph, not a fictitious SKU or the logo.
+ // Do not override its accessible alt text, fetch priority or src in live mode.
  const heroDisclaimer=document.querySelector(".hero-copy > p.muted");
  if(heroDisclaimer)heroDisclaimer.textContent="Consulte valores e disponibilidade atualizados no catálogo.";
  if(document.getElementById("catalog-grid"))initCatalog();
