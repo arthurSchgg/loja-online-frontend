@@ -20,20 +20,26 @@ O usuário pediu que a imagem principal da home parecesse uma **Live Photo**, co
 - Conferir que a pausa de vídeo é possível, que o controle pode receber foco por teclado e que o retorno à aba não reativa uma animação pausada manualmente.
 - Não divulgar a cena como uma fotografia de produto realmente vendido na loja.
 
-## Imagens secundárias: arte vetorial transparente (20/11/2026)
+## Imagens secundárias: fotografias reais (20/11/2026)
 
-Para manter o estilo leve aprovado na revisão visual, a seção "Uma pausa. Um aroma. Um ritual." agora usa `assets/images/editorial/candle-floral-cutout.svg`, sem fundo retangular, com cores alinhadas ao tema rosé e luz quente. A página inicial também usa as imagens editoriais transparentes `floral-perfume-cutout.svg` e `amber-perfume-cutout.svg` para as coleções demonstrativas, sem associá-las a produtos reais.
+O usuário aprovou a composição e pediu explicitamente trocar os desenhos por **fotos de frascos reais de O Boticário**.
 
-As páginas Conheça a Loja, Viva sua Experiência, Contato e Espaço das Velas não exibem mais uma logo ampliada no hero. Cada uma usa uma composição vetorial decorativa sem fundo, fornecida pela própria aplicação. A logo verdadeira permanece pequena no header.
+- Coleção floral e hero "Conheça a Loja": fotografia do frasco **Lily Eau de Parfum 75ml**. Referência do fabricante: https://www.boticario.com.br/lily-eau-de-parfum-75ml/
+- Coleção amadeirada e hero "Contato": fotografia do frasco **Malbec Desodorante Colônia 100ml**. Referência do fabricante: https://www.boticario.com.br/produto/malbec-desodorante-colonia-100ml-v2/
+- Hero "Viva sua Experiência": fotografia do frasco **Egeo Dolce**. Referência: https://www.boticario.com.br/produto/egeo-dolce-desodorante-colonia-90ml-v2/
+- "Nossa História", em "Conheça a Loja": fotografia do frasco **Floratta Red**.
+- "Espaço das Velas" e editorial secundário da home: fotografia de **vela e flores**, não de um perfume de O Boticário, para preservar a relação com o conteúdo. Foto de Thirdman/Pexels: https://www.pexels.com/photo/a-scented-candle-beside-a-vase-with-flowers-7219339/
 
-Os arquivos são SVGs declarativos locais e não contêm scripts, fontes externas, imagens remotas ou fotografias de itens não cadastrados. Fotografias reais fornecidas pelo backend para produtos e conteúdo administrativo não são alteradas.
+As fotografias são **referências decorativas, não produtos em estoque**. Os oito Skelt existentes e a API continuam sendo a única fonte para produtos publicados, preços e disponibilidade. A Live Photo autoral da home permanece intacta.
 
-O efeito de movimento está no wrapper, enquanto o parallax leve atua na imagem interna. Isso evita conflitos de `transform`. `prefers-reduced-motion` e `data-motion="off"` desativam ambos os efeitos.
+As imagens são carregadas de servidores externos por URLs HTTPS referenciadas diretamente nas páginas, sem download ou cópia local pelo código. O CSS usa `mix-blend-mode:multiply` e ajustes de máscara para minimizar o retângulo branco original das fotos de produto. O novo `assets/js/editorial-photos.js` mostra uma mensagem neutra se algum host impedir carregamento; ele nunca troca um perfume por outro.
+
+**Direitos comerciais pendentes:** visualizar uma fotografia em catálogo online **não concede automaticamente** permissão de reutilização comercial. Confirmar com O Boticário e com os detentores dos direitos das fotografias dos revendedores a autorização para uso na vitrine. A foto de Pexels tem a licença gratuita indicada na página, mas seus termos atuais também devem ser observados. Preferir fotografias licenciadas pela proprietária e ativos locais otimizados antes da publicação final, evitando hotlinks permanentes.
 
 ## Checklist para homologação
 
 - [ ] Verificar enquadramento do hero em 320, 375, 768 e 1440 px.
-- [ ] Conferir se o SVG local é carregado em redes que bloqueiam imagens externas.
+- [ ] Testar o carregamento de fotografias externas e o estado de indisponibilidade do CDN.
 - [ ] Testar animações e preferência por movimento reduzido.
 - [ ] Validar com a proprietária que as imagens não confundem a identidade da loja nem insinuam produtos em estoque.
 - [ ] Confirmar que os cartões de catálogo respeitam `available`, preço, publicação e quantidade reais; **nunca** habilitar consulta em produto indisponível apenas por motivo visual.
