@@ -279,3 +279,48 @@ html[data-motion="off"] .chapter-hero__art .editorial-cutout{transform:none!impo
  .chapter-story__art .editorial-product-photo{width:min(75vw,270px)}
  .chapter-hero__art .editorial-product-photo--scene{width:min(84vw,345px);max-height:355px}
 }
+
+
+/* Compact studio product photography: blend the white studio backdrop into
+   the existing warm hero instead of showing a white rectangle. Keep the real
+   product proportions and preserve the approved typography/animations. */
+.chapter-hero__art{isolation:auto}
+.chapter-hero__art .editorial-cutout-shell{
+ width:min(69%,350px);
+ max-height:390px;
+ mix-blend-mode:multiply;
+}
+.chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){
+ width:100%;
+ max-height:380px;
+ height:auto;
+ object-fit:contain;
+ mix-blend-mode:normal;
+ filter:contrast(1.04) saturate(.98);
+ -webkit-mask-image:radial-gradient(ellipse 88% 88% at center,#000 73%,transparent 100%);
+ mask-image:radial-gradient(ellipse 88% 88% at center,#000 73%,transparent 100%);
+}
+.chapter-hero__art .editorial-product-photo--scene{
+ mix-blend-mode:normal;
+}
+.chapter-story__art .editorial-product-photo{
+ mix-blend-mode:multiply;
+ width:min(78%,285px);
+ max-height:330px;
+}
+@media(max-width:768px){
+ .chapter-hero__art{min-height:250px}
+ .chapter-hero__art .editorial-cutout-shell{width:min(62vw,275px);max-height:310px}
+ .chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){max-height:300px}
+ .chapter-story__art .editorial-product-photo{width:min(62vw,260px)}
+}
+@media(max-width:560px){
+ .chapter-hero__art{min-height:220px;padding-bottom:24px}
+ .chapter-hero__art .editorial-cutout-shell{width:min(58vw,240px);max-height:260px}
+ .chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){max-height:260px}
+ .chapter-story__art .editorial-product-photo{width:min(63vw,230px);max-height:250px}
+}
+@media(max-width:360px){
+ .chapter-hero__art .editorial-cutout-shell{width:min(59vw,205px)}
+ .chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){max-height:220px}
+}
