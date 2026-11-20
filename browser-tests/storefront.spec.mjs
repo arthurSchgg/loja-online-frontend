@@ -283,21 +283,25 @@ test("motion | reduced motion avoids downloading Live Photo video",async({page})
 });
 
 
-test("demo | transparent editorial assets load and pages stay responsive at mobile widths",async({page})=>{
+test("demo | real perfume photos load and layouts remain responsive",async({page})=>{
  const errors=collectPageErrors(page);
+ const picture=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nAAAAABJRU5ErkJggg==","base64");
+ await page.route(/https:\/\/(?:res\.cloudinary\.com|shopsupermercadobrazil\.com|tiendacdn\.farmashop\.com\.uy|down-br\.img\.susercontent\.com|images\.pexels\.com)\//,route=>
+  route.fulfill({status:200,contentType:"image/png",body:picture})
+ );
  const pages=[
-  ["/conheca-a-loja.html","floral-perfume-cutout.svg"],
-  ["/viva-sua-experiencia.html","discovery-perfume-cutout.svg"],
-  ["/contato.html","amber-perfume-cutout.svg"],
-  ["/espaco-das-velas.html","candle-floral-cutout.svg"]
+  ["/conheca-a-loja.html","res.cloudinary.com"],
+  ["/viva-sua-experiencia.html","tiendacdn.farmashop.com.uy"],
+  ["/contato.html","shopsupermercadobrazil.com"],
+  ["/espaco-das-velas.html","images.pexels.com"]
  ];
  for(const width of [320,390,768]){
   await page.setViewportSize({width,height:820});
-  for(const [url,filename] of pages){
+  for(const [url,host] of pages){
    await page.goto(url);
-   const image=page.locator(".chapter-hero__art .editorial-cutout");
+   const image=page.locator(".chapter-hero__art .editorial-product-photo");
    await expect(image).toHaveCount(1);
-   await expect(image).toHaveAttribute("src",new RegExp(filename.replaceAll(".","\\.")+"$"));
+   await expect(image).toHaveAttribute("src",new RegExp("^https://"+host.replaceAll(".","\\.")));
    await expect.poll(()=>image.evaluate(el=>el.complete&&el.naturalWidth>0)).toBe(true);
    await expectNoHorizontalOverflow(page,width);
   }
@@ -305,6 +309,12 @@ test("demo | transparent editorial assets load and pages stay responsive at mobi
  expect(errors).toEqual([]);
 });
 
+test("demo | unavailable remote product photo gets a neutral fallback, not a drawing",async({page})=>{
+ await page.route(/https:\/\/res\.cloudinary\.com\//,route=>route.abort());
+ await page.goto("/conheca-a-loja.html");
+ await expect(page.locator(".chapter-hero__art .editorial-photo-placeholder")).toBeVisible();
+ await expect(page.locator(".chapter-hero__art .editorial-photo-placeholder")).toContainText("Fotografia temporariamente indisponível");
+});
 test("motion | institutional cutouts stay still when reduced motion is requested",async({page})=>{
  await page.emulateMedia({reducedMotion:"reduce"});
  await page.setViewportSize({width:375,height:812});
