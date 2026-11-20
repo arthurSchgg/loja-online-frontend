@@ -5,6 +5,7 @@ import {isLive} from "./config.js";
 import {fetchProducts,fetchProduct,fetchOfferings,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
 import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
+import {loadCatalogPage} from "./public-catalog-load.js";
 import {escapeHtml} from "./layout.js";
 import {UI_ICONS} from "./ui-icons.js";
 import {officialStoreLinks} from "./official-contact.js";
@@ -216,7 +217,7 @@ async function initHome(){
  const grid=document.getElementById("featured-grid");
  if(grid){
   grid.replaceChildren();status(grid,"Carregando produtos publicados...");
-  try{const page=await fetchProducts();currentProducts=page.items;grid.innerHTML=currentProducts.length?currentProducts.slice(0,4).map(liveProductCard).join(""):"<p>Nenhum produto publicado no momento.</p>";}
+  try{const page=await loadCatalogPage((index)=>fetchProducts(index),0);currentProducts=page.items;grid.innerHTML=currentProducts.length?currentProducts.slice(0,8).map(liveProductCard).join(""):"<p>Nenhum produto publicado no momento.</p>";}
   catch(err){grid.replaceChildren();status(grid,err.message,true);}
  }
  // Replace local demonstration quiz with the actual backend question contract.
@@ -277,27 +278,39 @@ async function initCatalog(){
  const featured=form.elements.sort?.querySelector('option[value="featured"]');
  if(featured){featured.value="recent";featured.textContent="Mais recentes";}
  form.elements.sort?.querySelector('option[value="new"]')?.remove();
- const search=createCatalogSearch((page,filters)=>fetchProducts(page,undefined,filters));
+ const search=createCatalogSearch((page,filters)=>loadCatalogPage((index,options)=>fetchProducts(index,undefined,options),page,filters));
  const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";
  loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
  let version=0,searchTimer=null,categoryWarning="";
  const params=new URLSearchParams(location.search),familyName=params.get("familia");
- try{
-  const categories=await fetchCategories();
-  family.replaceChildren();
-  const any=document.createElement("option");any.value="";any.textContent="Todas as categorias";family.append(any);
-  for(const category of categories){
-   const option=document.createElement("option");
-   option.value=String(category.id);option.textContent=category.name;family.append(option);
+ // Display the unfiltered catalog immediately. The categories endpoint is an
+ // independent enhancement and must not block the first product listing.
+ const categoryField=family.closest(".field");
+ family.disabled=true;
+ family.replaceChildren();
+ const loadingOption=document.createElement("option");
+ loadingOption.value="";loadingOption.textContent="Carregando categorias...";
+ family.append(loadingOption);
+ async function loadCategories(){
+  try{
+   const categories=await fetchCategories();
+   family.replaceChildren();
+   const any=document.createElement("option");any.value="";any.textContent="Todas as categorias";family.append(any);
+   for(const category of categories){
+    const option=document.createElement("option");option.value=String(category.id);option.textContent=category.name;family.append(option);
+   }
+   if(familyName){
+    const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
+    if(match)family.value=String(match.id);
+    else categoryWarning="A categoria indicada no link não consta do catálogo real. ";
+   }
+   family.disabled=false;
+  }catch(error){
+   categoryField.hidden=true;
+   categoryWarning="Categorias temporariamente indisponíveis; todos os produtos publicados continuam visíveis. ";
+  }finally{
+   if(familyName)applyServerFilters();
   }
-  if(familyName){
-   const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
-   if(match)family.value=String(match.id);
-   else categoryWarning="A categoria indicada no link não consta do catálogo real. ";
-  }
- }catch(error){
-  family.closest(".field").hidden=true;
-  categoryWarning="Não foi possível consultar as categorias; a busca por nome continua disponível. ";
  }
  if(params.has("q"))queryField.value=params.get("q").slice(0,180);
  function render(){
@@ -339,7 +352,9 @@ async function initCatalog(){
  family.addEventListener("change",applyServerFilters);
  for(const field of ["sort","max"])form.elements[field]?.addEventListener("change",applyServerFilters);
  loadMore.addEventListener("click",()=>void next());
- applyServerFilters();
+ if(familyName)count.textContent="Carregando categoria selecionada...";
+ else applyServerFilters();
+ void loadCategories();
 }
 async function initProduct(){
  const host=document.getElementById("product-content");if(!host)return;

@@ -338,3 +338,42 @@ html[data-motion="off"] .editorial-visual img[data-parallax]{transform:none!impo
   width:37%;font-size:.64rem;right:2%;bottom:9%;padding:9px 12px;
  }
 }
+
+
+/* Better balance of studio packshots with the editorial collection typography.
+   White in the original JPEG visually blends with the colored tile; no new
+   image files, product claims, or external effects are introduced. */
+.collection-tile img.editorial-product-photo{
+ width:clamp(135px,22vw,245px);
+ max-width:40%;
+ height:78%;
+ right:5%;
+ bottom:4%;
+ object-fit:contain;
+ mix-blend-mode:multiply;
+ filter:contrast(1.05) saturate(.96);
+ -webkit-mask-image:radial-gradient(ellipse 88% 90% at center,#000 72%,transparent 100%);
+ mask-image:radial-gradient(ellipse 88% 90% at center,#000 72%,transparent 100%);
+}
+.collection-tile .copy{width:60%}
+@media(max-width:768px){
+ .collection-tile img.editorial-product-photo{
+  width:clamp(155px,36vw,220px);
+  max-width:44%;
+  height:80%;
+  right:2%;
+  opacity:1;
+ }
+}
+@media(max-width:560px){
+ .collection-tile{min-height:315px}
+ .collection-tile .copy{width:65%}
+ .collection-tile img.editorial-product-photo{
+  width:min(44vw,175px);
+  max-width:43%;
+  height:70%;
+  right:-1%;
+  bottom:1%;
+  opacity:.85;
+ }
+}

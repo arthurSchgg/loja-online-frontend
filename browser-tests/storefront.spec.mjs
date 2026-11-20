@@ -325,3 +325,51 @@ test("motion | institutional cutouts stay still when reduced motion is requested
  await expect(image).toHaveCSS("transform","none");
  await expect(image).toHaveCSS("transition-duration","0s");
 });
+
+
+test("live | published products are visible without search while categories are pending",async({page})=>{
+ const listed=Array.from({length:8},(_,i)=>({
+  id:i+101,name:"Produto publicado "+(i+1),description:"Produto de catálogo",
+  price:89.9,effectivePrice:89.9,available:false,published:true,
+  brand:{id:1,name:"Skelt"},categories:[],
+  images:[{url:"assets/images/brand/product-photo-pending.svg",position:0,altText:"Imagem provisória"}]
+ }));
+ await page.route("**/api/v1/**",async route=>{
+  const url=new URL(route.request().url());
+  if(url.pathname==="/api/v1/categories"){
+   await new Promise(resolve=>setTimeout(resolve,6000));
+   return route.fulfill({status:200,contentType:"application/json",body:"[]"});
+  }
+  if(url.pathname==="/api/v1/products")
+   return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({content:listed,last:true})});
+  return route.fulfill({status:200,contentType:"application/json",body:"[]"});
+ });
+ await page.goto("/catalogo.html");
+ const live=await page.evaluate(async()=> (await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires the SITE_MODE=live build");
+ await expect(page.locator("#catalog-grid .product-card")).toHaveCount(8,{timeout:4500});
+ await expect(page.locator("#filters #search")).toHaveValue("");
+ await expect(page.locator("#catalog-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#catalog-grid")).toContainText("Indisponível");
+});
+
+test("live | homepage displays eight published but unavailable products without a search",async({page})=>{
+ const listed=Array.from({length:8},(_,i)=>({
+  id:i+111,name:"Vitrine "+(i+1),description:"Cadastro publicado",
+  price:49.9,effectivePrice:49.9,available:false,published:true,
+  brand:{id:1,name:"Skelt"},categories:[],images:[]
+ }));
+ await page.route("**/api/v1/**",async route=>{
+  const path=new URL(route.request().url()).pathname;
+  const body=path==="/api/v1/products"?{content:listed,last:true}:
+   path==="/api/v1/store"?{displayName:"Lojinha da Kátia"}:[];
+  await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(body)});
+ });
+ await page.goto("/index.html");
+ const live=await page.evaluate(async()=> (await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires the SITE_MODE=live build");
+ await expect(page.locator("#featured-grid .product-card")).toHaveCount(8);
+ await expect(page.locator("#featured-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#featured-grid .badge")).toHaveCount(8);
+ await expect(page.locator("#mais-amados")).toContainText("Produtos para descobrir");
+});
