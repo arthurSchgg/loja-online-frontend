@@ -167,3 +167,54 @@ test("motion | reduced-motion preference disables floating hero and scroll-linke
  expect(await image.evaluate(el=>el.style.getPropertyValue("--motion-shift"))).toBe("");
  expect(errors).toEqual([]);
 });
+
+
+test("demo | premium header outline icons align on touch and search focuses its field",async({page})=>{
+ await page.setViewportSize({width:375,height:812});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ const actions=page.locator(".header-actions .icon-button");
+ await expect(actions).toHaveCount(3);
+ const metrics=await actions.evaluateAll(nodes=>nodes.map(node=>{
+  const rect=node.getBoundingClientRect(),svg=node.querySelector("svg")?.getBoundingClientRect();
+  return {
+   width:rect.width,height:rect.height,
+   deltaX:svg?Math.abs(svg.left+svg.width/2-(rect.left+rect.width/2)):99,
+   deltaY:svg?Math.abs(svg.top+svg.height/2-(rect.top+rect.height/2)):99
+  };
+ }));
+ for(const metric of metrics){
+  expect(metric.width).toBeGreaterThanOrEqual(44);
+  expect(metric.height).toBeGreaterThanOrEqual(44);
+  expect(metric.deltaX).toBeLessThan(2);
+  expect(metric.deltaY).toBeLessThan(2);
+ }
+ await page.locator(".icon-button--search").click();
+ await expect(page).toHaveURL(/catalogo\.html#search$/);
+ await expect(page.locator("#search")).toBeFocused();
+ expect(errors).toEqual([]);
+});
+
+test("demo | shopping bag uses vector icon, hidden zero badge and usable quantity controls",async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ await expect(page.locator(".icon-button--bag .ui-icon")).toBeVisible();
+ await expect(page.locator(".cart-count")).toBeHidden();
+ await page.locator("#featured-grid [data-add]").first().click();
+ await expect(page.locator("#cart-dialog")).toBeVisible();
+ await expect(page.locator(".cart-count")).toHaveText("1");
+ const controls=page.locator(".qty-control button");
+ await expect(controls).toHaveCount(2);
+ for(const control of await controls.all()){
+  const box=await control.boundingBox();
+  expect(box?.width).toBeGreaterThanOrEqual(44);
+  expect(box?.height).toBeGreaterThanOrEqual(44);
+  await expect(control.locator("svg.ui-icon")).toHaveCount(1);
+ }
+ await page.locator(".qty-control [data-cart-change='1']").click();
+ await expect(page.locator(".cart-count")).toHaveText("2");
+ await page.locator("[data-close-cart]").click();
+ await expect(page.locator("#cart-dialog")).toBeHidden();
+ expect(errors).toEqual([]);
+});
