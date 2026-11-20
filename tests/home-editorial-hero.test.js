@@ -46,7 +46,7 @@ test("ambient motion honors accessibility and slow-network preferences",()=>{
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
 test("editorial image remains independent of the shop logo in live mode",()=>{
- assert.match(html,/class="editorial-visual"><img\s+data-parallax\s+src="https:\/\/images\.unsplash\.com/);
+ assert.match(html,/class="editorial-visual"><div class="editorial-visual__float"><img\s+data-parallax\s+src="assets\/images\/editorial\/candle-floral-cutout\.svg"/);
  assert.doesNotMatch(live,/editorialImage\.src\s*=\s*["']assets\/images\/brand\/logo-katia\.svg/);
 });
 test("mobile and desktop share the same photo frame without distortion",()=>{

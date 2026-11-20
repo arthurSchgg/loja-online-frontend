@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 700" role="img" aria-labelledby="title desc">
+<title id="title">Vela artesanal com flor e ramos</title><desc id="desc">Arte editorial original sem fundo: frasco e elementos botânicos, sem relação com itens em estoque.</desc>
+<defs>
+ <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".84"/><stop offset=".23" stop-color="#fff8f5" stop-opacity=".56"/><stop offset=".62" stop-color="#eac8bb" stop-opacity=".83"/><stop offset="1" stop-color="#fffcf3" stop-opacity=".72"/></linearGradient>
+ <linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#eac8bb" stop-opacity=".47"/><stop offset="1" stop-color="#b76f65" stop-opacity=".68"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2=".12"><stop stop-color="#8e624c"/><stop offset=".2" stop-color="#f3d1ad"/><stop offset=".4" stop-color="#ad7c59"/><stop offset=".72" stop-color="#e5c1a0"/><stop offset="1" stop-color="#9d6f52"/></linearGradient>
+ <radialGradient id="petal" cx=".38" cy=".2" r=".9"><stop stop-color="#fffaf0"/><stop offset=".5" stop-color="#f8d9ce"/><stop offset="1" stop-color="#d9a29e"/></radialGradient>
+ <filter id="soft" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="15"/></filter>
+</defs>
+<ellipse cx="320" cy="586" rx="179" ry="20" fill="#6d4538" opacity=".11" filter="url(#soft)"/>
+<g fill="none" stroke="#978370" stroke-width="3"><path d="M170 545Q160 374 207 256"/><path d="M496 549Q472 399 449 302"/></g><g transform="translate(174 400) rotate(25) scale(1.25)" opacity=".86">
+ <path d="M0 0 Q-15 -30 -8 -52 Q15 -43 0 0Z" fill="#9b8972" opacity=".78"/>
+ <path d="M0 0 Q11 -23 -8 -52" fill="none" stroke="#fff5e9" stroke-width="1.5" opacity=".55"/></g><g transform="translate(190 333) rotate(-32) scale(1)" opacity=".86">
+ <path d="M0 0 Q-15 -30 -8 -52 Q15 -43 0 0Z" fill="#9b8972" opacity=".78"/>
+ <path d="M0 0 Q11 -23 -8 -52" fill="none" stroke="#fff5e9" stroke-width="1.5" opacity=".55"/></g><g transform="translate(494 452) rotate(48) scale(1.2)" opacity=".86">
+ <path d="M0 0 Q-15 -30 -8 -52 Q15 -43 0 0Z" fill="#9b8972" opacity=".78"/>
+ <path d="M0 0 Q11 -23 -8 -52" fill="none" stroke="#fff5e9" stroke-width="1.5" opacity=".55"/></g><g transform="translate(176 527) rotate(-10) scale(0.75)"><path transform="rotate(0)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><path transform="rotate(72)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><path transform="rotate(144)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><path transform="rotate(216)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><path transform="rotate(288)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><circle r="12" fill="#f3d0a0"/><circle r="5" fill="#aa6c51"/><g fill="#b58450"><circle cx="6" cy="0" r="1.5"/><circle cx="4" cy="5" r="1.5"/><circle cx="-1" cy="6" r="1.5"/><circle cx="-5" cy="3" r="1.5"/><circle cx="-5" cy="-3" r="1.5"/><circle cx="-1" cy="-6" r="1.5"/><circle cx="4" cy="-5" r="1.5"/></g></g><g transform="translate(488 514) rotate(24) scale(0.62)"><path transform="rotate(0)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><path transform="rotate(72)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><path transform="rotate(144)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><path transform="rotate(216)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><path transform="rotate(288)" d="M0 4 C-27 -6 -26 -48 0 -58 C25 -45 24 -9 0 4Z" fill="url(#petal)" stroke="#d5a49a" stroke-width="1.2" opacity=".92"/><circle r="12" fill="#f3d0a0"/><circle r="5" fill="#aa6c51"/><g fill="#b58450"><circle cx="6" cy="0" r="1.5"/><circle cx="4" cy="5" r="1.5"/><circle cx="-1" cy="6" r="1.5"/><circle cx="-5" cy="3" r="1.5"/><circle cx="-5" cy="-3" r="1.5"/><circle cx="-1" cy="-6" r="1.5"/><circle cx="4" cy="-5" r="1.5"/></g></g><g>
+ <path d="M252 272 Q255 259 270 259 H394 Q410 259 413 273 L400 511 Q396 535 373 541 H286 Q265 537 262 517Z" fill="url(#glass)" stroke="#caa38d" stroke-width="5"/>
+ <path d="M270 311H399L390 505Q386 517 376 518H290Q276 515 275 502Z" fill="url(#liquid)" opacity=".6"/>
+ <ellipse cx="331" cy="270" rx="81" ry="20" fill="#fff8e8" stroke="#d6b8a2" stroke-width="4"/>
+ <path d="M331 254V207" fill="none" stroke="#685240" stroke-width="4"/>
+ <path d="M331 207 C297 176 315 142 336 118 C355 155 361 184 331 207Z" fill="#f2ad68" stroke="#e5b477" stroke-width="3"/>
+ <path d="M332 197 Q323 182 335 151 Q349 177 332 197Z" fill="#ffedbb"/>
+ <rect x="283" y="362" width="97" height="111" rx="6" fill="#fff8ef" opacity=".76"/>
+ <text x="331" y="414" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="24" fill="#945f51">afeto</text>
+ <text x="331" y="441" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="#876b60" letter-spacing="2.1">UM RITUAL</text>
+ </g>
+</svg>
