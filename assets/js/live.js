@@ -5,26 +5,56 @@ import {isLive} from "./config.js";
 import {fetchProducts,fetchProduct,fetchOfferings,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
 import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
+import {loadCatalogPage} from "./public-catalog-load.js";
 import {escapeHtml} from "./layout.js";
+import {UI_ICONS} from "./ui-icons.js";
 import {officialStoreLinks} from "./official-contact.js";
 import {safeNumericId as numberId} from "./render-safety.js";
 import {createConfirmationGate} from "./confirmation-gate.js";
 const safe=value=>escapeHtml(value??"");
 
 const productTitle=p=>safe(p.name||"Produto sem nome");
+// The eight previously supplied Skelt miniatures are kept only as an offline
+// fallback. Primary product photos come from the official Skelt CDN via API.
+// Never infer stock or sales availability from the presence of an image.
+const SKELT_IMAGE_FALLBACK=Object.freeze({
+ "Maquiagem Corporal Bronzeado Instantâneo":"maquiagem-corporal-bronzeado-instantaneo.webp",
+ "Kit Miniaturas Sellers Set":"kit-miniaturas-sellers-set.webp",
+ "Kit miniaturas Exótic Set":"kit-miniaturas-exotic-set.webp",
+ "Kit Miniaturas Trends Set":"kit-miniaturas-trends-set.webp",
+ "Mousse Autobronzeador Dark":"mousse-autobronzeador-dark.webp",
+ "Luva aplicadora de autobronzeador":"luva-aplicadora-autobronzeador.webp",
+ "Autobronzeador Bifásico":"autobronzeador-bifasico.webp",
+ "Maquiagem Corporal Iluminador":"maquiagem-corporal-iluminador.webp"
+});
+function imageFallback(p){
+ const file=p?.brand?.name==="Skelt"?SKELT_IMAGE_FALLBACK[p?.name]:null;
+ return file?"assets/images/catalogo/skelt/"+file:"assets/images/brand/product-photo-pending.svg";
+}
+// CSP-safe fallback, including when an upstream image host rejects a request.
+// The alternative must be a local, explicitly approved static asset.
+document.addEventListener("error",event=>{
+ const image=event.target;
+ if(!(image instanceof HTMLImageElement))return;
+ const fallback=image.dataset.imageFallback;
+ if(!fallback)return;
+ delete image.dataset.imageFallback;
+ if(!/^assets\/images\/[a-z0-9/_-]+\.(?:svg|webp)$/.test(fallback))return;
+ image.src=new URL(fallback,location.href).href;
+},true);
 function imageFromProduct(p){
  const raw=p?.images?.[0]?.url;
- if(typeof raw!=="string"||!raw.trim())return "assets/images/brand/logo-katia.svg";
+ if(typeof raw!=="string"||!raw.trim())return "assets/images/brand/product-photo-pending.svg";
  try{
   const url=new URL(raw,location.href);
   if(url.protocol==="https:"||(url.origin===location.origin&&["http:","https:"].includes(url.protocol)))return url.href;
  }catch{}
- return "assets/images/brand/logo-katia.svg";
+ return "assets/images/brand/product-photo-pending.svg";
 }
 const imageFromOffering=o=>{
- if(typeof o.imageUrl!=="string"||!o.imageUrl.trim())return "assets/images/brand/logo-katia.svg";
+ if(typeof o.imageUrl!=="string"||!o.imageUrl.trim())return "assets/images/brand/product-photo-pending.svg";
  try{const u=new URL(o.imageUrl,location.href);if(u.protocol==="https:"||u.origin===location.origin)return u.href;}catch{}
- return "assets/images/brand/logo-katia.svg";
+ return "assets/images/brand/product-photo-pending.svg";
 };
 function status(target,message,error=false){
  if(!target)return;let region=target.querySelector("[data-api-status]");
@@ -34,10 +64,10 @@ function status(target,message,error=false){
 function liveProductCard(p){
  const id=numberId(p?.id);
  if(id===null)return ""; // API data must never become unescaped HTML attributes.
- const img=safe(imageFromProduct(p)),price=currentPrice(p),available=!!p.available;
+ const img=safe(imageFromProduct(p)),fallback=safe(imageFallback(p)),price=currentPrice(p),available=!!p.available;
  const label=price===null?"Valor sob consulta":money(price);
  const action=available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
- return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#efe0d8"><img src="'+img+'" loading="lazy" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div></div></article>';
+ return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#faf9f6"><img src="'+img+'" data-image-fallback="'+fallback+'" loading="lazy" decoding="async" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div></div></article>';
 }
 const confirmationGate=createConfirmationGate();
 let requestConfirmation=null;
@@ -45,7 +75,7 @@ function ensureDialog(){
  let dlg=document.getElementById("whatsapp-confirm-dialog");
  if(dlg)return dlg;
  dlg=document.createElement("dialog");dlg.id="whatsapp-confirm-dialog";dlg.className="drawer";dlg.setAttribute("aria-labelledby","confirm-heading");
- dlg.innerHTML='<div class="drawer-inner"><div class="drawer-head"><h2 id="confirm-heading">Confirme sua consulta</h2><button type="button" class="icon-button" id="close-confirm" aria-label="Fechar">✕</button></div><div class="drawer-items"><p id="confirm-details"></p><div id="confirm-options"></div><p id="confirm-feedback" role="status" aria-live="polite"></p></div><div class="drawer-footer"><button type="button" class="btn btn--primary btn--full" id="send-confirm">Validar preço e disponibilidade</button><p id="confirmed-link"></p><small>O backend confirma a informação atual. A mensagem só é aberta quando você clicar no link validado.</small></div></div>';
+ dlg.innerHTML='<div class="drawer-inner"><div class="drawer-head"><h2 id="confirm-heading">Confirme sua consulta</h2><button type="button" class="icon-button icon-button--close" id="close-confirm" aria-label="Fechar">'+UI_ICONS.close+'</button></div><div class="drawer-items"><p id="confirm-details"></p><div id="confirm-options"></div><p id="confirm-feedback" role="status" aria-live="polite"></p></div><div class="drawer-footer"><button type="button" class="btn btn--primary btn--full" id="send-confirm">Validar preço e disponibilidade</button><p id="confirmed-link"></p><small>O backend confirma a informação atual. A mensagem só é aberta quando você clicar no link validado.</small></div></div>';
  document.body.append(dlg);dlg.querySelector("#close-confirm").addEventListener("click",()=>dlg.close());
  dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close();});
  dlg.addEventListener("close",()=>{confirmationGate.invalidate();requestConfirmation=null;});
@@ -67,7 +97,7 @@ function ensureDialog(){
    for(const el of dlg.querySelectorAll("[data-option-kind]")){if(el.value)customizations[el.dataset.optionKind]=el.value;}
    const response=await confirmWhatsApp({...selection,customizations});
    if(!confirmationGate.isCurrent(revision)||!dlg.open)return;
-   const a=document.createElement("a");a.href=response.url;a.target="_blank";a.rel="noopener noreferrer";a.className="btn btn--secondary btn--full";a.textContent="Abrir WhatsApp com informações confirmadas ↗";link.append(a);
+   const a=document.createElement("a");a.href=response.url;a.target="_blank";a.rel="noopener noreferrer";a.className="btn btn--secondary btn--full";a.textContent="Abrir WhatsApp com informações confirmadas";link.append(a);
    feedback.textContent="Informações atualizadas confirmadas. Revise o resumo no WhatsApp antes de enviar.";
   }catch(err){
    if(confirmationGate.isCurrent(revision)&&dlg.open)
@@ -159,7 +189,7 @@ async function initLiveCategoryHighlights(){
    const order=document.createElement("span");order.textContent=String(index+1).padStart(2,"0")+" / "+String(categories.length).padStart(2,"0");
    const symbol=document.createElement("i");symbol.textContent="✿";symbol.setAttribute("aria-hidden","true");
    const heading=document.createElement("strong");heading.textContent=category.name;
-   const detail=document.createElement("span");detail.textContent="Ver produtos da categoria ↗";
+   const detail=document.createElement("span");detail.textContent="Ver produtos da categoria";
    link.append(order,symbol,heading,detail);grid.append(link);
   }
  }catch(error){
@@ -167,6 +197,8 @@ async function initLiveCategoryHighlights(){
  }
 }
 async function initHome(){
+ const cta=document.querySelector(".hero-copy .btn--primary");
+ if(cta?.firstChild?.nodeType===Node.TEXT_NODE)cta.firstChild.textContent="Explorar produtos ";
  // Concept-only collection tiles must never imply fictitious products are on sale.
  const demoCollections=document.getElementById("colecoes");
  if(demoCollections)demoCollections.hidden=true;
@@ -179,13 +211,13 @@ async function initHome(){
  const quizLead=document.querySelector("#quiz p.lead");
  if(quizLead)quizLead.textContent="Responda às experiências da loja sem armazenar suas respostas.";
  const editorialImage=document.querySelector("#experiencias img[data-parallax]");
- if(editorialImage){editorialImage.src="assets/images/brand/logo-katia.svg";editorialImage.alt="Símbolo da Lojinha da Kátia";}
+ // The editorial uses the licensed photograph already declared in HTML. Do not replace it with a logo.
  void initLiveCategoryHighlights();
  void initContact();
  const grid=document.getElementById("featured-grid");
  if(grid){
   grid.replaceChildren();status(grid,"Carregando produtos publicados...");
-  try{const page=await fetchProducts();currentProducts=page.items;grid.innerHTML=currentProducts.length?currentProducts.slice(0,4).map(liveProductCard).join(""):"<p>Nenhum produto publicado no momento.</p>";}
+  try{const page=await loadCatalogPage((index)=>fetchProducts(index),0);currentProducts=page.items;grid.innerHTML=currentProducts.length?currentProducts.slice(0,8).map(liveProductCard).join(""):"<p>Nenhum produto publicado no momento.</p>";}
   catch(err){grid.replaceChildren();status(grid,err.message,true);}
  }
  // Replace local demonstration quiz with the actual backend question contract.
@@ -246,27 +278,39 @@ async function initCatalog(){
  const featured=form.elements.sort?.querySelector('option[value="featured"]');
  if(featured){featured.value="recent";featured.textContent="Mais recentes";}
  form.elements.sort?.querySelector('option[value="new"]')?.remove();
- const search=createCatalogSearch((page,filters)=>fetchProducts(page,undefined,filters));
+ const search=createCatalogSearch((page,filters)=>loadCatalogPage((index,options)=>fetchProducts(index,undefined,options),page,filters));
  const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";
  loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
  let version=0,searchTimer=null,categoryWarning="";
  const params=new URLSearchParams(location.search),familyName=params.get("familia");
- try{
-  const categories=await fetchCategories();
-  family.replaceChildren();
-  const any=document.createElement("option");any.value="";any.textContent="Todas as categorias";family.append(any);
-  for(const category of categories){
-   const option=document.createElement("option");
-   option.value=String(category.id);option.textContent=category.name;family.append(option);
+ // Display the unfiltered catalog immediately. The categories endpoint is an
+ // independent enhancement and must not block the first product listing.
+ const categoryField=family.closest(".field");
+ family.disabled=true;
+ family.replaceChildren();
+ const loadingOption=document.createElement("option");
+ loadingOption.value="";loadingOption.textContent="Carregando categorias...";
+ family.append(loadingOption);
+ async function loadCategories(){
+  try{
+   const categories=await fetchCategories();
+   family.replaceChildren();
+   const any=document.createElement("option");any.value="";any.textContent="Todas as categorias";family.append(any);
+   for(const category of categories){
+    const option=document.createElement("option");option.value=String(category.id);option.textContent=category.name;family.append(option);
+   }
+   if(familyName){
+    const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
+    if(match)family.value=String(match.id);
+    else categoryWarning="A categoria indicada no link não consta do catálogo real. ";
+   }
+   family.disabled=false;
+  }catch(error){
+   categoryField.hidden=true;
+   categoryWarning="Categorias temporariamente indisponíveis; todos os produtos publicados continuam visíveis. ";
+  }finally{
+   if(familyName)applyServerFilters();
   }
-  if(familyName){
-   const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
-   if(match)family.value=String(match.id);
-   else categoryWarning="A categoria indicada no link não consta do catálogo real. ";
-  }
- }catch(error){
-  family.closest(".field").hidden=true;
-  categoryWarning="Não foi possível consultar as categorias; a busca por nome continua disponível. ";
  }
  if(params.has("q"))queryField.value=params.get("q").slice(0,180);
  function render(){
@@ -308,7 +352,9 @@ async function initCatalog(){
  family.addEventListener("change",applyServerFilters);
  for(const field of ["sort","max"])form.elements[field]?.addEventListener("change",applyServerFilters);
  loadMore.addEventListener("click",()=>void next());
- applyServerFilters();
+ if(familyName)count.textContent="Carregando categoria selecionada...";
+ else applyServerFilters();
+ void loadCategories();
 }
 async function initProduct(){
  const host=document.getElementById("product-content");if(!host)return;
@@ -317,19 +363,14 @@ async function initProduct(){
  status(host,"Carregando produto...");
  try{
   const p=await fetchProduct(id);currentProducts=[p];
-  const price=currentPrice(p),image=safe(imageFromProduct(p));
-  host.innerHTML='<section class="container product-view"><div class="product-main-art"><img src="'+image+'" width="400" height="530" alt="'+safe(p.images?.[0]?.altText||p.name)+'"></div><div class="product-detail"><span class="eyebrow">Catálogo real da loja</span><h1>'+productTitle(p)+'</h1><p class="lead">'+safe(p.description||"")+'</p><p>'+safe((p.categories||[]).map(c=>c.name).join(" · "))+'</p><p><strong>'+(price===null?"Valor sob consulta":money(price))+'</strong></p><p class="muted">Volumes e pirâmide olfativa não constam no contrato de produtos desta API; não serão inventados.</p>'+(p.available?'<button class="btn btn--primary" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':'<span class="badge">Indisponível</span>')+'</div></section>';
+  const price=currentPrice(p),image=safe(imageFromProduct(p)),fallback=safe(imageFallback(p));
+  host.innerHTML='<section class="container product-view"><div class="product-main-art" style="--product-theme:#faf9f6"><img src="'+image+'" data-image-fallback="'+fallback+'" loading="eager" decoding="async" width="400" height="530" alt="'+safe(p.images?.[0]?.altText||p.name)+'"></div><div class="product-detail"><span class="eyebrow">Catálogo real da loja</span><h1>'+productTitle(p)+'</h1><p class="lead">'+safe(p.description||"")+'</p><p>'+safe((p.categories||[]).map(c=>c.name).join(" · "))+'</p><p><strong>'+(price===null?"Valor sob consulta":money(price))+'</strong></p><p class="muted">Imagens ilustram o produto cadastrado. Disponibilidade e informações comerciais são confirmadas pela loja.</p>'+(p.available?'<button class="btn btn--primary" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':'<span class="badge">Indisponível</span>')+'</div></section>';
   document.title=(p.name||"Produto")+" | Lojinha da Kátia";
  }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
 }
 if(isLive){
- // The hero can keep its editorial layout, but must not present a fictitious
- // product bottle as a published real item.
- const heroBottle=document.querySelector("[data-hero-bottle]");
- if(heroBottle){
-  heroBottle.src="assets/images/brand/logo-katia.svg";
-  heroBottle.alt="Símbolo floral da Lojinha da Kátia";
- }
+ // The hero uses a licensed editorial photograph, not a fictitious SKU or the logo.
+ // Do not override its accessible alt text, fetch priority or src in live mode.
  const heroDisclaimer=document.querySelector(".hero-copy > p.muted");
  if(heroDisclaimer)heroDisclaimer.textContent="Consulte valores e disponibilidade atualizados no catálogo.";
  if(document.getElementById("catalog-grid"))initCatalog();

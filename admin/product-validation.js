@@ -8,10 +8,11 @@ export function validateProductImages(images,published){
   throw new Error("Adicione pelo menos uma imagem antes de publicar. Você também pode salvar como rascunho.");
  for(const image of images){
   const value=typeof image?.url==="string"?image.url.trim():"";
+  if(/^assets\/images\/catalogo\/[a-z0-9-]+\/[a-z0-9-]+\.webp$/.test(value))continue;
   let url;
-  try{url=new URL(value);}catch{throw new Error("Informe uma URL HTTPS válida para cada imagem.");}
-  if(url.protocol!=="https:"||!url.hostname||url.username||url.password||value.length>2048)
-   throw new Error("Cada imagem deve ter uma URL HTTPS pública, sem usuário ou senha.");
+  try{url=new URL(value);}catch{throw new Error("Informe uma URL HTTPS ou arquivo WebP local do catálogo.");}
+  if(url.protocol!=="https:"||!url.hostname||url.username||url.password||url.port||value.length>2048)
+   throw new Error("Imagem deve ter URL HTTPS pública ou arquivo WebP do catálogo.");
  }
  return images;
 }
