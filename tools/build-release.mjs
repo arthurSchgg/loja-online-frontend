@@ -1,5 +1,6 @@
 /** Explicit public release build. A production artifact cannot silently be demo. */
 import {readFileSync,existsSync} from "node:fs";
+import {spawnSync} from "node:child_process";
 import {resolve,join} from "node:path";
 import {fileURLToPath} from "node:url";
 
@@ -16,6 +17,24 @@ if(raw.startsWith("/")&&!raw.startsWith("//")){
  if(process.env.ALLOW_EXTERNAL_PUBLIC_API!=="true")
   throw new Error("API pública externa exige ALLOW_EXTERNAL_PUBLIC_API=true.");
 }
+// Cloudflare Pages builds run independently of GitHub-hosted Actions runners.
+// A successful Pages build must include real syntax/asset checks and Node tests.
+// No opt-out flag: avoid publishing unvalidated source when Actions has no runner.
+const rootDir=resolve(fileURLToPath(new URL("..",import.meta.url)));
+function qualityGate(script){
+ const cli=process.env.npm_execpath;
+ const command=cli?process.execPath:(process.platform==="win32"?"npm.cmd":"npm");
+ const args=cli?[cli,"run",script]:["run",script];
+ const execution=spawnSync(command,args,{
+  cwd:rootDir,stdio:"inherit",shell:!cli&&process.platform==="win32",
+  env:{...process.env,CI:"true"}
+ });
+ if(execution.error||execution.status!==0)
+  throw new Error("Release quality gate failed: npm run "+script+(execution.error?" — "+execution.error.message:""));
+}
+qualityGate("check");
+qualityGate("test");
+
 process.env.SITE_MODE="live";
 process.env.API_BASE_URL=raw;
 await import("./build.mjs");
