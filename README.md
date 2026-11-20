@@ -1,8 +1,10 @@
 # Lojinha da Kátia — Perfumaria de Luxo (Frontend)
 
-Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem frameworks de interface. Identidade rosé/cobre, tipografia editorial, frascos vetoriais originais e animações nativas com IntersectionObserver/Web Animations API, sem scripts de animação de terceiros.
+Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem framework de interface. Identidade rosé/cobre, tipografia editorial, fotografias reais de frascos nas seções institucionais, Live Photo na home e animações nativas com IntersectionObserver/Web Animations API, sem scripts de animação de terceiros.
 
-> **MODO DEMONSTRAÇÃO:** os oito perfumes, preços e pirâmides olfativas são fictícios. A sacola é uma lista de interesse, sem checkout, pedido, pagamento ou reservas. Contato real via WhatsApp exige confirmação no backend.
+> **PRODUÇÃO = MODO LIVE:** o Cloudflare Pages publica a vitrine usando a API pública Spring Boot/Render e dados do PostgreSQL/Neon. Os oito produtos Skelt cadastrados em 20/11/2026 estão publicados, mas continuam **indisponíveis para solicitação** enquanto não houver estoque real confirmado. A sacola e os perfumes fictícios existem **apenas no modo demo local**, sem checkout, pedido ou pagamento. Consultas por WhatsApp exigem validação atual pelo backend.
+>
+> **Versão main publicada:** [Cloudflare Pages — main](https://main.loja-online-frontend.pages.dev/). Fotos editoriais de marcas de terceiros exigem confirmação de direitos de uso comercial antes de promoção pública definitiva; não equivalem ao catálogo à venda.
 
 ## Como executar
 
@@ -20,14 +22,14 @@ Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módul
 - `index.html`: hero, coleções, famílias olfativas, best-sellers, quiz, experiência, newsletter demonstrativa.
 - `conheca-a-loja.html`: página institucional, história publicada e contatos oficiais no modo live.
 - `espaco-das-velas.html`: apresentação editorial e filtros de velas, oficinas e locações publicados, com confirmação pelo WhatsApp.
-- `catalogo.html`: filtros de família, perfil, volume, preço e ordem.
-- `produto.html?id=aurora-de-petalas`: zoom, pirâmide de notas, volume 30/50/100 ml, recomendações e sacola.
+- `catalogo.html`: listagem automática dos produtos publicados; busca, categoria, preço e ordenação realizados no backend no modo live.
+- `produto.html?productId=1`: detalhe real por ID do produto publicado, com preço vigente, foto e disponibilidade obtidos da API.
 - `privacidade.html`: aviso de demonstração e uso de dados.
 - `assets/css/tokens.css`: seis cores centrais, tipografia, escala 4/8px, sombras, raios, movimento.
 - `assets/css/base.css`, `components.css`, `pages.css`, `institutional.css`: base, componentes e layouts responsivos.
-- `assets/js/data.js`: somente catálogo fictício; substituir por API depois de homologação.
+- `assets/js/data.js`: catálogo fictício usado somente na prévia demo; em produção, `assets/js/live.js` consome a API.
 - `assets/js/animations.js`: revelações ao rolar a página, parallax limitado, microinterações e indicador de leitura, respeitando `prefers-reduced-motion` e Save-Data.
-- `assets/images/perfumes/`: ilustrações SVG autorais sem imagens de terceiros.
+- `assets/images/perfumes/`: assets fictícios do demo; a vitrine publicada usa imagens cadastradas no backend e fotografias editoriais externas identificadas.
 - `docs/DESIGN-SYSTEM.md`: componentes e acessibilidade.
 - `docs/INSTITUTIONAL-PAGES.md`: conteúdo oficial, contratos do backend e limites de publicação das duas páginas.
 - `docs/GIT-FLOW.md` e `docs/SECURITY-PERMISSIONS.md`: branches, revisões, proteção e privilégios.
@@ -41,7 +43,7 @@ O modo padrão em `assets/js/config.js` é `demo`. Para gerar a vitrine usando s
 SITE_MODE=live API_BASE_URL=/api/v1 npm run build
 ```
 
-No modo live, o site oculta a sacola fictícia (inclusive itens antigos de sessão) e não apresenta frascos conceituais como produtos reais. O catálogo mantém a página após falhas HTTP e permite nova tentativa. O site não usa automaticamente preços fictícios quando a API fica indisponível. Ver [contratos e limites](docs/API-INTEGRATION.md). A API pública usa `credentials: omit` (sem cookies de administração). O WhatsApp real exige confirmação e validação da URL entregue pelo backend.
+No modo live, o site oculta a sacola fictícia (inclusive itens antigos de sessão), exibe até oito produtos publicados na home e lista os produtos sem exigir texto de busca no catálogo. Itens indisponíveis continuam visíveis sem botão de solicitação. O catálogo mantém a página após falhas HTTP e permite nova tentativa. O site não usa automaticamente preços fictícios quando a API fica indisponível. Ver [contratos e limites](docs/API-INTEGRATION.md). A API pública usa `credentials: omit` (sem cookies de administração). O WhatsApp real exige confirmação e validação da URL entregue pelo backend.
 
 Em modo live, a busca textual e as categorias consultam a API em todas as páginas (sem limitar a pesquisa aos produtos já carregados). O seletor usa categorias reais; links `?familia=...` são resolvidos pelo nome cadastrado. A ordenação e o filtro de preço são feitos no backend em todo o catálogo, inclusive promoções vigentes, quando a API contém o contrato do backend PR #160. Não publique este frontend sobre versões antigas da API. Falhas de página são recuperáveis sem saltar resultados.
 
@@ -62,7 +64,7 @@ para essas URLs na mesma origem HTTPS. Ver
 
 ## Animações e proteção do frontend
 
-O frontend usa recursos nativos para animações suaves e mantém a rolagem do navegador. As páginas possuem CSP com scripts restritos à própria origem; o build verifica a separação entre `dist/` e `dist-admin/`. O cliente administrativo utiliza sessão/CSRF com credenciais apenas na memória, e o backend continua responsável pela autorização. Consulte [movimento, CSP e checklist para HTTPS](docs/FRONTEND-MOTION-SECURITY.md). O deploy final exige cabeçalhos de segurança definidos no servidor/CDN, além de testes de acessibilidade e performance com navegador real.
+O frontend usa recursos nativos para animações suaves e mantém a rolagem do navegador. As páginas possuem CSP com scripts restritos à própria origem; o build verifica a separação entre `dist/` e `dist-admin/`. O cliente administrativo utiliza sessão/CSRF com credenciais apenas na memória, e o backend continua responsável pela autorização. Consulte [movimento, CSP e checklist para HTTPS](docs/FRONTEND-MOTION-SECURITY.md). O deploy final exige cabeçalhos de segurança definidos no servidor/CDN, além de testes de acessibilidade e performance com navegador real. O `npm run build:release` agora roda `npm run check` e `npm test` antes de gerar o build para que o Cloudflare bloqueie deployments com erros, mesmo quando os runners do GitHub Actions não são provisionados.
 
 ## Segurança e escopo do backend
 
