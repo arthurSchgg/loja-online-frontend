@@ -1,24 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="600" height="720" viewBox="0 0 600 720" role="img" aria-labelledby="title desc">
 <title id="title">Imagem do produto em preparação</title>
-<desc id="desc">Composição ilustrativa neutra de frascos, não representa produto disponível.</desc>
+<desc id="desc">Ilustração neutra e transparente de frasco com flores; não representa produto real.</desc>
 <defs>
- <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#faf0ea"/><stop offset="1" stop-color="#e9cfca"/></linearGradient>
- <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".92"/><stop offset=".5" stop-color="#f0c8c4" stop-opacity=".55"/><stop offset="1" stop-color="#b88b7b" stop-opacity=".72"/></linearGradient>
- <filter id="shadow"><feGaussianBlur stdDeviation="18"/></filter>
+ <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".86"/><stop offset=".5" stop-color="#eed8d2" stop-opacity=".45"/><stop offset="1" stop-color="#be9181" stop-opacity=".57"/></linearGradient>
+ <linearGradient id="copper" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#8e6151"/><stop offset=".4" stop-color="#f5d6ba"/><stop offset=".7" stop-color="#b98968"/><stop offset="1" stop-color="#856051"/></linearGradient>
+ <filter id="blur"><feGaussianBlur stdDeviation="15"/></filter>
 </defs>
-<rect width="600" height="720" fill="url(#bg)"/>
-<circle cx="500" cy="100" r="200" fill="#fff" opacity=".15"/>
-<ellipse cx="300" cy="520" rx="177" ry="29" fill="#865d58" opacity=".13" filter="url(#shadow)"/>
-<g stroke="#ac806f" stroke-width="3" fill="url(#glass)">
- <rect x="207" y="215" width="186" height="280" rx="24"/>
- <rect x="244" y="173" width="112" height="57" rx="12" fill="#af816e" opacity=".68"/>
- <rect x="260" y="151" width="80" height="30" rx="7" fill="#e4c0a9"/>
- <path d="M225 260 V448" fill="none" stroke="#fff" opacity=".7" stroke-width="8"/>
- <path d="M375 260 V448" fill="none" stroke="#fff" opacity=".55" stroke-width="5"/>
-</g>
-<rect x="250" y="315" width="100" height="100" rx="4" fill="#fffaf4" opacity=".45"/>
-<g fill="#76574f" text-anchor="middle" font-family="Georgia, serif">
- <text x="300" y="590" font-size="34">Imagem em breve</text>
- <text x="300" y="629" font-family="Arial, sans-serif" font-size="14" letter-spacing="2">LOJINHA DA KÁTIA</text>
-</g>
+<ellipse cx="300" cy="515" rx="162" ry="19" fill="#6e4c42" opacity=".1" filter="url(#blur)"/>
+<path d="M150 487C130 375 145 320 160 250M450 484C463 388 450 335 433 285" fill="none" stroke="#ad9984" stroke-width="3" opacity=".58"/>
+<g fill="#ccaaa1" opacity=".7"><path d="M156 353C101 332 116 297 154 313Q173 332 156 353Z"/><path d="M447 388C497 373 488 345 451 355Q434 370 447 388Z"/></g>
+<g fill="#f5d3cb" stroke="#d9aaa1" stroke-width="2" opacity=".83">
+<path d="M160 410Q120 372 145 345Q181 356 160 410Z"/><path d="M160 410Q187 362 215 389Q200 427 160 410Z"/><path d="M160 410Q127 445 108 418Q120 389 160 410Z"/><path d="M445 423Q414 384 426 368Q464 380 445 423Z"/></g>
+<rect x="254" y="131" width="92" height="88" rx="13" fill="url(#glass)" stroke="#d7b8a8" stroke-width="3"/>
+<rect x="236" y="209" width="128" height="43" rx="7" fill="url(#copper)"/>
+<rect x="174" y="249" width="252" height="266" rx="22" fill="url(#glass)" stroke="#c5a292" stroke-width="5"/>
+<path d="M188 390H412V486Q410 501 396 502H205Q189 500 188 483Z" fill="#e5bcb4" opacity=".35"/>
+<path d="M204 280V477" stroke="#fff" stroke-width="9" opacity=".62" stroke-linecap="round"/>
+<rect x="230" y="325" width="140" height="119" rx="5" fill="#fffaf1" opacity=".73"/>
+<text x="300" y="371" text-anchor="middle" font-family="Georgia,serif" font-size="26" font-style="italic" fill="#936d60">essência</text>
+<text x="300" y="404" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" letter-spacing="2.6" fill="#986c60">EM PREPARAÇÃO</text>
+<text x="300" y="601" text-anchor="middle" font-family="Georgia,serif" font-size="34" fill="#7d5c51">Imagem em breve</text>
 </svg>
