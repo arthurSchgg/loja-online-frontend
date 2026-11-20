@@ -46,7 +46,7 @@ test("ambient motion honors accessibility and slow-network preferences",()=>{
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
 test("editorial image remains independent of the shop logo in live mode",()=>{
- assert.match(html,/class="editorial-visual"><div class="editorial-visual__float"><img\s+data-parallax\s+src="assets\/images\/editorial\/candle-floral-cutout\.svg"/);
+ assert.match(html,/class="editorial-visual"><div class="editorial-visual__float"><img\s+data-parallax\s+class="editorial-product-photo editorial-product-photo--scene"\s+data-editorial-photo\s+src="https:\/\/images\.pexels\.com\/photos\/7219339/);
  assert.doesNotMatch(live,/editorialImage\.src\s*=\s*["']assets\/images\/brand\/logo-katia\.svg/);
 });
 test("mobile and desktop share the same photo frame without distortion",()=>{
