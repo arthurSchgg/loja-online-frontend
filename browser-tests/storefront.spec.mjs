@@ -167,3 +167,209 @@ test("motion | reduced-motion preference disables floating hero and scroll-linke
  expect(await image.evaluate(el=>el.style.getPropertyValue("--motion-shift"))).toBe("");
  expect(errors).toEqual([]);
 });
+
+
+test("demo | premium header outline icons align on touch and search focuses its field",async({page})=>{
+ await page.setViewportSize({width:375,height:812});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ const actions=page.locator(".header-actions .icon-button");
+ await expect(actions).toHaveCount(3);
+ const metrics=await actions.evaluateAll(nodes=>nodes.map(node=>{
+  const rect=node.getBoundingClientRect(),svg=node.querySelector("svg")?.getBoundingClientRect();
+  return {
+   width:rect.width,height:rect.height,
+   deltaX:svg?Math.abs(svg.left+svg.width/2-(rect.left+rect.width/2)):99,
+   deltaY:svg?Math.abs(svg.top+svg.height/2-(rect.top+rect.height/2)):99
+  };
+ }));
+ for(const metric of metrics){
+  expect(metric.width).toBeGreaterThanOrEqual(44);
+  expect(metric.height).toBeGreaterThanOrEqual(44);
+  expect(metric.deltaX).toBeLessThan(2);
+  expect(metric.deltaY).toBeLessThan(2);
+ }
+ await page.locator(".icon-button--search").click();
+ await expect(page).toHaveURL(/catalogo\.html#search$/);
+ await expect(page.locator("#search")).toBeFocused();
+ expect(errors).toEqual([]);
+});
+
+test("demo | shopping bag uses vector icon, hidden zero badge and usable quantity controls",async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ await expect(page.locator(".icon-button--bag .ui-icon")).toBeVisible();
+ await expect(page.locator(".cart-count")).toBeHidden();
+ await page.locator("#featured-grid [data-add]").first().click();
+ await expect(page.locator("#cart-dialog")).toBeVisible();
+ await expect(page.locator(".cart-count")).toHaveText("1");
+ const controls=page.locator(".qty-control button");
+ await expect(controls).toHaveCount(2);
+ for(const control of await controls.all()){
+  const box=await control.boundingBox();
+  expect(box?.width).toBeGreaterThanOrEqual(44);
+  expect(box?.height).toBeGreaterThanOrEqual(44);
+  await expect(control.locator("svg.ui-icon")).toHaveCount(1);
+ }
+ await page.locator(".qty-control [data-cart-change='1']").click();
+ await expect(page.locator(".cart-count")).toHaveText("2");
+ await page.locator("[data-close-cart]").click();
+ await expect(page.locator("#cart-dialog")).toBeHidden();
+ expect(errors).toEqual([]);
+});
+
+
+test("live | Skelt products show official photos with local fallback and no stock-based CTA",async({page})=>{
+ const errors=collectPageErrors(page);
+ const skelt={
+  id:2,name:"Kit Miniaturas Sellers Set",description:"Três miniaturas de fragrâncias",
+  price:99.90,effectivePrice:99.90,available:false,published:true,
+  brand:{id:1,name:"Skelt"},categories:[{id:1,name:"Kits de fragrâncias"}],
+  images:[{url:"https://skelt.vtexassets.com/arquivos/ids/157774-800-auto?width=800",position:0,altText:"Foto oficial Skelt: Kit Miniaturas Sellers Set"}]
+ };
+ await page.route("https://skelt.vtexassets.com/**",route=>route.abort());
+ await page.route("**/api/v1/**",async route=>{
+  const path=new URL(route.request().url()).pathname;
+  const data=path==="/api/v1/products"?{content:[skelt],last:true}:
+   path==="/api/v1/categories"?[{id:1,name:"Kits de fragrâncias"}]:[];
+  await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(data)});
+ });
+ await page.goto("/catalogo.html");
+ const card=page.locator("#catalog-grid .product-card").first();
+ await expect(card).toContainText("Kit Miniaturas Sellers Set");
+ await expect(card).toContainText("Indisponível");
+ await expect(card.locator("[data-confirm-product]")).toHaveCount(0);
+ await expect(card.locator("img")).toHaveAttribute("src",/assets\/images\/catalogo\/skelt\/kit-miniaturas-sellers-set\.webp$/);
+ expect(errors).toEqual([]);
+});
+
+
+test("demo | Live Photo poster stays visible while ambient video is optional",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ const frame=page.locator("[data-hero-live]");
+ const poster=frame.locator("img[data-hero-bottle]");
+ const video=frame.locator("video[data-hero-video]");
+ await expect(poster).toBeVisible();
+ await expect(poster).toHaveAttribute("src","assets/images/brand/hero-live-poster.webp");
+ await expect(video).toHaveAttribute("data-src","assets/images/brand/hero-live-motion.mp4");
+ await expect(video).toHaveAttribute("muted","");
+ await expect(video).toHaveAttribute("preload","none");
+ // Video is loaded only after the hero enters the viewport. Autoplay itself
+ // is intentionally not required; browsers may block it.
+ await expect(video).toHaveAttribute("src",/hero-live-motion\.mp4/);
+ const control=frame.locator("[data-hero-toggle]");
+ if(await control.isVisible()){
+  await control.click();
+  await expect(control).toHaveAttribute("aria-pressed","true");
+  await expect(control).toHaveAttribute("aria-label","Reproduzir animação da fotografia");
+ }
+ expect(errors).toEqual([]);
+});
+
+test("motion | reduced motion avoids downloading Live Photo video",async({page})=>{
+ await page.emulateMedia({reducedMotion:"reduce"});
+ await page.setViewportSize({width:375,height:812});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ const frame=page.locator("[data-hero-live]");
+ await expect(frame.locator("img[data-hero-bottle]")).toBeVisible();
+ await expect(frame.locator("video[data-hero-video]")).not.toHaveAttribute("src",/hero-live-motion\.mp4/);
+ await expect(frame.locator("[data-hero-toggle]")).toBeHidden();
+ await expectNoHorizontalOverflow(page,375);
+ expect(errors).toEqual([]);
+});
+
+
+test("demo | real perfume photos load and layouts remain responsive",async({page})=>{
+ const errors=collectPageErrors(page);
+ const picture=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nAAAAABJRU5ErkJggg==","base64");
+ await page.route(/https:\/\/(?:res\.cloudinary\.com|shopsupermercadobrazil\.com|tiendacdn\.farmashop\.com\.uy|down-br\.img\.susercontent\.com|images\.pexels\.com)\//,route=>
+  route.fulfill({status:200,contentType:"image/png",body:picture})
+ );
+ const pages=[
+  ["/conheca-a-loja.html","res.cloudinary.com"],
+  ["/viva-sua-experiencia.html","tiendacdn.farmashop.com.uy"],
+  ["/contato.html","shopsupermercadobrazil.com"],
+  ["/espaco-das-velas.html","images.pexels.com"]
+ ];
+ for(const width of [320,390,768]){
+  await page.setViewportSize({width,height:820});
+  for(const [url,host] of pages){
+   await page.goto(url);
+   const image=page.locator(".chapter-hero__art .editorial-product-photo");
+   await expect(image).toHaveCount(1);
+   await expect(image).toHaveAttribute("src",new RegExp("^https://"+host.replaceAll(".","\\.")));
+   await expect.poll(()=>image.evaluate(el=>el.complete&&el.naturalWidth>0)).toBe(true);
+   await expectNoHorizontalOverflow(page,width);
+  }
+ }
+ expect(errors).toEqual([]);
+});
+
+test("demo | unavailable remote product photo gets a neutral fallback, not a drawing",async({page})=>{
+ await page.route(/https:\/\/res\.cloudinary\.com\//,route=>route.abort());
+ await page.goto("/conheca-a-loja.html");
+ await expect(page.locator(".chapter-hero__art .editorial-photo-placeholder")).toBeVisible();
+ await expect(page.locator(".chapter-hero__art .editorial-photo-placeholder")).toContainText("Fotografia temporariamente indisponível");
+});
+test("motion | institutional cutouts stay still when reduced motion is requested",async({page})=>{
+ await page.emulateMedia({reducedMotion:"reduce"});
+ await page.setViewportSize({width:375,height:812});
+ await page.goto("/conheca-a-loja.html");
+ const shell=page.locator(".editorial-cutout-shell");
+ const image=page.locator(".editorial-cutout");
+ await expect(shell).toHaveCSS("animation-name","none");
+ await expect(image).toHaveCSS("transform","none");
+ await expect(image).toHaveCSS("transition-duration","0s");
+});
+
+
+test("live | published products are visible without search while categories are pending",async({page})=>{
+ const listed=Array.from({length:8},(_,i)=>({
+  id:i+101,name:"Produto publicado "+(i+1),description:"Produto de catálogo",
+  price:89.9,effectivePrice:89.9,available:false,published:true,
+  brand:{id:1,name:"Skelt"},categories:[],
+  images:[{url:"assets/images/brand/product-photo-pending.svg",position:0,altText:"Imagem provisória"}]
+ }));
+ await page.route("**/api/v1/**",async route=>{
+  const url=new URL(route.request().url());
+  if(url.pathname==="/api/v1/categories"){
+   await new Promise(resolve=>setTimeout(resolve,6000));
+   return route.fulfill({status:200,contentType:"application/json",body:"[]"});
+  }
+  if(url.pathname==="/api/v1/products")
+   return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({content:listed,last:true})});
+  return route.fulfill({status:200,contentType:"application/json",body:"[]"});
+ });
+ await page.goto("/catalogo.html");
+ const live=await page.evaluate(async()=> (await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires the SITE_MODE=live build");
+ await expect(page.locator("#catalog-grid .product-card")).toHaveCount(8,{timeout:4500});
+ await expect(page.locator("#filters #search")).toHaveValue("");
+ await expect(page.locator("#catalog-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#catalog-grid")).toContainText("Indisponível");
+});
+
+test("live | homepage displays eight published but unavailable products without a search",async({page})=>{
+ const listed=Array.from({length:8},(_,i)=>({
+  id:i+111,name:"Vitrine "+(i+1),description:"Cadastro publicado",
+  price:49.9,effectivePrice:49.9,available:false,published:true,
+  brand:{id:1,name:"Skelt"},categories:[],images:[]
+ }));
+ await page.route("**/api/v1/**",async route=>{
+  const path=new URL(route.request().url()).pathname;
+  const body=path==="/api/v1/products"?{content:listed,last:true}:
+   path==="/api/v1/store"?{displayName:"Lojinha da Kátia"}:[];
+  await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(body)});
+ });
+ await page.goto("/index.html");
+ const live=await page.evaluate(async()=> (await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires the SITE_MODE=live build");
+ await expect(page.locator("#featured-grid .product-card")).toHaveCount(8);
+ await expect(page.locator("#featured-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#featured-grid .badge")).toHaveCount(8);
+ await expect(page.locator("#mais-amados")).toContainText("Produtos para descobrir");
+});

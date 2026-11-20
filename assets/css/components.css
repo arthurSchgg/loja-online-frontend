@@ -67,3 +67,37 @@
  .product-card:hover .product-visual img,
  .product-card:focus-within .product-visual img{transform:none!important}
 }
+
+
+/* Unified editorial details: vector arrows, product affordances and bag drawer. */
+.cta-icon{display:inline-block;vertical-align:-.17em;width:16px;height:16px;flex:none;margin-left:3px;stroke:currentColor;stroke-width:1.65;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.btn{gap:12px}
+.btn .cta-icon{width:18px;height:18px;transition:transform .25s var(--ease-lux)}
+.text-link .cta-icon{width:14px;height:14px;margin-left:5px}
+.collection-tile .cta-icon,.family-tile .cta-icon{width:14px;height:14px}
+.product-visual{border-radius:12px}
+.product-card__meta h3 a{text-decoration-color:transparent;text-underline-offset:4px}
+.icon-button--add{width:44px;height:44px;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--color-border);border-radius:50%;background:var(--color-surface);color:var(--color-deep)}
+.icon-button--add .ui-icon{display:block;width:20px;height:20px}
+.drawer{height:100dvh;max-height:100dvh;overflow:hidden}
+.drawer-inner{padding:clamp(20px,4vw,32px)}
+.drawer-head{min-height:52px}
+.drawer-head h2{font-size:clamp(2rem,5vw,2.5rem)}
+.drawer-item{gap:16px;grid-template-columns:84px minmax(0,1fr)}
+.drawer-item img{width:84px;height:104px;border-radius:8px}
+.qty-control{width:max-content;display:inline-flex;align-items:center;gap:0;border:1px solid var(--color-border);border-radius:999px;overflow:hidden;background:var(--color-surface)}
+.qty-control button{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:0;background:transparent;color:var(--color-deep);padding:0}
+.qty-control button .ui-icon{width:17px;height:17px}
+.qty-control span{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:44px;font-weight:600;font-variant-numeric:tabular-nums}
+.drawer-footer{padding-bottom:max(4px,env(safe-area-inset-bottom))}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ .btn:hover .cta-icon{transform:translate(2px,-2px)}
+ .icon-button--add:hover,.qty-control button:hover{background:var(--color-highlight);color:var(--color-accent);border-color:var(--color-accent)}
+ .product-card__meta h3 a:hover{text-decoration:underline;text-decoration-color:var(--color-accent)}
+}
+@media(max-width:560px){
+ .product-card__bottom .icon-button--add{width:44px;height:44px;flex:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .btn .cta-icon{transition:none}
+}
