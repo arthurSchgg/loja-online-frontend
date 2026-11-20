@@ -218,3 +218,28 @@ test("demo | shopping bag uses vector icon, hidden zero badge and usable quantit
  await expect(page.locator("#cart-dialog")).toBeHidden();
  expect(errors).toEqual([]);
 });
+
+
+test("live | Skelt products show official photos with local fallback and no stock-based CTA",async({page})=>{
+ const errors=collectPageErrors(page);
+ const skelt={
+  id:2,name:"Kit Miniaturas Sellers Set",description:"Três miniaturas de fragrâncias",
+  price:99.90,effectivePrice:99.90,available:false,published:true,
+  brand:{id:1,name:"Skelt"},categories:[{id:1,name:"Kits de fragrâncias"}],
+  images:[{url:"https://skelt.vtexassets.com/arquivos/ids/157774-800-auto?width=800",position:0,altText:"Foto oficial Skelt: Kit Miniaturas Sellers Set"}]
+ };
+ await page.route("https://skelt.vtexassets.com/**",route=>route.abort());
+ await page.route("**/api/v1/**",async route=>{
+  const path=new URL(route.request().url()).pathname;
+  const data=path==="/api/v1/products"?{content:[skelt],last:true}:
+   path==="/api/v1/categories"?[{id:1,name:"Kits de fragrâncias"}]:[];
+  await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(data)});
+ });
+ await page.goto("/catalogo.html");
+ const card=page.locator("#catalog-grid .product-card").first();
+ await expect(card).toContainText("Kit Miniaturas Sellers Set");
+ await expect(card).toContainText("Indisponível");
+ await expect(card.locator("[data-confirm-product]")).toHaveCount(0);
+ await expect(card.locator("img")).toHaveAttribute("src",/assets\/images\/catalogo\/skelt\/kit-miniaturas-sellers-set\.webp$/);
+ expect(errors).toEqual([]);
+});
