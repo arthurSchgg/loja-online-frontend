@@ -1,17 +1,19 @@
 # Cloudflare Pages — Lojinha da Kátia (vitrine pública)
 
-> **Preparado, não publicado.** Este repositório tem uma pasta de Functions para fazer proxy apenas da API pública. O painel administrativo **NÃO** é implantado no Pages. A API Java permanece em um Web Service Render Free e o PostgreSQL no Neon Free.
+> **Publicado em `main` em 20/11/2026.** O commit de publicação `705319749ce6caea88fb7545ae817366c7b755ec` teve deployment Cloudflare Pages com conclusão **success**, com prévia imutável `https://132d4763.loja-online-frontend.pages.dev` e URL de branch `https://main.loja-online-frontend.pages.dev`. O painel administrativo **NÃO** foi incluído no Pages. A API Java permanece no Render e o PostgreSQL no Neon.
+>
+> **Pendências distintas do deploy:** os jobs GitHub Actions não receberam runners (nenhum step executado), a navegação no domínio principal não pôde ser verificada automaticamente e as licenças das fotos editoriais externas não foram comprovadas. Produtos publicados ficam indisponíveis até confirmação do estoque.
 
-## Ordem de implantação
+## Configuração e verificação da implantação
 
-1. Encerrar problemas de CI e homologação. Integrar o PR do catálogo Skelt e revisar as imagens provisórias.
+1. Após mudanças em `develop`, executar a validação de release e homologação. O catálogo Skelt já foi integrado, sem habilitar estoque ainda não contado.
 2. Disponibilizar o backend Spring Boot no Render em HTTPS e ligar ao Neon através de variáveis de ambiente protegidas, usando o Blueprint do repositório backend.
 3. No Cloudflare Dashboard, acesse Workers & Pages → Create → Pages → Connect to Git. Escolha o repositório **arthurSchgg/loja-online-frontend** e use o nome de projeto Pages **loja-online-frontend**, que já corresponde ao arquivo Wrangler.
 4. O arquivo `wrangler.toml` configura o serviço em `loja-online-frontend`, com o **endereço real** da API Render `https://lojinha-da-katia-api-rjvx.onrender.com` em `PUBLIC_API_ORIGIN`. O nome do projeto Pages precisa coincidir com o nome do arquivo Wrangler. Configure (sem inserir segredos no frontend):
 
 | Campo Pages | Valor |
 |---|---|
-| Production branch | `main` **somente depois de mesclar/homologar**; para prévia use a branch de deploy |
+| Production branch | `main` (publicada via PR #93); branches de feature/develop geram prévias, não substituem a produção |
 | Build command | `npm run build:release` |
 | Build output directory | `dist` |
 | Root directory | `/` (raiz do repo) |
@@ -49,4 +51,14 @@ npm run build:release
 Get-Content dist\_routes.json
 ```
 
-A publicação final depende de CI, homologação e aprovação comercial. Sem domínio personalizado, o endereço gratuito do Pages basta para testes.
+## Gate de qualidade do próprio Cloudflare
+O build `npm run build:release` executa obrigatoriamente `npm run check` e `npm test` **antes** de criar `dist/`. Isso evita que a falha de provisionamento de runners do GitHub Actions deixe o Cloudflare publicar versões com erros já detectáveis por testes Node. Não substitui Playwright nem a revisão comercial.
+
+## Pendências pós-publicação
+- [ ] Resolver falha de provisionamento do Actions; até lá, não alegar CI verde.
+- [ ] Executar testes reais de navegador, inclusive mobile e o proxy `GET /api/v1/products`.
+- [ ] Confirmar qual branch está ligada ao domínio principal, além da URL da branch `main`.
+- [ ] Regularizar direitos de uso das fotografias externas (veja issue #95).
+- [ ] Inserir quantidades reais e ativar disponibilidade **somente após conferência da proprietária**.
+
+Sem domínio personalizado, o endereço gratuito do Pages é suficiente para acesso à vitrine.
