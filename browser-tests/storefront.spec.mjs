@@ -243,3 +243,41 @@ test("live | Skelt products show official photos with local fallback and no stoc
  await expect(card.locator("img")).toHaveAttribute("src",/assets\/images\/catalogo\/skelt\/kit-miniaturas-sellers-set\.webp$/);
  expect(errors).toEqual([]);
 });
+
+
+test("demo | Live Photo poster stays visible while ambient video is optional",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ const frame=page.locator("[data-hero-live]");
+ const poster=frame.locator("img[data-hero-bottle]");
+ const video=frame.locator("video[data-hero-video]");
+ await expect(poster).toBeVisible();
+ await expect(poster).toHaveAttribute("src","assets/images/brand/hero-live-poster.webp");
+ await expect(video).toHaveAttribute("data-src","assets/images/brand/hero-live-motion.mp4");
+ await expect(video).toHaveAttribute("muted","");
+ await expect(video).toHaveAttribute("preload","none");
+ // Video is loaded only after the hero enters the viewport. Autoplay itself
+ // is intentionally not required; browsers may block it.
+ await expect(video).toHaveAttribute("src",/hero-live-motion\.mp4/);
+ const control=frame.locator("[data-hero-toggle]");
+ if(await control.isVisible()){
+  await control.click();
+  await expect(control).toHaveAttribute("aria-pressed","true");
+  await expect(control).toHaveAttribute("aria-label","Reproduzir animação da fotografia");
+ }
+ expect(errors).toEqual([]);
+});
+
+test("motion | reduced motion avoids downloading Live Photo video",async({page})=>{
+ await page.emulateMedia({reducedMotion:"reduce"});
+ await page.setViewportSize({width:375,height:812});
+ const errors=collectPageErrors(page);
+ await page.goto("/index.html");
+ const frame=page.locator("[data-hero-live]");
+ await expect(frame.locator("img[data-hero-bottle]")).toBeVisible();
+ await expect(frame.locator("video[data-hero-video]")).not.toHaveAttribute("src",/hero-live-motion\.mp4/);
+ await expect(frame.locator("[data-hero-toggle]")).toBeHidden();
+ await expectNoHorizontalOverflow(page,375);
+ expect(errors).toEqual([]);
+});
