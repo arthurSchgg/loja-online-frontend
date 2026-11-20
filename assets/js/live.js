@@ -6,6 +6,7 @@ import {fetchProducts,fetchProduct,fetchOfferings,fetchStore,fetchExperiences,fe
 import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
 import {escapeHtml} from "./layout.js";
+import {UI_ICONS} from "./ui-icons.js";
 import {officialStoreLinks} from "./official-contact.js";
 import {safeNumericId as numberId} from "./render-safety.js";
 import {createConfirmationGate} from "./confirmation-gate.js";
@@ -45,7 +46,7 @@ function ensureDialog(){
  let dlg=document.getElementById("whatsapp-confirm-dialog");
  if(dlg)return dlg;
  dlg=document.createElement("dialog");dlg.id="whatsapp-confirm-dialog";dlg.className="drawer";dlg.setAttribute("aria-labelledby","confirm-heading");
- dlg.innerHTML='<div class="drawer-inner"><div class="drawer-head"><h2 id="confirm-heading">Confirme sua consulta</h2><button type="button" class="icon-button" id="close-confirm" aria-label="Fechar">✕</button></div><div class="drawer-items"><p id="confirm-details"></p><div id="confirm-options"></div><p id="confirm-feedback" role="status" aria-live="polite"></p></div><div class="drawer-footer"><button type="button" class="btn btn--primary btn--full" id="send-confirm">Validar preço e disponibilidade</button><p id="confirmed-link"></p><small>O backend confirma a informação atual. A mensagem só é aberta quando você clicar no link validado.</small></div></div>';
+ dlg.innerHTML='<div class="drawer-inner"><div class="drawer-head"><h2 id="confirm-heading">Confirme sua consulta</h2><button type="button" class="icon-button icon-button--close" id="close-confirm" aria-label="Fechar">'+UI_ICONS.close+'</button></div><div class="drawer-items"><p id="confirm-details"></p><div id="confirm-options"></div><p id="confirm-feedback" role="status" aria-live="polite"></p></div><div class="drawer-footer"><button type="button" class="btn btn--primary btn--full" id="send-confirm">Validar preço e disponibilidade</button><p id="confirmed-link"></p><small>O backend confirma a informação atual. A mensagem só é aberta quando você clicar no link validado.</small></div></div>';
  document.body.append(dlg);dlg.querySelector("#close-confirm").addEventListener("click",()=>dlg.close());
  dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close();});
  dlg.addEventListener("close",()=>{confirmationGate.invalidate();requestConfirmation=null;});
@@ -67,7 +68,7 @@ function ensureDialog(){
    for(const el of dlg.querySelectorAll("[data-option-kind]")){if(el.value)customizations[el.dataset.optionKind]=el.value;}
    const response=await confirmWhatsApp({...selection,customizations});
    if(!confirmationGate.isCurrent(revision)||!dlg.open)return;
-   const a=document.createElement("a");a.href=response.url;a.target="_blank";a.rel="noopener noreferrer";a.className="btn btn--secondary btn--full";a.textContent="Abrir WhatsApp com informações confirmadas ↗";link.append(a);
+   const a=document.createElement("a");a.href=response.url;a.target="_blank";a.rel="noopener noreferrer";a.className="btn btn--secondary btn--full";a.textContent="Abrir WhatsApp com informações confirmadas";link.append(a);
    feedback.textContent="Informações atualizadas confirmadas. Revise o resumo no WhatsApp antes de enviar.";
   }catch(err){
    if(confirmationGate.isCurrent(revision)&&dlg.open)
@@ -159,7 +160,7 @@ async function initLiveCategoryHighlights(){
    const order=document.createElement("span");order.textContent=String(index+1).padStart(2,"0")+" / "+String(categories.length).padStart(2,"0");
    const symbol=document.createElement("i");symbol.textContent="✿";symbol.setAttribute("aria-hidden","true");
    const heading=document.createElement("strong");heading.textContent=category.name;
-   const detail=document.createElement("span");detail.textContent="Ver produtos da categoria ↗";
+   const detail=document.createElement("span");detail.textContent="Ver produtos da categoria";
    link.append(order,symbol,heading,detail);grid.append(link);
   }
  }catch(error){
