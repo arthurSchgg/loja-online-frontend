@@ -51,3 +51,63 @@ section[id]{scroll-margin-top:98px}
  .announcement{font-size:.58rem;letter-spacing:.08em}
  .container{width:min(calc(100% - 36px),var(--container))}
 }
+
+
+/* Editorial navigation refresh — same outline weight and touch targets everywhere. */
+.site-header{background:rgba(250,247,243,.97);border-bottom-color:rgba(83,58,49,.12)}
+.header-inner{min-height:84px;gap:clamp(12px,2vw,28px)}
+.brand{flex-shrink:0}
+.brand-mark{flex-shrink:0}
+.nav-links{justify-content:center}
+.nav-links a{position:relative;padding:12px 0;transition:color .22s ease}
+.nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:5px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .28s var(--ease-lux)}
+.nav-links a[aria-current="page"]{color:var(--color-accent)}
+.header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0}
+.header-actions .icon-button,.drawer-head .icon-button{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;line-height:1;color:var(--color-deep);background:transparent;border:1px solid transparent;border-radius:999px;position:relative;vertical-align:middle;appearance:none;transition:color .25s ease,background-color .25s ease,border-color .25s ease,transform .25s var(--ease-lux)}
+.icon-button .ui-icon{display:block;flex:none;width:21px;height:21px;overflow:visible}
+.header-actions .icon-button--menu{background:#f0e2dd;border-color:rgba(146,93,80,.13)}
+.header-actions .icon-button--bag{isolation:isolate}
+.cart-count{position:absolute;top:-1px;right:-2px;display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:50px;background:var(--color-accent);color:#fff;font-size:.66rem;font-weight:700;line-height:1;box-shadow:0 2px 7px rgba(52,37,32,.13)}
+.cart-count[hidden]{display:none!important}
+.icon-button .menu-line{transform-box:fill-box;transform-origin:center;transition:transform .23s ease,opacity .18s ease}
+.mobile-toggle[aria-expanded="true"] .menu-line--top{transform:translateY(5px) rotate(45deg)}
+.mobile-toggle[aria-expanded="true"] .menu-line--middle{opacity:0}
+.mobile-toggle[aria-expanded="true"] .menu-line--bottom{transform:translateY(-5px) rotate(-45deg)}
+.mobile-toggle{display:none}
+.mobile-links{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:clamp(24px,8vw,100px);row-gap:4px;max-width:100%;background:var(--color-surface);padding:24px max(var(--page-gutter),calc((100vw - var(--container))/2));box-shadow:0 22px 38px rgba(52,35,29,.07)}
+.mobile-links a{font-size:.82rem;letter-spacing:.1em;font-weight:600;padding:12px 24px 12px 0;border-bottom:1px solid var(--color-border);justify-content:space-between}
+.mobile-links a::after{content:"";display:inline-block;width:8px;height:8px;flex:none;border-right:1.5px solid currentColor;border-top:1.5px solid currentColor;transform:rotate(45deg);opacity:.65}
+.mobile-links a[aria-current="page"]{color:var(--color-accent);font-weight:700}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ .nav-links a:hover::after,.nav-links a:focus-visible::after,.nav-links a[aria-current="page"]::after{transform:scaleX(1)}
+ .header-actions .icon-button:hover,.drawer-head .icon-button:hover{color:var(--color-accent);background:var(--color-highlight);border-color:rgba(146,93,80,.12);transform:translateY(-1px)}
+ .mobile-links a:hover{color:var(--color-accent)}
+}
+@media(max-width:1024px){
+ .header-inner{min-height:76px}
+ .brand{min-width:0;flex:1}
+ .mobile-toggle{display:inline-flex}
+ .nav-links{display:none}
+}
+@media(min-width:1025px){.mobile-links{display:none!important}}
+@media(max-width:600px){
+ .mobile-links{grid-template-columns:1fr;row-gap:0;padding:10px var(--page-gutter) 22px}
+ .mobile-links a{min-height:48px}
+}
+@media(max-width:560px){
+ .header-inner{min-height:72px;gap:8px}
+ .header-actions{gap:3px}
+ .header-actions .icon-button{width:44px;height:44px;min-width:44px}
+ .brand{gap:9px}
+ .brand-mark{width:42px;height:42px}
+ .brand strong{font-size:clamp(.97rem,4vw,1.12rem)}
+ .brand small{font-size:.58rem;letter-spacing:.075em}
+}
+@media(max-width:355px){
+ .brand-mark{width:36px;height:36px}
+ .brand strong{font-size:.92rem}
+ .header-actions{gap:0}
+}
+@media(prefers-reduced-motion:reduce){
+ .icon-button .menu-line,.nav-links a::after{transition:none}
+}
