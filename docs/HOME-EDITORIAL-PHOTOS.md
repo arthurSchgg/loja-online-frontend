@@ -20,12 +20,15 @@ O usuário pediu que a imagem principal da home parecesse uma **Live Photo**, co
 - Conferir que a pausa de vídeo é possível, que o controle pode receber foco por teclado e que o retorno à aba não reativa uma animação pausada manualmente.
 - Não divulgar a cena como uma fotografia de produto realmente vendido na loja.
 
-## Editorial secundário: imagem provisória
+## Imagens secundárias: arte vetorial transparente (20/11/2026)
 
-A seção "Uma pausa. Um aroma. Um ritual." ainda utiliza fotografia de referência do Unsplash:
-[Dário Gomes — perfume rosé com flor](https://unsplash.com/photos/pink-perfume-bottle-with-white-flower-MoPGCgHPS6I),
-entregue de `https://images.unsplash.com/photo-1630573133526-8d090e0269af` sob [licença Unsplash](https://unsplash.com/license).
-Esta imagem é apenas editorial, não é foto de item anunciado e pode ser substituída por fotografia oficial aprovada pela proprietária.
+Para manter o estilo leve aprovado na revisão visual, a seção "Uma pausa. Um aroma. Um ritual." agora usa `assets/images/editorial/candle-floral-cutout.svg`, sem fundo retangular, com cores alinhadas ao tema rosé e luz quente. A página inicial também usa as imagens editoriais transparentes `floral-perfume-cutout.svg` e `amber-perfume-cutout.svg` para as coleções demonstrativas, sem associá-las a produtos reais.
+
+As páginas Conheça a Loja, Viva sua Experiência, Contato e Espaço das Velas não exibem mais uma logo ampliada no hero. Cada uma usa uma composição vetorial decorativa sem fundo, fornecida pela própria aplicação. A logo verdadeira permanece pequena no header.
+
+Os arquivos são SVGs declarativos locais e não contêm scripts, fontes externas, imagens remotas ou fotografias de itens não cadastrados. Fotografias reais fornecidas pelo backend para produtos e conteúdo administrativo não são alteradas.
+
+O efeito de movimento está no wrapper, enquanto o parallax leve atua na imagem interna. Isso evita conflitos de `transform`. `prefers-reduced-motion` e `data-motion="off"` desativam ambos os efeitos.
 
 ## Checklist para homologação
 
