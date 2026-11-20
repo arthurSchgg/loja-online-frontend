@@ -1,5 +1,7 @@
 # Revisão visual — imagens transparentes e movimento responsivo
 
+> **Nota de evolução:** este documento registra a primeira versão editorial com SVGs do PR #89. Na revisão seguinte, a pedido do usuário, os desenhos visíveis das páginas públicas foram substituídos por fotografias reais de perfumes de O Boticário e por uma fotografia de vela na página temática. As imagens SVG permaneceram apenas como arquivos históricos sem uso nas áreas editoriais. As novas fontes, pendências de direitos de uso e fallbacks estão descritos em [HOME-EDITORIAL-PHOTOS.md](HOME-EDITORIAL-PHOTOS.md).
+
 ## Escopo (20/11/2026)
 Solicitação: substituir imagens grandes da loja com fundos quadrados ou a logo ampliada por composições transparentes semelhantes à direção visual aprovada, polir animações de imagens e garantir uso em telefones e tablets.
 
