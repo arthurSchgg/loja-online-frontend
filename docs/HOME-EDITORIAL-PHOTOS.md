@@ -1,11 +1,24 @@
-# Imagens editoriais da home — arte local e licença
+# Imagens editoriais da home — Live Photo autoral e direitos
 
-## Hero: arte autoral, nítida e independente de estoque
+## Hero — fotografia cinematográfica local (20/11/2026)
 
-- O arquivo `assets/images/brand/hero-perfumaria-editorial.svg` é uma **composição vetorial original** criada para a Lojinha da Kátia, com frascos genéricos, pedra clara, flores e luz quente.
-- A home carrega o SVG pela **mesma origem** do frontend. Não depende do Unsplash, não perde resolução em telas de alta densidade, nem exibe marcas ou produtos que não estejam cadastrados.
-- Ele é **decorativo**: não prova que um perfume específico esteja à venda e não deve ser apresentado como foto de produto real. Produtos, preços e status de disponibilidade são fornecidos exclusivamente pelo backend.
-- A imagem tem proporção 720×820; o CSS a apresenta em um cartão responsivo. `fetchpriority="high"` prioriza o hero e `prefers-reduced-motion` desativa movimentos.
+O usuário pediu que a imagem principal da home parecesse uma **Live Photo**, com aparência fotográfica e movimento discreto, mantendo a composição editorial premium.
+
+- `assets/images/brand/hero-live-poster.webp`: fotografia **gerada originalmente para a Lojinha da Kátia**, contendo frascos genéricos de perfume, flores, travertino e luz dourada. Não representa marca, produto vendido ou estoque real. Poster estático de 900 × 1125 px (~106 KB), prioritário para LCP.
+- `assets/images/brand/hero-live-motion.mp4`: vídeo H.264 sem áudio, cerca de seis segundos (~240 KB) com movimento cinematográfico suave de câmera, hospedado na mesma origem. O efeito de Live Photo é uma animação da cena, **não uma gravação real de objetos em movimento**.
+- O antigo SVG `assets/images/brand/hero-perfumaria-editorial.svg` foi preservado no repositório como histórico, mas não é usado como arte principal.
+- `assets/js/hero-live-photo.js` adiciona a origem do vídeo somente quando a mídia aparece na tela e quando o movimento é permitido. A reprodução é pausada fora da viewport, na aba oculta ou ao selecionar o controle de pausa. Não há som.
+- Com `prefers-reduced-motion: reduce`, `Save-Data`, conexão 2G ou sem JavaScript, só a imagem estática é exibida; o vídeo não é baixado pelos fluxos controlados.
+- O botão de pausa/continuação possui área de toque de 44 × 44 px, rótulo acessível e estado `aria-pressed`.
+- A imagem é **editorial**, sem relação com o catálogo Skelt ou com a quantidade disponível. Produtos e preços continuam vindo do backend.
+
+## Recomendações de publicação
+
+- Testar o enquadramento nos tamanhos 320, 375, 768, 1024 e 1440 px.
+- Medir LCP da foto estática; o vídeo nunca deve bloquear sua exibição.
+- Testar no Safari do iPad/iPhone, navegadores de desktop, conexão lenta e `prefers-reduced-motion`.
+- Conferir que a pausa de vídeo é possível, que o controle pode receber foco por teclado e que o retorno à aba não reativa uma animação pausada manualmente.
+- Não divulgar a cena como uma fotografia de produto realmente vendido na loja.
 
 ## Editorial secundário: imagem provisória
 

@@ -138,3 +138,66 @@ html[data-motion="off"] .hero-watermark {
 @media(prefers-reduced-motion:reduce){
  .hero-image img[data-hero-bottle]{transform:none!important}
 }
+
+
+/* Cinematic Live Photo: a self-hosted still is the LCP image and fallback.
+ * The 6s muted motion layer loads only when visible and allowed by preferences.
+ * No background image URL, external video service, or layout-shifting animation. */
+.hero-live-frame{
+ position:relative;display:block;margin:0;width:min(100%,520px);
+ height:clamp(360px,44vw,590px);overflow:hidden;isolation:isolate;
+ background:#d9ad8d;border-radius:clamp(20px,3vw,38px);
+ border:1px solid rgba(255,255,255,.5);
+ box-shadow:0 34px 66px rgba(113,68,56,.18),0 8px 26px rgba(113,68,56,.08);
+}
+.hero-image .hero-live-frame > img[data-hero-bottle],
+.hero-image .hero-live-frame > video.hero-live-video{
+ position:absolute;inset:0;display:block;width:100%;height:100%;
+ min-width:100%;max-width:none;min-height:100%;max-height:none;
+ border:0;border-radius:0;object-fit:cover;object-position:center;
+ box-shadow:none;filter:none;animation:none!important;transform:none!important;
+}
+.hero-image .hero-live-frame > img[data-hero-bottle]{z-index:0}
+.hero-image .hero-live-frame > video.hero-live-video{
+ z-index:1;opacity:0;pointer-events:none;
+ transition:opacity 650ms ease;
+}
+.hero-live-frame[data-live-active="true"] > video.hero-live-video{opacity:1}
+.hero-live-frame::after{
+ content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:linear-gradient(110deg,transparent 20%,rgba(255,235,201,.14) 50%,transparent 78%);
+ opacity:.22;mix-blend-mode:screen;transform:translate3d(-15%,0,0);
+}
+@keyframes hero-live-light{from{transform:translate3d(-25%,0,0)}to{transform:translate3d(24%,0,0)}}
+@media(prefers-reduced-motion:no-preference){
+ .hero-live-frame[data-live-active="true"]::after{animation:hero-live-light 9s ease-in-out infinite alternate}
+}
+.hero-live-toggle{
+ position:absolute;z-index:3;right:17px;bottom:17px;
+ display:inline-grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;
+ border:1px solid rgba(255,255,255,.65);border-radius:50%;
+ background:rgba(40,29,26,.48);backdrop-filter:blur(10px);
+ color:#fff;cursor:pointer;
+ transition:background-color .2s ease,transform .2s ease;
+}
+.hero-live-toggle svg{
+ width:19px;height:19px;fill:none;stroke:currentColor;
+ stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+}
+.hero-live-toggle .hero-live-toggle__play{display:none}
+.hero-live-toggle[aria-pressed="true"] .hero-live-toggle__play{display:block}
+.hero-live-toggle[aria-pressed="true"] .hero-live-toggle__pause{display:none}
+.hero-live-toggle:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media(hover:hover){
+ .hero-live-toggle:hover{background:rgba(40,29,26,.72);transform:scale(1.055)}
+}
+@media(max-width:768px){
+ .hero-live-frame{width:min(100%,440px);height:clamp(290px,77vw,450px);max-width:100%}
+ .hero-live-toggle{right:12px;bottom:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hero-live-frame::after{animation:none!important;opacity:0!important}
+ .hero-live-frame > video.hero-live-video{display:none!important}
+}
+html[data-motion="off"] .hero-live-frame::after{animation:none!important;opacity:0!important}
+html[data-motion="off"] .hero-live-frame > video.hero-live-video{display:none!important}
