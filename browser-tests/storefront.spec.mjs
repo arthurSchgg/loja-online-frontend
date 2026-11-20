@@ -281,3 +281,37 @@ test("motion | reduced motion avoids downloading Live Photo video",async({page})
  await expectNoHorizontalOverflow(page,375);
  expect(errors).toEqual([]);
 });
+
+
+test("demo | transparent editorial assets load and pages stay responsive at mobile widths",async({page})=>{
+ const errors=collectPageErrors(page);
+ const pages=[
+  ["/conheca-a-loja.html","floral-perfume-cutout.svg"],
+  ["/viva-sua-experiencia.html","discovery-perfume-cutout.svg"],
+  ["/contato.html","amber-perfume-cutout.svg"],
+  ["/espaco-das-velas.html","candle-floral-cutout.svg"]
+ ];
+ for(const width of [320,390,768]){
+  await page.setViewportSize({width,height:820});
+  for(const [url,filename] of pages){
+   await page.goto(url);
+   const image=page.locator(".chapter-hero__art .editorial-cutout");
+   await expect(image).toHaveCount(1);
+   await expect(image).toHaveAttribute("src",new RegExp(filename.replaceAll(".","\\.")+"$"));
+   await expect.poll(()=>image.evaluate(el=>el.complete&&el.naturalWidth>0)).toBe(true);
+   await expectNoHorizontalOverflow(page,width);
+  }
+ }
+ expect(errors).toEqual([]);
+});
+
+test("motion | institutional cutouts stay still when reduced motion is requested",async({page})=>{
+ await page.emulateMedia({reducedMotion:"reduce"});
+ await page.setViewportSize({width:375,height:812});
+ await page.goto("/conheca-a-loja.html");
+ const shell=page.locator(".editorial-cutout-shell");
+ const image=page.locator(".editorial-cutout");
+ await expect(shell).toHaveCSS("animation-name","none");
+ await expect(image).toHaveCSS("transform","none");
+ await expect(image).toHaveCSS("transition-duration","0s");
+});
