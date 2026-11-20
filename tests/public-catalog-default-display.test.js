@@ -21,7 +21,7 @@ test("first public catalog listing starts independently from category discovery"
  assert.ok(load>=0);
  const catalogInit=source.slice(load,source.indexOf("async function initProduct()",load));
  assert.match(catalogInit,/const search=createCatalogSearch/);
- assert.match(catalogInit,/if\(!familyName\)count\.textContent/);
+ assert.match(catalogInit,/if\(familyName\)count\.textContent="Carregando categoria selecionada\.\.\."/);
  // This branch must start the product fetch before the optional category request.
  assert.match(catalogInit,/else applyServerFilters\(\);\s*void loadCategories\(\);/);
  assert.match(catalogInit,/const categoryField=family\.closest/);
