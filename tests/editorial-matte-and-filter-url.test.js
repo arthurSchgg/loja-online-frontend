@@ -55,3 +55,15 @@ test("real perfume packshots use a soft matte with no image replacement",()=>{
  assert.match(read("espaco-das-velas.html"),/editorial-product-photo--scene/);
  assert.match(read("index.html"),/hero-live-poster\.webp/);
 });
+
+test("homepage loads featured products, quiz and offerings independently",()=>{
+ const script=read("assets/js/live.js");
+ const home=script.slice(script.indexOf("async function initHome(){"),script.indexOf("async function initCatalog(){"));
+ assert.match(script,/async function initHomeOfferings\(\)\{/);
+ assert.match(script,/currentOfferings=await fetchOfferings\(\)/);
+ assert.match(home,/void initHomeOfferings\(\);/);
+ assert.match(home,/void loadFeatured\(\);/);
+ assert.doesNotMatch(home,/await loadFeatured\(\);/);
+ assert.match(home,/const experiences=await fetchExperiences\(\)/);
+ assert.match(home,/grid\.removeAttribute\("aria-busy"\)/);
+});
