@@ -7,6 +7,7 @@ import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
 import {setupCatalogToolbar} from "./catalog-toolbar.js";
 import {productGalleryImages} from "./product-gallery.js";
+import {relatedCatalogProducts} from "./related-products.js";
 import {loadCatalogPage} from "./public-catalog-load.js";
 import {escapeHtml} from "./layout.js";
 import {UI_ICONS} from "./ui-icons.js";
@@ -255,19 +256,30 @@ async function initHome(){
  }
  const sec=document.querySelector("#experiencias .editorial-copy");
  if(sec){
-  const box=document.createElement("div");box.style.marginTop="22px";sec.append(box);status(box,"Carregando velas e serviços...");
+  const box=document.createElement("div");box.className="service-preview-list";sec.append(box);
   try{
-   currentOfferings=await fetchOfferings();box.replaceChildren();
-   for(const o of currentOfferings.slice(0,6)){
-    const card=document.createElement("div");card.style.cssText="padding:14px 0;border-bottom:1px solid #ab978a";
-    card.innerHTML='<strong>'+safe(o.title)+'</strong> · '+safe(o.type)+'<br><span>'+safe(o.price===null?"Valor sob consulta":money(o.price))+'</span> ';
-    if(o.available){const btn=document.createElement("button");btn.className="btn btn--ghost";btn.textContent="Consultar";btn.dataset.confirmOffering=o.id;card.append(btn);}
-    else{const badge=document.createElement("span");badge.className="badge";badge.textContent="Indisponível";card.append(badge);}
+   currentOfferings=await fetchOfferings();
+   const published=currentOfferings.filter(item=>item.published!==false).slice(0,3);
+   for(const offering of published){
+    const card=document.createElement("article");card.className="service-preview";
+    const head=document.createElement("div");head.className="service-preview__copy";
+    const name=document.createElement("h3");name.textContent=String(offering.title||"Serviço");
+    const kind=document.createElement("span");kind.className="service-preview__kind";
+    kind.textContent=String(offering.type||"Experiência");
+    const price=document.createElement("p");price.textContent=offering.price===null?"Valor sob consulta":money(offering.price);
+    head.append(kind,name,price);card.append(head);
+    if(offering.available){
+     const btn=document.createElement("button");btn.type="button";btn.className="btn btn--ghost";
+     btn.textContent="Consultar";btn.dataset.confirmOffering=offering.id;card.append(btn);
+    }else{
+     const badge=document.createElement("span");badge.className="badge";badge.textContent="Indisponível";card.append(badge);
+    }
     box.append(card);
    }
-   if(!currentOfferings.length)status(box,"Nenhum serviço publicado.");
-  }catch(err){box.replaceChildren();status(box,"Serviços indisponíveis: "+err.message,true);}
+   if(!published.length)box.remove();
+  }catch{box.remove();}
  }
+
 }
 async function initCatalog(){
  const grid=document.getElementById("catalog-grid"),form=document.getElementById("filters"),count=document.getElementById("result-count");
@@ -371,6 +383,8 @@ async function initCatalog(){
 }
 async function initProduct(){
  const host=document.getElementById("product-content");if(!host)return;
+ const relatedGrid=document.getElementById("related-grid"),relatedSection=relatedGrid?.closest("section");
+ if(relatedSection)relatedSection.hidden=true;
  const query=new URLSearchParams(location.search),id=numberId(query.get("productId"));
  if(!id){status(host,"Selecione um produto do catálogo real.");return;}
  status(host,"Carregando produto...");
@@ -427,6 +441,17 @@ async function initProduct(){
    });
   });
   document.title=(p.name||"Produto")+" | Lojinha da Kátia";
+  if(relatedGrid){
+   try{
+    const nearby=await fetchProducts(0);
+    const recommendations=relatedCatalogProducts(p,nearby.items,4);
+    if(recommendations.length){
+     currentProducts=[p,...recommendations];
+     relatedGrid.innerHTML=recommendations.map(liveProductCard).join("");
+     if(relatedSection)relatedSection.hidden=false;
+    }
+   }catch{/* Related products are optional; the main product remains visible. */}
+  }
  }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
 }
 if(isLive){
