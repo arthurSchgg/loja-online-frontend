@@ -5,6 +5,9 @@ import {isLive} from "./config.js";
 import {fetchProducts,fetchProduct,fetchOfferings,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
 import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
+import {setupCatalogToolbar} from "./catalog-toolbar.js";
+import {productGalleryImages} from "./product-gallery.js";
+import {relatedCatalogProducts} from "./related-products.js";
 import {loadCatalogPage} from "./public-catalog-load.js";
 import {escapeHtml} from "./layout.js";
 import {UI_ICONS} from "./ui-icons.js";
@@ -67,7 +70,11 @@ function liveProductCard(p){
  const img=safe(imageFromProduct(p)),fallback=safe(imageFallback(p)),price=currentPrice(p),available=!!p.available;
  const label=price===null?"Valor sob consulta":money(price);
  const action=available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
- return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#faf9f6"><img src="'+img+'" data-image-fallback="'+fallback+'" loading="lazy" decoding="async" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div></div></article>';
+ return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#faf9f6"><img src="'+img+'" data-image-fallback="'+fallback+'" loading="lazy" decoding="async" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div><a class="product-card__details" href="produto.html?productId='+id+'" aria-label="Ver detalhes de '+productTitle(p)+'">Ver detalhes</a></div></article>';
+}
+/** Perceived-loading placeholder; never substitute fake products for API data. */
+function catalogLoadingMarkup(count=4){
+ return Array.from({length:count},()=>'<div class="product-skeleton" aria-hidden="true"><div class="product-skeleton__art"></div><div class="product-skeleton__line"></div><div class="product-skeleton__line"></div><div class="product-skeleton__line"></div></div>').join("");
 }
 const confirmationGate=createConfirmationGate();
 let requestConfirmation=null;
@@ -216,9 +223,10 @@ async function initHome(){
  void initContact();
  const grid=document.getElementById("featured-grid");
  if(grid){
-  grid.replaceChildren();status(grid,"Carregando produtos publicados...");
+  grid.innerHTML=catalogLoadingMarkup(4);grid.setAttribute("aria-busy","true");
   try{const page=await loadCatalogPage((index)=>fetchProducts(index),0);currentProducts=page.items;grid.innerHTML=currentProducts.length?currentProducts.slice(0,8).map(liveProductCard).join(""):"<p>Nenhum produto publicado no momento.</p>";}
   catch(err){grid.replaceChildren();status(grid,err.message,true);}
+  finally{grid.removeAttribute("aria-busy");}
  }
  // Replace local demonstration quiz with the actual backend question contract.
  const quiz=document.getElementById("quiz-form");
@@ -248,19 +256,30 @@ async function initHome(){
  }
  const sec=document.querySelector("#experiencias .editorial-copy");
  if(sec){
-  const box=document.createElement("div");box.style.marginTop="22px";sec.append(box);status(box,"Carregando velas e serviços...");
+  const box=document.createElement("div");box.className="service-preview-list";sec.append(box);
   try{
-   currentOfferings=await fetchOfferings();box.replaceChildren();
-   for(const o of currentOfferings.slice(0,6)){
-    const card=document.createElement("div");card.style.cssText="padding:14px 0;border-bottom:1px solid #ab978a";
-    card.innerHTML='<strong>'+safe(o.title)+'</strong> · '+safe(o.type)+'<br><span>'+safe(o.price===null?"Valor sob consulta":money(o.price))+'</span> ';
-    if(o.available){const btn=document.createElement("button");btn.className="btn btn--ghost";btn.textContent="Consultar";btn.dataset.confirmOffering=o.id;card.append(btn);}
-    else{const badge=document.createElement("span");badge.className="badge";badge.textContent="Indisponível";card.append(badge);}
+   currentOfferings=await fetchOfferings();
+   const published=currentOfferings.filter(item=>item.published!==false).slice(0,3);
+   for(const offering of published){
+    const card=document.createElement("article");card.className="service-preview";
+    const head=document.createElement("div");head.className="service-preview__copy";
+    const name=document.createElement("h3");name.textContent=String(offering.title||"Serviço");
+    const kind=document.createElement("span");kind.className="service-preview__kind";
+    kind.textContent=String(offering.type||"Experiência");
+    const price=document.createElement("p");price.textContent=offering.price===null?"Valor sob consulta":money(offering.price);
+    head.append(kind,name,price);card.append(head);
+    if(offering.available){
+     const btn=document.createElement("button");btn.type="button";btn.className="btn btn--ghost";
+     btn.textContent="Consultar";btn.dataset.confirmOffering=offering.id;card.append(btn);
+    }else{
+     const badge=document.createElement("span");badge.className="badge";badge.textContent="Indisponível";card.append(badge);
+    }
     box.append(card);
    }
-   if(!currentOfferings.length)status(box,"Nenhum serviço publicado.");
-  }catch(err){box.replaceChildren();status(box,"Serviços indisponíveis: "+err.message,true);}
+   if(!published.length)box.remove();
+  }catch{box.remove();}
  }
+
 }
 async function initCatalog(){
  const grid=document.getElementById("catalog-grid"),form=document.getElementById("filters"),count=document.getElementById("result-count");
@@ -309,13 +328,15 @@ async function initCatalog(){
    categoryField.hidden=true;
    categoryWarning="Categorias temporariamente indisponíveis; todos os produtos publicados continuam visíveis. ";
   }finally{
-   if(familyName)applyServerFilters();
+   toolbar.render();
+   if(familyName&&new URLSearchParams(location.search).has("familia"))applyServerFilters();
   }
  }
  if(params.has("q"))queryField.value=params.get("q").slice(0,180);
  function render(){
   const state=search.state;
-  grid.innerHTML=state.items.map(liveProductCard).join("")||'<p>Nenhum produto encontrado com estes filtros.</p>';
+  grid.innerHTML=state.items.map(liveProductCard).join("")||'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>';
+  toolbar.render();
   count.textContent=categoryWarning+state.items.length+" produtos carregados"+
     (state.hasNext?" · mais páginas disponíveis":" · fim dos resultados");
   loadMore.hidden=!state.hasNext;
@@ -323,7 +344,9 @@ async function initCatalog(){
  }
  async function next(expectedVersion=version){
   if(expectedVersion!==version)return;
-  loadMore.disabled=true;status(grid,"Carregando produtos publicados...");
+  loadMore.disabled=true;
+  if(!search.state.items.length){grid.innerHTML=catalogLoadingMarkup(6);grid.setAttribute("aria-busy","true");}
+  else loadMore.textContent="Carregando mais...";
   try{
    const state=await search.next();
    if(expectedVersion!==version||state.stale)return;
@@ -333,7 +356,7 @@ async function initCatalog(){
    if(!search.state.items.length)grid.replaceChildren();
    status(grid,"Não foi possível carregar esta página: "+(error?.message||"Tente novamente."),true);
    loadMore.textContent="Tentar novamente";loadMore.hidden=false;
-  }finally{if(expectedVersion===version)loadMore.disabled=false;}
+  }finally{if(expectedVersion===version){loadMore.disabled=false;grid.removeAttribute("aria-busy");}}
  }
  function applyServerFilters(){
   window.clearTimeout(searchTimer);
@@ -341,10 +364,12 @@ async function initCatalog(){
    sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value||null});
   version++;
   currentProducts=[];grid.replaceChildren();
+  toolbar.render();
   count.textContent="Buscando produtos no catálogo...";
   loadMore.hidden=true;
   void next(version);
  }
+ const toolbar=setupCatalogToolbar({form,count,onChange:applyServerFilters});
  queryField.addEventListener("input",()=>{
   window.clearTimeout(searchTimer);
   searchTimer=window.setTimeout(applyServerFilters,300);
@@ -358,14 +383,76 @@ async function initCatalog(){
 }
 async function initProduct(){
  const host=document.getElementById("product-content");if(!host)return;
+ const relatedGrid=document.getElementById("related-grid"),relatedSection=relatedGrid?.closest("section");
+ if(relatedSection)relatedSection.hidden=true;
  const query=new URLSearchParams(location.search),id=numberId(query.get("productId"));
  if(!id){status(host,"Selecione um produto do catálogo real.");return;}
  status(host,"Carregando produto...");
  try{
   const p=await fetchProduct(id);currentProducts=[p];
-  const price=currentPrice(p),image=safe(imageFromProduct(p)),fallback=safe(imageFallback(p));
-  host.innerHTML='<section class="container product-view"><div class="product-main-art" style="--product-theme:#faf9f6"><img src="'+image+'" data-image-fallback="'+fallback+'" loading="eager" decoding="async" width="400" height="530" alt="'+safe(p.images?.[0]?.altText||p.name)+'"></div><div class="product-detail"><span class="eyebrow">Catálogo real da loja</span><h1>'+productTitle(p)+'</h1><p class="lead">'+safe(p.description||"")+'</p><p>'+safe((p.categories||[]).map(c=>c.name).join(" · "))+'</p><p><strong>'+(price===null?"Valor sob consulta":money(price))+'</strong></p><p class="muted">Imagens ilustram o produto cadastrado. Disponibilidade e informações comerciais são confirmadas pela loja.</p>'+(p.available?'<button class="btn btn--primary" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':'<span class="badge">Indisponível</span>')+'</div></section>';
+  const price=currentPrice(p),fallback=imageFallback(p);
+  const gallery=productGalleryImages(p,{origin:location.origin,fallback});
+  const first=gallery[0]||{url:imageFromProduct(p),alt:p.name||"Produto"};
+  const priceLabel=price===null?"Valor sob consulta":money(price);
+  const categories=(p.categories||[]).filter(c=>typeof c?.name==="string").slice(0,8);
+  const meta=categories.map(c=>'<span>'+safe(c.name)+'</span>').join("");
+  const thumbs=gallery.length>1?'<div class="product-gallery__thumbs" role="group" aria-label="Escolher imagem do produto">'+
+   gallery.map((image,index)=>'<button type="button" class="product-gallery__thumb" data-product-thumb="'+index+
+    '" aria-label="Ver imagem '+(index+1)+' de '+gallery.length+'" aria-pressed="'+(index===0)+'">'+
+    '<img src="'+safe(image.url)+'" alt="" loading="lazy" decoding="async" width="72" height="80"></button>').join("")+
+   '</div>':"";
+  host.innerHTML='<section class="container product-view">'+
+   '<div class="product-gallery" data-product-gallery>'+
+    '<div class="product-main-art product-gallery__main" style="--product-theme:#f6f0eb">'+
+     '<button type="button" class="product-gallery__main-button" aria-label="Ampliar imagem do produto" aria-pressed="false">'+
+      '<img src="'+safe(first.url)+'" data-image-fallback="'+safe(fallback)+'" loading="eager" decoding="async" width="400" height="530" alt="'+safe(first.alt)+'">'+
+     '</button><span class="product-gallery__zoom-tip" aria-hidden="true">Toque para ampliar</span></div>'+thumbs+
+   '</div><div class="product-detail">'+
+    '<nav class="product-breadcrumb" aria-label="Caminho de navegação"><a href="catalogo.html">Catálogo</a><span aria-hidden="true">/</span><span>Detalhes</span></nav>'+
+    '<span class="eyebrow">'+safe(p.brand?.name||"Lojinha da Kátia")+'</span>'+
+    '<h1>'+productTitle(p)+'</h1>'+
+    '<p class="lead">'+safe(p.description||"")+'</p>'+
+    (meta?'<div class="product-detail__meta">'+meta+'</div>':"")+
+    '<p class="product-detail__price">'+priceLabel+'</p>'+
+    '<div class="product-detail__availability">'+
+     (p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
+      '<span class="badge" aria-label="Indisponível">Indisponível</span>')+
+    '</div><p class="product-detail__disclaimer">Imagens ilustram o produto cadastrado. Preço e disponibilidade são confirmados antes de qualquer solicitação.</p>'+
+   '</div></section>';
+  const galleryHost=host.querySelector("[data-product-gallery]");
+  const main=galleryHost?.querySelector(".product-gallery__main-button");
+  const mainImage=main?.querySelector("img");
+  main?.addEventListener("click",()=>{
+   const zoom=main.getAttribute("aria-pressed")!=="true";
+   main.setAttribute("aria-pressed",String(zoom));
+   main.setAttribute("aria-label",zoom?"Reduzir imagem do produto":"Ampliar imagem do produto");
+  });
+  galleryHost?.querySelectorAll("[data-product-thumb]").forEach(button=>{
+   button.addEventListener("click",()=>{
+    const index=Number(button.dataset.productThumb);
+    if(!Number.isSafeInteger(index)||index<0||index>=gallery.length||!mainImage)return;
+    const chosen=gallery[index];
+    mainImage.dataset.imageFallback=fallback;
+    mainImage.src=chosen.url;
+    mainImage.alt=chosen.alt;
+    main?.setAttribute("aria-pressed","false");
+    main?.setAttribute("aria-label","Ampliar imagem do produto");
+    galleryHost.querySelectorAll("[data-product-thumb]").forEach(other=>
+      other.setAttribute("aria-pressed",String(other===button)));
+   });
+  });
   document.title=(p.name||"Produto")+" | Lojinha da Kátia";
+  if(relatedGrid){
+   try{
+    const nearby=await fetchProducts(0);
+    const recommendations=relatedCatalogProducts(p,nearby.items,4);
+    if(recommendations.length){
+     currentProducts=[p,...recommendations];
+     relatedGrid.innerHTML=recommendations.map(liveProductCard).join("");
+     if(relatedSection)relatedSection.hidden=false;
+    }
+   }catch{/* Related products are optional; the main product remains visible. */}
+  }
  }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
 }
 if(isLive){
