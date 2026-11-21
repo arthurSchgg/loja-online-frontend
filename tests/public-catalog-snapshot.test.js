@@ -60,8 +60,10 @@ test("price filters cannot assert stale data, and an offline product has no sale
  assert.equal(snapshotProduct(-1),null);
 });
 test("only appropriate public API outages show fallback, never aborted/authenticated actions",()=>{
- for(const status of [0,400,404,408,429,500,502,503,504])
+ for(const status of [400,404,408,429,500,502,503,504])
   assert.equal(canShowPublicSnapshot({status}),true);
+ assert.equal(canShowPublicSnapshot({name:"ApiError",status:0}),true);
+ assert.equal(canShowPublicSnapshot(new TypeError("bug")),false);
  for(const status of [401,403,409,422])
   assert.equal(canShowPublicSnapshot({status}),false);
  assert.equal(canShowPublicSnapshot({name:"AbortError",status:0}),false);
