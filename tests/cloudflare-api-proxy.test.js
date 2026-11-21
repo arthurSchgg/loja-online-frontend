@@ -60,3 +60,18 @@ test("rejects excessively large POST payload",async()=>{
  const request=make("/api/v1/experiences/123/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({answers:"x".repeat(12200)})});
  assert.equal((await onRequest(request)).status,413);
 });
+
+test("slow public upstream is bounded and produces a retryable 504 without leaking data",async()=>{
+ const context=make("/api/v1/products?page=0");
+ context.fetchImpl=async(url,options)=>{
+  assert.ok(options.signal instanceof AbortSignal);
+  assert.equal(options.signal.aborted,false);
+  assert.equal(options.method,"GET");
+  throw Object.assign(new Error("upstream deadline"),{name:"TimeoutError"});
+ };
+ const response=await onRequest(context);
+ assert.equal(response.status,504);
+ assert.equal(response.headers.get("cache-control"),"no-store");
+ assert.equal(response.headers.get("set-cookie"),null);
+ assert.match((await response.json()).title,/demorou a responder/);
+});
