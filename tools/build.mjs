@@ -1,11 +1,13 @@
 import {cpSync,existsSync,rmSync,mkdirSync,readFileSync,writeFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import {join,resolve,dirname} from "node:path";
+import {bundleBaseCss} from "./bundle-base-css.mjs";
 const root=resolve(fileURLToPath(new URL("..",import.meta.url)));
 const dist=join(root,"dist");rmSync(dist,{recursive:true,force:true});mkdirSync(dist,{recursive:true});
 const pages=["index.html","catalogo.html","produto.html","conheca-a-loja.html","espaco-das-velas.html","viva-sua-experiencia.html","contato.html","privacidade.html"];
 for(const file of pages)cpSync(join(root,file),join(dist,file));
 cpSync(join(root,"assets"),join(dist,"assets"),{recursive:true});
+bundleBaseCss(dist);
 // Build-time PUBLIC configuration, never secrets. Same-origin API is preferred.
 const mode=process.env.SITE_MODE||"demo";
 const apiBase=process.env.API_BASE_URL||"/api/v1";
@@ -25,6 +27,25 @@ if(mode==="live"){
  writeFileSync(join(dist,"_routes.json"),JSON.stringify({
   version:1,include:["/api/v1/*"],exclude:[]
  },null,2)+"\n");
+ // Static asset rules apply independently of the Pages Functions API policy.
+ writeFileSync(join(dist,"_headers"),[
+  "/*",
+  "  X-Content-Type-Options: nosniff",
+  "  X-Frame-Options: DENY",
+  "  Referrer-Policy: strict-origin-when-cross-origin",
+  "  Permissions-Policy: camera=(), microphone=(), geolocation=()",
+  "/assets/images/*",
+  "  Cache-Control: public, max-age=3600, must-revalidate",
+  "/assets/css/*",
+  "  Cache-Control: public, max-age=300, must-revalidate",
+  "/assets/js/*",
+  "  Cache-Control: public, max-age=300, must-revalidate",
+  "/",
+  "  Cache-Control: no-cache",
+  "/*.html",
+  "  Cache-Control: no-cache",
+  ""
+ ].join("\n"));
 }
 for(const page of pages){
  let html=readFileSync(join(dist,page),"utf8");
@@ -34,8 +55,11 @@ for(const page of pages){
  if(mode==="live"&&!apiBase.startsWith("/")){
   const origin=new URL(apiBase).origin;
   html=html.replace("connect-src 'self';","connect-src 'self' "+origin+";");
-  writeFileSync(join(dist,page),html);
  }
+ if(page==="index.html"&&!html.includes('rel="preload" as="image"')){
+  html=html.replace("</head>",'<link rel="preload" as="image" href="assets/images/brand/hero-live-poster.webp" fetchpriority="high"></head>');
+ }
+ writeFileSync(join(dist,page),html);
  const paths=[...html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g)].map(m=>m[1]);
  for(const path of paths)if(!existsSync(join(dist,path)))throw Error("Missing public asset: "+path+" in "+page);
 }

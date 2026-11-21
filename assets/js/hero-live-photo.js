@@ -14,6 +14,7 @@ export function setupHeroLivePhoto({win=globalThis.window,doc=globalThis.documen
  const frame=doc.querySelector("[data-hero-live]");
  const video=frame?.querySelector("[data-hero-video]");
  const control=frame?.querySelector("[data-hero-toggle]");
+ const poster=frame?.querySelector("[data-hero-bottle]");
  if(!frame||!video||!control)return ()=>{};
 
  const preference=win.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -24,6 +25,8 @@ export function setupHeroLivePhoto({win=globalThis.window,doc=globalThis.documen
  let videoFailed=false;
  let playPending=false;
  let disposed=false;
+ let posterReady=!poster;
+ let autoplayBlocked=false;
 
  const permitted=()=>heroMotionAllowed({
   reducedMotion:preference?.matches===true,
@@ -31,7 +34,7 @@ export function setupHeroLivePhoto({win=globalThis.window,doc=globalThis.documen
   connectionType:connection?.effectiveType||"",
   motionOff:doc.documentElement?.dataset?.motion==="off"
  });
- const canPlay=()=>!disposed&&!videoFailed&&permitted()&&inView&&!doc.hidden;
+ const canPlay=()=>!disposed&&!videoFailed&&!autoplayBlocked&&posterReady&&permitted()&&inView&&!doc.hidden;
  const pause=()=>{if(!video.paused)video.pause();};
  function render(){
   if(disposed)return;
@@ -63,14 +66,16 @@ export function setupHeroLivePhoto({win=globalThis.window,doc=globalThis.documen
    playPending=true;
    try{
     const pending=video.play();
-    Promise.resolve(pending).catch(()=>{
+    Promise.resolve(pending).catch(error=>{
      // Autoplay might be denied: continue showing the poster, with no loop.
+     if(error?.name!=="AbortError"&&canPlay())autoplayBlocked=true;
     }).finally(()=>{
      playPending=false;
      if(!disposed)render();
     });
    }catch{
     playPending=false;
+    autoplayBlocked=true;
    }
   }
   render();
@@ -93,6 +98,21 @@ export function setupHeroLivePhoto({win=globalThis.window,doc=globalThis.documen
   sync();
  };
  const onPageHide=()=>{pause();render();};
+ // The local poster is the priority image. Start video only after it has
+ // loaded/decoded and the browser has had a chance to display it.
+ const onPosterLoad=()=>{
+  const ready=()=>{
+   if(disposed)return;
+   const proceed=()=>{if(!disposed){posterReady=true;sync();}};
+   if(typeof win.requestIdleCallback==="function")win.requestIdleCallback(proceed,{timeout:600});
+   else if(typeof win.requestAnimationFrame==="function")win.requestAnimationFrame(proceed);
+   else proceed();
+  };
+  if(typeof poster?.decode==="function")poster.decode().then(ready,ready);
+  else ready();
+ };
+ poster?.addEventListener("load",onPosterLoad,{once:true});
+ if(poster?.complete&&poster.naturalWidth>0)onPosterLoad();
 
  video.addEventListener("playing",onPlaying);
  video.addEventListener("pause",onPause);
@@ -132,6 +152,7 @@ export function setupHeroLivePhoto({win=globalThis.window,doc=globalThis.documen
   video.removeEventListener("pause",onPause);
   video.removeEventListener("error",onError);
   control.removeEventListener("click",onToggle);
+  poster?.removeEventListener("load",onPosterLoad);
   doc.removeEventListener("visibilitychange",sync);
   win.removeEventListener("pageshow",sync);
   win.removeEventListener("pagehide",onPageHide);

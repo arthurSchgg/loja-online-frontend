@@ -7,7 +7,7 @@ import {fileURLToPath} from "node:url";
 
 const root=resolve(fileURLToPath(new URL("..",import.meta.url)));
 const publicRoot=join(root,"dist"),adminRoot=join(root,"dist-admin");
-const publics=["index.html","catalogo.html","produto.html","conheca-a-loja.html","espaco-das-velas.html","privacidade.html"];
+const publics=["index.html","catalogo.html","produto.html","conheca-a-loja.html","espaco-das-velas.html","viva-sua-experiencia.html","contato.html","privacidade.html"];
 const admins=["admin.html","admin-experiences.html","reset-password.html","confirm-email.html"];
 
 for(const [directory,pages] of [[publicRoot,publics],[adminRoot,admins]]){

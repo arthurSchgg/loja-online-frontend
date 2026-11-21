@@ -10,8 +10,9 @@ Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem framework de interface. 
 
 - [Manual de utilização do site e do painel](docs/MANUAL-UTILIZACAO-LOJINHA-2026-11-21.md)
 - [Estado de homologação e checklist de liberação](docs/GO-LIVE-ESTADO-E-ACEITE-2026-11-21.md)
+- [Revisão full-stack de desempenho, qualidade e release](docs/REVISAO-FULLSTACK-2026-11-21.md)
 
-**Administração:** o código de `admin.html` existe, mas seu build é separado da vitrine publicada. Não há confirmação de que esteja implantado em um domínio de administração HTTPS; não tentar login pela Cloudflare Pages pública.
+**Administração:** [painel no host HTTPS do backend](https://lojinha-da-katia-api-rjvx.onrender.com/admin.html), separado da vitrine publicada. A entrega HTML (200) e a restrição de leitura anônima (401) foram verificadas em 21/11/2026; login e recuperação reais ainda exigem homologação. Não tente login pela Cloudflare Pages pública. O novo bundle administrativo deve acompanhar a release de backend.
 
 ## Como executar
 

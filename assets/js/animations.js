@@ -35,15 +35,15 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
  const visibleImages = new Set();
  // Product cards keep their elegant hover/reveal, but do not repaint every image on scroll.
  const imageSelector = "[data-parallax], .collection-tile img, .editorial-visual img";
+ const revealSelector = "[data-reveal], .section-heading, .product-card, .family-tile, .collection-tile, .editorial-copy, .quiz-box";
+ const matchingNodes = (node,selector) => node instanceof win.Element
+  ? [...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)] : [];
  // Gentle image depth is available on mobile too. Previously it was entirely
  // disabled below 769px, which made touch devices look static.
  const imageMotion = canAnimate && "IntersectionObserver" in win;
  const observeImages = node => {
   if(!imageObserver || !(node instanceof win.Element)) return;
-  const candidates = [
-   ...(node.matches(imageSelector) ? [node] : []),
-   ...node.querySelectorAll(imageSelector)
-  ];
+  const candidates = matchingNodes(node,imageSelector);
   for(const image of candidates){
    if(observedImages.has(image)) continue;
    observedImages.add(image);
@@ -65,14 +65,14 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
  }
 
  // Native Web Animations only run for elements in view; nothing is hidden by default.
- const revealSelector = "[data-reveal], .section-heading, .product-card, .family-tile, .collection-tile, .editorial-copy, .quiz-box";
+ let observeReveal=()=>{};
  if (canAnimate && animationAvailable && "IntersectionObserver" in win) {
   revealObserver = new win.IntersectionObserver(entries => {
    for (const entry of entries) {
     if (!entry.isIntersecting) continue;
     revealObserver.unobserve(entry.target);
     const el = entry.target;
-    if (!el.isConnected || el.closest("[hidden]")) continue;
+    if (!el.isConnected || el.closest("[hidden]")||preference?.matches) continue;
     const index = [...(el.parentElement?.children ?? [])].indexOf(el);
     el.animate([
      {opacity: 0, transform: "translate3d(0, 20px, 0) scale(.988)"},
@@ -80,26 +80,35 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
     ], {duration: 720, delay: revealDelay(index), easing: "cubic-bezier(.22,1,.36,1)"});
    }
   }, {threshold: 0.12, rootMargin: "0px 0px -4% 0px"});
-  const observe = node => {
-   if (!(node instanceof win.Element)) return;
-   const candidates = [...(node.matches(revealSelector) ? [node] : []), ...node.querySelectorAll(revealSelector)];
+  observeReveal = node => {
+   const candidates = matchingNodes(node,revealSelector);
    for (const el of candidates) {
     if (once.has(el)) continue;
     once.add(el);
     revealObserver.observe(el);
    }
   };
-  observe(doc.body);
-  if ("MutationObserver" in win) {
-   mutationObserver = new win.MutationObserver(changes => {
-    for (const change of changes)
-     for (const child of change.addedNodes) {
-      observe(child);
-      observeImages(child);
-     }
-   });
-   mutationObserver.observe(doc.body, {childList: true, subtree: true});
-  }
+  observeReveal(doc.body);
+ }
+ if ("MutationObserver" in win && (revealObserver||imageObserver)) {
+  mutationObserver = new win.MutationObserver(changes => {
+   // Filtering/pagination removes many nodes. Unobserve them so the observers
+   // don't keep detached cards and images alive for the rest of the session.
+   for(const change of changes)for(const child of change.removedNodes){
+    for(const el of matchingNodes(child,revealSelector))if(!el.isConnected){
+     revealObserver?.unobserve(el);once.delete(el);
+    }
+    for(const el of matchingNodes(child,imageSelector))if(!el.isConnected){
+     imageObserver?.unobserve(el);observedImages.delete(el);visibleImages.delete(el);
+    }
+   }
+   for (const change of changes)for (const child of change.addedNodes) {
+    observeReveal(child);
+    observeImages(child);
+   }
+   schedule();
+  });
+  mutationObserver.observe(doc.body, {childList: true, subtree: true});
  }
 
  if (canAnimate && animationAvailable) {
@@ -108,7 +117,7 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
    {opacity: 1, transform: "translate3d(0, 0, 0)"}
   ], {duration: 820, delay: 70 + index * 105, easing: "cubic-bezier(.22,1,.36,1)"}));
   doc.querySelector("[data-hero-bottle]")?.animate([
-   {opacity: 0, transform: "translate3d(0, 20px, 0) scale(.985)"},
+   {opacity: .9, transform: "translate3d(0, 20px, 0) scale(.985)"},
    {opacity: 1, transform: "translate3d(0, 0, 0) scale(1)"}
   ], {duration: 1000, delay: 120, easing: "cubic-bezier(.22,1,.36,1)"});
  }
@@ -143,23 +152,28 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
    for(const el of visibleImages)el.style.removeProperty("--motion-shift");
    return;
   }
+  const measurements=[];
+  const height=win.innerHeight,limit=win.innerWidth<=768?8:20;
+  // Batch geometry reads before style writes to avoid repeated forced layout.
   for(const el of visibleImages){
    if(!el.isConnected){visibleImages.delete(el);continue;}
    const bounds=el.getBoundingClientRect();
-   // Intentionally perceptible on desktop, softer on narrow touch viewports.
-   const limit=win.innerWidth<=768?8:20;
-   const offset=imageScrollOffset(bounds.top+bounds.height/2,win.innerHeight,limit);
+   measurements.push([el,imageScrollOffset(bounds.top+bounds.height/2,height,limit)]);
+  }
+  for(const [el,offset] of measurements){
    el.style.setProperty("--motion-shift",offset.toFixed(2)+"px");
   }
  };
- const schedule = () => {if (!raf) raf = win.requestAnimationFrame(tick);};
+ const schedule = () => {if (!raf&&doc.visibilityState!=="hidden") raf = win.requestAnimationFrame(tick);};
  win.addEventListener("scroll", schedule, {passive: true});
  win.addEventListener("resize", schedule, {passive: true});
  doc.addEventListener("visibilitychange", schedule);
+ win.addEventListener("pageshow",schedule);
  cleanups.push(() => {
   win.removeEventListener("scroll", schedule);
   win.removeEventListener("resize", schedule);
   doc.removeEventListener("visibilitychange", schedule);
+  win.removeEventListener("pageshow",schedule);
  });
  schedule();
  const destroy = () => {
@@ -173,7 +187,14 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
   for (const cleanup of cleanups) cleanup();
   progress.remove();
  };
- win.addEventListener("pagehide", destroy, {once: true});
+ const pagehide=event=>{
+  if(event.persisted){
+   // Back/forward cache preserves the DOM and listeners. Resume on pageshow.
+   if(raf){win.cancelAnimationFrame(raf);raf=0;}
+  }else destroy();
+ };
+ win.addEventListener("pagehide",pagehide);
+ cleanups.push(()=>win.removeEventListener("pagehide",pagehide));
  return destroy;
 }
 

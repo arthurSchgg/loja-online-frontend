@@ -5,6 +5,8 @@
  */
 export function isUnfilteredFirstPage(page,filters={}){
  return page===0&&!String(filters?.q??"").trim()
+  &&(!filters?.sort||filters.sort==="recent")
+  &&(filters?.brandId===null||filters?.brandId===undefined||filters?.brandId==="")
   &&(filters?.categoryId===null||filters?.categoryId===undefined||filters?.categoryId==="")
   &&(filters?.maxPrice===null||filters?.maxPrice===undefined||filters?.maxPrice==="");
 }
@@ -35,14 +37,18 @@ export function abortableCatalogDelay(milliseconds,signal){
 }
 export async function loadCatalogPage(fetchPage,page=0,filters={},sleep=abortableCatalogDelay,signal){
  if(typeof fetchPage!=="function")throw new TypeError("Carregamento do catálogo inválido.");
- const delays=isUnfilteredFirstPage(page,filters)?[1400,3300,6500]:[];
+ // Retry quick transient failures for the initial page, but don't make visitors
+ // wait through repeated 18-second upstream deadlines before using the preview.
+ const delays=isUnfilteredFirstPage(page,filters)?[700,1600]:[];
+ const startedAt=Date.now();
  for(let attempt=0;;attempt++){
   if(signal?.aborted)throw canceled();
   try{
    return await fetchPage(page,filters,signal);
   }catch(error){
    if(signal?.aborted||error?.name==="AbortError")throw error;
-   if(attempt>=delays.length||!transientCatalogError(error))throw error;
+   if(attempt>=delays.length||!transientCatalogError(error)||
+      Number(error?.status)===504||Date.now()-startedAt+delays[attempt]>4000)throw error;
    await sleep(delays[attempt],signal);
   }
  }

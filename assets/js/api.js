@@ -12,16 +12,51 @@ function baseUrl(){
  return base;
 }
 export function apiUrl(path){
- if(typeof path!=="string"||!path.startsWith("/")||path.includes(".."))throw new ApiError("Caminho de API inválido.");
- return new URL(path.slice(1),baseUrl()).toString();
+ if(typeof path!=="string"||!path.startsWith("/")||path.startsWith("//")||path.includes("#"))throw new ApiError("Caminho de API inválido.");
+ const pathname=path.split("?")[0];
+ if(pathname.includes("..")||pathname.includes("\\")||/%(?:2e|2f|5c)/i.test(pathname))throw new ApiError("Caminho de API inválido.");
+ const base=baseUrl(),url=new URL(path.slice(1),base);
+ if(url.origin!==base.origin||!url.pathname.startsWith(base.pathname))throw new ApiError("Caminho de API inválido.");
+ return url.toString();
 }
-export async function publicRequest(path,{method="GET",payload,signal,fetchImpl=globalThis.fetch}={}){
- const url=apiUrl(path);const options={method,signal,credentials:"omit",cache:"no-store",headers:{Accept:"application/json"}};
+const SHORT_CACHE=new Set(["/brands","/categories","/store","/content-sections"]);
+export function publicCacheMode(path,method="GET"){
+ return method==="GET"&&SHORT_CACHE.has(path)?"default":"no-store";
+}
+export async function publicRequest(path,{method="GET",payload,signal,timeoutMs=20000,fetchImpl=globalThis.fetch.bind(globalThis)}={}){
+ const url=apiUrl(path),controller=new AbortController();
+ const abort=()=>controller.abort(signal?.reason);
+ if(signal?.aborted)throw new DOMException("Consulta cancelada.","AbortError");
+ signal?.addEventListener("abort",abort,{once:true});
+ let expired=false;
+ const timer=setTimeout(()=>{expired=true;controller.abort();},timeoutMs);
+ const options={method,signal:controller.signal,credentials:"omit",cache:publicCacheMode(path,method),
+  redirect:"error",referrerPolicy:"same-origin",headers:{Accept:"application/json"}};
  if(payload!==undefined){options.headers["Content-Type"]="application/json";options.body=JSON.stringify(payload);}
- let response;try{response=await fetchImpl(url,options);}catch(e){if(e?.name==="AbortError")throw e;throw new ApiError("Não foi possível conectar ao servidor.");}
- if(!response.ok)throw new ApiError(response.status===404?"Conteúdo não encontrado.":response.status===409?"Informações alteradas; atualize os dados.":"Não foi possível concluir a solicitação.",response.status);
- if(response.status===204)return null;
- try{return await response.json();}catch{throw new ApiError("Resposta inválida do servidor.",response.status);}
+ try{
+  const response=await fetchImpl(url,options);
+  if(signal?.aborted)throw new DOMException("Consulta cancelada.","AbortError");
+  if(expired)throw new ApiError("A loja demorou a responder. Tente novamente.",504);
+  if(!response.ok)throw new ApiError(response.status===404?"Conteúdo não encontrado.":response.status===409?"Informações alteradas; atualize os dados.":response.status===504?"A loja demorou a responder. Tente novamente.":"Não foi possível concluir a solicitação.",response.status);
+  if(response.status===204)return null;
+  try{
+   const data=await response.json();
+   if(signal?.aborted)throw new DOMException("Consulta cancelada.","AbortError");
+   if(expired)throw new ApiError("A loja demorou a responder. Tente novamente.",504);
+   return data;
+  }catch(error){
+   if(signal?.aborted||expired||error?.name==="AbortError")throw error;
+   throw new ApiError("Resposta inválida do servidor.",response.status);
+  }
+ }catch(error){
+  if(signal?.aborted)throw new DOMException("Consulta cancelada.","AbortError");
+  if(expired||error?.name==="TimeoutError")throw new ApiError("A loja demorou a responder. Tente novamente.",504);
+  if(error instanceof ApiError||error?.name==="AbortError")throw error;
+  throw new ApiError("Não foi possível conectar ao servidor.");
+ }finally{
+  clearTimeout(timer);
+  signal?.removeEventListener("abort",abort);
+ }
 }
 export function normalizePage(data){
  if(Array.isArray(data))return {items:data,hasNext:false};
@@ -34,11 +69,13 @@ export function productSearchPath(page=0,filters={}){
  const query=new URLSearchParams({page:String(number),size:"12"});
  const q=String(filters?.q??"").trim();
  if(q)query.set("q",q);
- const category=filters?.categoryId;
- if(category!==null&&category!==undefined&&category!==""){
-  const id=Number(category);
-  if(!Number.isSafeInteger(id)||id<1)throw new ApiError("Categoria inválida.");
-  query.set("categoryId",String(id));
+ for(const [field,label] of [["categoryId","Categoria"],["brandId","Marca"]]){
+  const selected=filters?.[field];
+  if(selected!==null&&selected!==undefined&&selected!==""){
+   const id=Number(selected);
+   if(!Number.isSafeInteger(id)||id<1)throw new ApiError(label+" inválida.");
+   query.set(field,String(id));
+  }
  }
  const sort=String(filters?.sort??"recent");
  if(!["recent","name","price-asc","price-desc"].includes(sort))throw new ApiError("Ordenação inválida.");
@@ -63,6 +100,12 @@ export async function fetchProduct(id,signal){
  if(!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new ApiError("ID de produto inválido.");
  return publicRequest("/products/"+Number(id),{signal});
 }
+export async function fetchRelatedProducts(id,signal){
+ if(!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new ApiError("ID de produto inválido.");
+ const result=await publicRequest("/products/"+Number(id)+"/related?limit=4",{signal});
+ if(!Array.isArray(result))throw new ApiError("Produtos relacionados indisponíveis.");
+ return result.filter(item=>item?.published===true);
+}
 export async function fetchStore(signal){return publicRequest("/store",{signal});}
 export async function fetchContentSections(signal){
  const sections=await publicRequest("/content-sections",{signal});
@@ -71,12 +114,16 @@ export async function fetchContentSections(signal){
   typeof section.slug==="string"&&typeof section.title==="string");
 }
 export async function fetchOfferings(signal){return publicRequest("/offerings",{signal});}
+export async function fetchOffering(id,signal){
+ if(!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new ApiError("ID de serviço inválido.");
+ return publicRequest("/offerings/"+Number(id),{signal});
+}
 export async function fetchExperiences(signal){return publicRequest("/experiences",{signal});}
 export async function fetchExperience(id,signal){return publicRequest("/experiences/"+Number(id),{signal});}
 export async function evaluateExperience(id,answers){
  return publicRequest("/experiences/"+Number(id)+"/evaluate",{method:"POST",payload:{answers}});
 }
-export function currentPrice(dto){const raw=dto?.effectivePrice??dto?.price;if(raw===null||raw===undefined)return null;const val=Number(raw);return Number.isFinite(val)&&val>=0?val:null;}
+export function currentPrice(dto){if(dto?.priceStatus==="ON_REQUEST")return null;const raw=dto?.effectivePrice??dto?.price;if(raw===null||raw===undefined||raw==="")return null;const val=Number(raw);return Number.isFinite(val)&&val>=0?val:null;}
 /** Accept only WhatsApp's documented click-to-chat destinations.
  * Never open links with credentials, alternate ports or a malformed phone.
  */
@@ -100,6 +147,8 @@ export function validateWhatsAppUrl(raw){
 }
 export async function confirmWhatsApp({type,id,expectedPrice,customizations={}}){
  if(!["PRODUCT","OFFERING"].includes(type)||!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new ApiError("Seleção inválida.");
+ if(type==="PRODUCT"&&(!Number.isFinite(Number(expectedPrice))||Number(expectedPrice)<=0))
+  throw new ApiError("O preço deste produto ainda não foi confirmado.");
  const payload={type,id:Number(id),expectedPrice:expectedPrice===null?null:expectedPrice,customizations};
  const result=await publicRequest("/whatsapp/confirm",{method:"POST",payload});
  return {url:validateWhatsAppUrl(result?.url),message:String(result.message||"")};

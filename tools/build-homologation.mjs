@@ -17,6 +17,7 @@ if(process.env.ALLOW_EXTERNAL_PUBLIC_API==="true")
 process.env.API_BASE_URL="/api/v1";
 process.env.SITE_MODE="live";
 process.env.ALLOW_EXTERNAL_PUBLIC_API="false";
+delete process.env.PUBLIC_STOREFRONT_URL;
 await import("./build-release.mjs");
 await import("./build-admin.mjs");
 

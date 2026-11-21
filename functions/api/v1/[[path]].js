@@ -4,13 +4,14 @@
  * The browser keeps same-origin /api/v1 and never receives DB or admin credentials.
  */
 const GET_ROUTES=[
- /^\/products(?:\/[0-9]+(?:\/whatsapp)?)?$/,
+ /^\/products(?:\/[0-9]+(?:\/(?:whatsapp|related))?)?$/,
  /^\/brands$/, /^\/categories$/, /^\/store$/,
  /^\/experiences(?:\/[0-9]+)?$/,
  /^\/offerings(?:\/[0-9]+(?:\/whatsapp)?)?$/,
  /^\/content-sections$/, /^\/campaigns$/
 ];
 const POST_ROUTES=[/^\/whatsapp\/confirm$/, /^\/experiences\/[0-9]+\/evaluate$/];
+const SHORT_CACHE=new Set(["/brands","/categories","/store","/content-sections"]);
 const problem=(status,title)=>new Response(JSON.stringify({title}),{
  status,
  headers:{"Content-Type":"application/problem+json; charset=utf-8",
@@ -49,16 +50,21 @@ export async function onRequest(context){
   headers.set("Content-Type","application/json");
  }
  const upstreamDeadline=AbortSignal.timeout(18000);
+ const upstreamSignal=typeof AbortSignal.any==="function"
+  ?AbortSignal.any([upstreamDeadline,request.signal]):upstreamDeadline;
  try{
   const fetchImpl=context.fetchImpl||globalThis.fetch;
-  const response=await fetchImpl(upstream.toString(),{method,headers,body,redirect:"manual",signal:upstreamDeadline});
+  const response=await fetchImpl(upstream.toString(),{method,headers,body,redirect:"manual",signal:upstreamSignal});
   if(response.status>=300&&response.status<400)return problem(502,"Resposta inesperada da API.");
   const contentType=response.headers.get("content-type")||"";
   if(!/^application\/(?:json|problem\+json)(?:\s*;|$)/i.test(contentType))
    return problem(502,"Resposta inválida da API.");
   return new Response(response.body,{
    status:response.status,
-   headers:{"Content-Type":contentType,"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}
+   headers:{"Content-Type":contentType,
+    "Cache-Control":method==="GET"&&response.status===200&&!incoming.search&&SHORT_CACHE.has(path)
+     ?"public, max-age=30, must-revalidate":"no-store",
+    "X-Content-Type-Options":"nosniff"}
   });
  }catch(error){
   if(upstreamDeadline.aborted||error?.name==="TimeoutError")

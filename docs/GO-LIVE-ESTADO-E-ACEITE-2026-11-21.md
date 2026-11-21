@@ -1,5 +1,7 @@
 # Estado operacional e aceite — 21/11/2026
 
+> **Atualização da revisão posterior:** a investigação direta do Render, da API pública e do arquivo de login administrativo foi registrada em [REVISAO-FULLSTACK-2026-11-21.md](REVISAO-FULLSTACK-2026-11-21.md). Este documento preserva o diagnóstico anterior; use a revisão mais recente para o estado técnico.
+
 ## Conclusão resumida
 
 **Vitrine: publicada e com dados cadastrados. Operação completa: ainda não homologada.**

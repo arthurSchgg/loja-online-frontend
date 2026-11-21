@@ -6,6 +6,7 @@ export function safeProductPhotoUrl(raw,{origin="https://example.invalid"}={}){
  if(typeof raw!=="string"||!raw.trim()||raw.length>2048)return null;
  try{
   const url=new URL(raw,origin);
+  if(url.username||url.password)return null;
   if(url.protocol==="https:"||(url.origin===origin&&url.protocol==="http:"))return url.href;
  }catch{}
  return null;

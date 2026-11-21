@@ -18,13 +18,14 @@ SITE_MODE=live API_BASE_URL=/api/v1 npm run build
 | Interação | Endpoint | Resposta/validação |
 |---|---|---|
 | Listar produtos | `GET /api/v1/products?page=0&size=12` | `Page<ProductResponse>`: `content`, `last` (ou array conforme contrato) |
-| Produto | `GET /api/v1/products/{id}` | `id`, `name`, `price`, `effectivePrice`, `available`, `images`, `brand`, `categories` |
+| Produto | `GET /api/v1/products/{id}` | `id`, `name`, `price`, `effectivePrice`, `available`, `images`, `brand`, `categories`; a revisão backend adiciona `priceStatus` e `stockQuantity` |
+| Relacionados | `GET /api/v1/products/{id}/related?limit=4` | Busca global por marca/categoria; compatibilidade transitória usa filtros públicos do backend antigo |
 | Serviços | `GET /api/v1/offerings` | `CANDLE`, `WORKSHOP`, `RENTAL`; `price` pode ser null |
 | Experiências | `GET /api/v1/experiences`, `/{id}` | Perguntas e opções com IDs reais |
 | Resultado do quiz | `POST /api/v1/experiences/{id}/evaluate` | `answers:[{questionId,optionId}]`; perfil e recomendações |
 | Confirmação WhatsApp | `POST /api/v1/whatsapp/confirm` | `{type:"PRODUCT"|"OFFERING",id,expectedPrice,customizations}` → `{url,message}` |
 
-O backend rejeita preços alterados ou indisponibilidade. O frontend exibe a confirmação do item e sua informação vigente **antes** da requisição. O link retornado precisa ser HTTPS em `wa.me` ou `api.whatsapp.com`; um segundo clique voluntário o abre. Sem mensagens automáticas, pagamentos ou pedidos persistidos.
+O backend rejeita preços alterados ou indisponibilidade. O frontend exibe a confirmação do item e sua informação vigente **antes** da requisição. O link retornado precisa ser HTTPS em `wa.me` ou `api.whatsapp.com`; um segundo clique voluntário o abre. É possível copiar a mensagem validada; em caso de alteração comercial, atualizar os dados e confirmar novamente. Sem mensagens automáticas, pagamentos ou pedidos persistidos.
 
 ## Diferença de domínios
 CORS público aceita GET/POST estritamente definidos **sem cookies**. Painel administrativo deve ser servido sob mesmo host HTTPS que a API; cookies HttpOnly e CSRF de sessão não são expostos a uma vitrine hospedada em outra origem.
@@ -41,6 +42,14 @@ Em `SITE_MODE=live`, a busca por nome/descrição e o filtro de categoria são *
 - `GET /api/v1/products?sort=recent|name|price-asc|price-desc&maxPrice=...` aplica ordem e teto de preço **no backend a todo o catálogo**, incluindo promoções vigentes, antes da paginação. A opção `Sem limite` não envia `maxPrice`. O frontend depende do contrato backend [PR #160](https://github.com/arthurSchgg/loja-online-backend/pull/160), ainda sujeito à homologação.
 
 A vitrine nunca substitui falha de API por perfumes/preços ilustrativos. CI cobre filtros, URLs, paginação, falha e requisições concorrentes; homologação real permanece necessária.
+
+### Desempenho, atualização e compatibilidade
+
+- O snapshot sem dados comerciais é carregado apenas nas páginas de catálogo/home/produto. Durante uma consulta, uma prévia pode mostrar fotos e descrições; resposta 404 definitiva remove o produto.
+- Páginas reais já carregadas não são misturadas com a prévia; falhas posteriores permitem repetir a mesma página e preservam as imagens já decodificadas.
+- Revalidação ocorre ao regressar à aba após 30 segundos ou restaurar a página pelo navegador; não existe polling que mantenha o servidor acordado.
+- Só referências institucionais e de filtro recebem cache curto (30 segundos, apenas HTTP 200). Produto, estoque, promoção, serviços e confirmação continuam sem cache.
+- A revisão aceita tanto o status nativo `ON_REQUEST` (`price=null`) quanto o antigo zero técnico para apresentação durante a transição. Nenhum deles libera WhatsApp de produto. O novo contrato de ordenação depende da release backend.
 
 ## Contato institucional em modo live
 

@@ -72,22 +72,24 @@ async function initExperiences(){
  const selection=el("experience-selection"),form=el("experience-form"),questions=el("experience-questions"),result=el("experience-result");
  if(!selection||!form||!questions||!result)return;
  if(!isLive){message("experience-status","Prévia demonstrativa: experiências oficiais aparecerão quando a loja publicar os dados.");return;}
- const reset=()=>{form.hidden=true;result.hidden=true;selection.hidden=false;questions.replaceChildren();result.replaceChildren();};
- el("experience-back").addEventListener("click",reset);
+ let chosen=null,selectionVersion=0;
+ const reset=()=>{selectionVersion++;chosen=null;form.hidden=true;result.hidden=true;selection.hidden=false;questions.replaceChildren();result.replaceChildren();};
+ el("experience-back").onclick=reset;
  message("experience-status","Buscando experiências publicadas...");
  try{
   const items=await fetchExperiences();
   if(!Array.isArray(items))throw new Error("Resposta inesperada");
   selection.replaceChildren();message("experience-status",items.length?"Selecione uma experiência para começar.":"Nenhuma experiência publicada no momento.");
-  let chosen=null;
   for(const item of items){
    const id=validId(item?.id);if(!id)continue;
    const card=document.createElement("article");card.className="experience-card";card.dataset.reveal="";
    card.append(tag("span","EXPERIÊNCIA","eyebrow"),tag("h3",item.title||item.name||"Descoberta"),tag("p",item.description||"Descubra um perfil especial."));
    card.append(button("Começar ↗",async()=>{
+    const revision=++selectionVersion;
     message("experience-status","Carregando perguntas...");
     try{
-     const full=await fetchExperience(id);
+     const full=Array.isArray(item.questions)&&item.questions.length?item:await fetchExperience(id);
+     if(revision!==selectionVersion)return;
      if(!Array.isArray(full?.questions)||!full.questions.length)throw new Error("Sem perguntas publicadas.");
      chosen=full;questions.replaceChildren();result.hidden=true;result.replaceChildren();
      el("experience-title").textContent=String(full.title||full.name||"Sua experiência");
@@ -104,22 +106,25 @@ async function initExperiences(){
       if(fieldset.querySelector("input"))questions.append(fieldset);
      }
      if(!questions.children.length)throw new Error("Não há opções válidas.");
+     form.querySelector('[type="submit"]').disabled=false;
      form.hidden=false;selection.hidden=true;message("experience-status","");
      form.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth",block:"start"});
-    }catch{message("experience-status","Não foi possível carregar esta experiência. Escolha outra ou tente novamente.");}
+    }catch{if(revision===selectionVersion)message("experience-status","Não foi possível carregar esta experiência. Escolha outra ou tente novamente.");}
    }));
    selection.append(card);
   }
   if(!selection.children.length)message("experience-status","Nenhuma experiência disponível.");
   form.addEventListener("submit",async event=>{
    event.preventDefault();if(!chosen)return;
+   const revision=selectionVersion,current=chosen;
    const submit=form.querySelector('[type="submit"]');submit.disabled=true;
    message("experience-status","Consultando o resultado...");
    try{
     const data=new FormData(form);
-    const answers=chosen.questions.map(q=>({questionId:validId(q.id),optionId:validId(data.get("q-"+q.id))}));
+    const answers=current.questions.map(q=>({questionId:validId(q.id),optionId:validId(data.get("q-"+q.id))}));
     if(answers.some(a=>!a.questionId||!a.optionId))throw new Error("Responda todas as perguntas.");
-    const evaluation=await evaluateExperience(chosen.id,answers);
+    const evaluation=await evaluateExperience(current.id,answers);
+    if(revision!==selectionVersion||form.hidden)return;
     result.replaceChildren();result.append(tag("span","SEU RESULTADO","eyebrow"),tag("h3",evaluation.title||evaluation.key||"Seu perfil"));
     if(evaluation.description)result.append(tag("p",evaluation.description));
     if(Array.isArray(evaluation.recommendations)&&evaluation.recommendations.length){
@@ -134,8 +139,8 @@ async function initExperiences(){
     }
     result.hidden=false;message("experience-status","Resultado disponível abaixo.");
     result.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth",block:"nearest"});
-   }catch(e){message("experience-status",e.message||"Não foi possível avaliar suas respostas.");}
-   finally{submit.disabled=false;}
+   }catch(e){if(revision===selectionVersion)message("experience-status",e.message||"Não foi possível avaliar suas respostas.");}
+   finally{if(revision===selectionVersion)submit.disabled=false;}
   });
  }catch{message("experience-status","Experiências indisponíveis no momento.");selection.append(button("Tentar novamente",()=>{selection.replaceChildren();initExperiences();}));}
 }
