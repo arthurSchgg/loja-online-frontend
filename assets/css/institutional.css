@@ -369,3 +369,28 @@ html[data-motion="off"] .chapter-hero__art .editorial-cutout{transform:none!impo
   transition:none!important;
  }
 }
+
+
+/* Editorial detail: a real vector star replaces the colored emoji on iOS. */
+.chapter-story__stamp{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap}
+.chapter-story__stamp-icon{width:16px;height:16px;flex:none;color:#865749;vertical-align:middle}
+.institutional-story-note{
+ margin:0 0 20px;
+ max-width:58ch;
+ font-size:clamp(.98rem,1.8vw,1.12rem);
+ line-height:1.7;
+ color:#65554f;
+}
+.institutional-retry{
+ display:inline-flex;align-items:center;justify-content:center;
+ border:0;border-bottom:1px solid currentColor;border-radius:0;
+ background:transparent;padding:6px 0;min-height:44px;
+ color:#8f5e51;font-size:.75rem;text-transform:uppercase;letter-spacing:.075em;
+ cursor:pointer;
+}
+.institutional-retry:focus-visible{outline:3px solid #845746;outline-offset:4px}
+.chapter-contact__links .institutional-contact-note{
+ flex-basis:100%;margin:0;color:#f1ddd2;line-height:1.6;
+ font-size:clamp(.9rem,2vw,1.02rem);text-align:center;
+}
+.chapter-contact__links .institutional-contact-note+.btn{margin:0}

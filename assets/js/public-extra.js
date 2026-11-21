@@ -6,6 +6,42 @@ function message(id,text){const node=el(id);if(node)node.textContent=text;}
 function validId(raw){const n=Number(raw);return Number.isSafeInteger(n)&&n>0?n:null;}
 function tag(name,content,className){const node=document.createElement(name);node.textContent=String(content??"");if(className)node.className=className;return node;}
 function button(label,action){const b=tag("button",label,"btn btn--secondary");b.type="button";b.addEventListener("click",action);return b;}
+function contactEmpty(links,details,{unavailable=false}={}){
+ links.replaceChildren();
+ const card=document.createElement("div");
+ card.className="contact-empty";
+ card.append(
+  tag("h3",unavailable?"Canais temporariamente indisponíveis":"Canais em atualização"),
+  tag("p",unavailable?
+    "Não foi possível consultar os canais oficiais agora. Nenhum contato não confirmado será exibido.":
+    "Os contatos oficiais aparecerão aqui assim que forem confirmados pela loja.")
+ );
+ if(unavailable)card.append(button("Tentar novamente",()=>void initContact()));
+ const catalog=tag("a","Explorar o catálogo","text-link");
+ catalog.href="catalogo.html";card.append(catalog);
+ links.append(card);
+ if(!details.children.length){
+  const row=document.createElement("div");
+  row.append(tag("dt","Atendimento"),
+   tag("dd","Horários, localização e canais serão exibidos quando estiverem confirmados."));
+  details.append(row);
+ }
+}
+function contactIcon(){
+ const ns="http://www.w3.org/2000/svg";
+ const svg=document.createElementNS(ns,"svg");
+ svg.setAttribute("viewBox","0 0 24 24");
+ svg.setAttribute("fill","none");
+ svg.setAttribute("aria-hidden","true");
+ svg.setAttribute("focusable","false");
+ const path=document.createElementNS(ns,"path");
+ path.setAttribute("d","M5 19 19 5M8 5h11v11");
+ path.setAttribute("stroke","currentColor");
+ path.setAttribute("stroke-width","1.6");
+ path.setAttribute("stroke-linecap","round");
+ path.setAttribute("stroke-linejoin","round");
+ svg.append(path);return svg;
+}
 async function initContact(){
  const links=el("contact-links"),details=el("contact-info");
  if(!links||!details)return;
@@ -14,20 +50,23 @@ async function initContact(){
  try{
   const store=await fetchStore();const channels=officialStoreLinks(store);
   message("contact-status","");
-  if(!channels.length)links.append(tag("p","A loja ainda não publicou canais oficiais."));
+  if(!channels.length)contactEmpty(links,details);
   for(const channel of channels){
-   const a=tag("a",channel.label+" ↗","contact-channel");
+   const a=tag("a",channel.label,"contact-channel");
+   a.append(contactIcon());
    a.href=channel.href;
    if(channel.external){a.target="_blank";a.rel="noopener noreferrer";}
    links.append(a);
   }
+  // The empty-contact card may have inserted a placeholder; real published details win.
+  details.replaceChildren();
   const fields=[["Horários",store.openingHours],["Localização",store.address],["Região de atendimento",store.region]];
   for(const [label,value] of fields){
    if(typeof value!=="string"||!value.trim())continue;
    const row=document.createElement("div");row.append(tag("dt",label),tag("dd",value.trim()));details.append(row);
   }
-  if(!details.children.length){const row=document.createElement("div");row.append(tag("dt","Informações adicionais"),tag("dd","Horários e localização ainda não publicados."));details.append(row);}
- }catch{message("contact-status","Não foi possível consultar os contatos. Tente novamente mais tarde.");links.append(button("Tentar novamente",initContact));}
+  if(!details.children.length){const row=document.createElement("div");row.append(tag("dt","Informações adicionais"),tag("dd","Horários e localização ainda não informados."));details.append(row);}
+ }catch{message("contact-status","");contactEmpty(links,details,{unavailable:true});}
 }
 async function initExperiences(){
  const selection=el("experience-selection"),form=el("experience-form"),questions=el("experience-questions"),result=el("experience-result");
