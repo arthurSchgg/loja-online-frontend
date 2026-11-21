@@ -12,6 +12,19 @@ O usuário pediu que a imagem principal da home parecesse uma **Live Photo**, co
 - O botão de pausa/continuação possui área de toque de 44 × 44 px, rótulo acessível e estado `aria-pressed`.
 - A imagem é **editorial**, sem relação com o catálogo Skelt ou com a quantidade disponível. Produtos e preços continuam vindo do backend.
 
+## Melhorias Live Photo v2 — reprodução e mobile
+
+A revisão preserva o **mesmo pôster WebP e o mesmo vídeo MP4** (sem novo download nem alterações do frasco). O aperfeiçoamento ocorre na apresentação e no controle de reprodução:
+
+- A primeira imagem nítida do vídeo aparece com *crossfade* de 850 ms somente depois de um quadro realmente reproduzido. Até lá, o pôster continua visível, sem flashes pretos.
+- Ao pausar, o **último quadro decodificado permanece na tela**, em vez de alternar abruptamente para o pôster. O botão conserva o estado `aria-pressed`, com rótulo de pausar/continuar.
+- A rolagem para fora da área visível e a troca de abas pausam o vídeo, sem reiniciar o carregamento a cada retorno.
+- O controle não é mostrado até haver reprodução; o atributo `hidden` é respeitado mesmo com CSS próprio.
+- Preferência de movimento reduzido, economia de dados e configuração dinâmica `data-motion="off"` exibem a foto estática e dispensam playback. Erros de mídia nunca deixam um quadro quebrado.
+- Em telas pequenas, a foto usa enquadramento **4:5**, mantendo as proporções dos frascos e evitando o corte horizontal agressivo.
+- Iluminação editorial mais discreta, vinheta suave e bordas/sombra refinadas, sem introduzir outras imagens, animações pesadas ou bibliotecas.
+- Testes Node adicionais verificam ciclo de vida da reprodução e estados de erro; ainda é recomendada homologação visual real no Safari/iPhone.
+
 ## Recomendações de publicação
 
 - Testar o enquadramento nos tamanhos 320, 375, 768, 1024 e 1440 px.
