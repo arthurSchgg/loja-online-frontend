@@ -377,3 +377,74 @@ html[data-motion="off"] .editorial-visual img[data-parallax]{transform:none!impo
   opacity:.85;
  }
 }
+
+
+/* Live Photo v2 — softer editorial lighting, consistent portrait composition,
+   crossfade only after the first decoded frame, frozen frame on pause. */
+.hero-live-frame{
+ background:#d9b5a2;
+ border-color:rgba(255,248,240,.65);
+ box-shadow:0 28px 65px rgba(102,61,51,.16),0 6px 20px rgba(102,61,51,.08);
+}
+.hero-image .hero-live-frame > img[data-hero-bottle],
+.hero-image .hero-live-frame > video.hero-live-video{
+ object-position:center 48%;
+}
+.hero-image .hero-live-frame > video.hero-live-video{
+ transition:opacity 850ms cubic-bezier(.22,1,.36,1);
+}
+.hero-live-frame[data-live-ready="true"] > video.hero-live-video{
+ opacity:1;
+}
+.hero-live-frame::before{
+ content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:radial-gradient(ellipse 80% 75% at 47% 39%,transparent 45%,rgba(60,38,29,.14) 100%);
+ opacity:.68;
+}
+.hero-live-frame::after{
+ z-index:3;opacity:.13;
+ background:linear-gradient(110deg,transparent 27%,rgba(255,246,225,.19) 51%,transparent 74%);
+}
+@keyframes hero-live-light-refined{
+ from{transform:translate3d(-17%,0,0)}
+ to{transform:translate3d(16%,0,0)}
+}
+@media(prefers-reduced-motion:no-preference){
+ .hero-live-frame[data-live-active="true"]::after{
+  animation:hero-live-light-refined 14s ease-in-out infinite alternate;
+  will-change:transform;
+ }
+}
+.hero-live-toggle{
+ z-index:4;
+ right:15px;bottom:15px;
+ background:rgba(39,30,28,.52);
+ border-color:rgba(255,255,255,.55);
+ box-shadow:0 4px 18px rgba(42,23,19,.16);
+}
+.hero-live-toggle[hidden]{display:none!important}
+@media(max-width:768px){
+ .hero-image{height:auto;min-height:0;padding:12px 0 32px}
+ .hero-live-frame{
+  width:min(84vw,390px);
+  height:auto;
+  aspect-ratio:4/5;
+  max-width:100%;
+  max-height:none;
+  border-radius:clamp(20px,6vw,32px);
+ }
+}
+@media(max-width:560px){
+ .hero-image{padding:8px 0 30px}
+ .hero-live-frame{
+  width:min(82vw,340px);
+  aspect-ratio:4/5;
+ }
+ .hero-live-toggle{right:12px;bottom:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hero-live-frame::after{animation:none!important;opacity:0!important}
+ .hero-image .hero-live-frame > video.hero-live-video{transition:none!important}
+}
+html[data-motion="off"] .hero-live-frame::after{animation:none!important;opacity:0!important}
+html[data-motion="off"] .hero-image .hero-live-frame > video.hero-live-video{display:none!important}
