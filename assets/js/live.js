@@ -405,7 +405,7 @@ async function initCatalog(){
   const state=search.state;
   grid.innerHTML=state.items.map(liveProductCard).join("")||'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>';
   if(snapshotActive)
-   showSnapshotNotice(grid,SNAPSHOT_NOTICE+(form.elements.max?.value?" O filtro por preço não pode ser aplicado sem a API.":""));
+   showSnapshotNotice(grid,SNAPSHOT_NOTICE+((form.elements.max?.value||String(form.elements.sort?.value||"").startsWith("price-"))?" A filtragem e a ordenação por preço dependem da API.":""));
   else clearSnapshotNotice(grid);
   toolbar.render();
   count.textContent=categoryWarning+state.items.length+" produtos carregados"+
