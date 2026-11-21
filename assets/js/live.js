@@ -9,6 +9,7 @@ import {setupCatalogToolbar} from "./catalog-toolbar.js";
 import {productGalleryImages} from "./product-gallery.js";
 import {relatedCatalogProducts} from "./related-products.js";
 import {loadCatalogPage} from "./public-catalog-load.js";
+import {snapshotCatalogPage,snapshotCategories,snapshotProduct,canShowPublicSnapshot,SNAPSHOT_NOTICE} from "./public-catalog-snapshot.js";
 import {escapeHtml} from "./layout.js";
 import {UI_ICONS} from "./ui-icons.js";
 import {officialStoreLinks} from "./official-contact.js";
@@ -68,10 +69,27 @@ function liveProductCard(p){
  const id=numberId(p?.id);
  if(id===null)return ""; // API data must never become unescaped HTML attributes.
  const img=safe(imageFromProduct(p)),fallback=safe(imageFallback(p)),price=currentPrice(p),available=!!p.available;
- const pricePending=price===null||price===0;
- const label=pricePending?"Valor sob consulta":money(price);
- const action=pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
+ const preview=p?.offlineSnapshot===true;
+ const pricePending=preview||price===null||price===0;
+ const label=preview?"Preço a confirmar":pricePending?"Valor sob consulta":money(price);
+ const action=preview?'<span class="badge" aria-label="Dados comerciais temporariamente indisponíveis">Informações em atualização</span>':pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
  return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#faf9f6"><img src="'+img+'" data-image-fallback="'+fallback+'" loading="lazy" decoding="async" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div><a class="product-card__details" href="produto.html?productId='+id+'" aria-label="Ver detalhes de '+productTitle(p)+'">Ver detalhes</a></div></article>';
+}
+/** Show previously public photos without using stale stock/prices for sale. */
+function showSnapshotNotice(grid,message=SNAPSHOT_NOTICE){
+ if(!grid?.parentNode)return;
+ let note=grid.parentNode.querySelector('[data-snapshot-for="'+grid.id+'"]');
+ if(!note){
+  note=document.createElement("p");
+  note.className="catalog-snapshot-notice";
+  note.dataset.snapshotFor=grid.id;
+  note.setAttribute("role","status");
+  grid.before(note);
+ }
+ note.textContent=message;
+}
+function clearSnapshotNotice(grid){
+ grid?.parentNode?.querySelector('[data-snapshot-for="'+grid.id+'"]')?.remove();
 }
 /** Perceived-loading placeholder; never substitute fake products for API data. */
 function catalogLoadingMarkup(count=4){
@@ -256,7 +274,11 @@ async function initHome(){
  const grid=document.getElementById("featured-grid");
  if(grid){
   const loadFeatured=async()=>{
-   grid.innerHTML=catalogLoadingMarkup(4);
+   grid.parentNode?.querySelector("[data-home-retry]")?.remove();
+   const preview=snapshotCatalogPage(0);
+   currentProducts=preview.items;
+   grid.innerHTML=preview.items.slice(0,8).map(liveProductCard).join("");
+   showSnapshotNotice(grid,"Conferindo preços e disponibilidade atualizados...");
    grid.setAttribute("aria-busy","true");
    try{
     const page=await loadCatalogPage((index)=>fetchProducts(index),0);
@@ -264,14 +286,18 @@ async function initHome(){
     grid.innerHTML=currentProducts.length?
       currentProducts.slice(0,8).map(liveProductCard).join(""):
       '<div class="catalog-empty"><strong>Nenhum produto publicado ainda.</strong><p>Explore outras experiências da loja enquanto o catálogo é preparado.</p></div>';
+    clearSnapshotNotice(grid);
    }catch(err){
-    grid.replaceChildren();
-    status(grid,"Não foi possível carregar os produtos da loja.",true);
+    if(!canShowPublicSnapshot(err)){
+     grid.replaceChildren();clearSnapshotNotice(grid);
+     status(grid,"Não foi possível carregar os produtos da loja.",true);
+    }else showSnapshotNotice(grid);
     const retry=document.createElement("button");
     retry.type="button";retry.className="btn btn--secondary";
+    retry.dataset.homeRetry="";
     retry.textContent="Tentar novamente";
     retry.addEventListener("click",()=>void loadFeatured(),{once:true});
-    grid.append(retry);
+    grid.after(retry);
    }finally{grid.removeAttribute("aria-busy");}
   };
   // Homepage sections are independent: a sleeping API must not hold the quiz
@@ -323,8 +349,21 @@ async function initCatalog(){
  const featured=form.elements.sort?.querySelector('option[value="featured"]');
  if(featured){featured.value="recent";featured.textContent="Mais recentes";}
  form.elements.sort?.querySelector('option[value="new"]')?.remove();
- const search=createCatalogSearch((page,filters,signal)=>loadCatalogPage(
-  (index,options,requestSignal)=>fetchProducts(index,requestSignal,options),page,filters,undefined,signal));
+ let snapshotActive=false;
+ const search=createCatalogSearch(async(page,filters,signal)=>{
+  if(snapshotActive&&page>0)return snapshotCatalogPage(page,filters);
+  try{
+   const result=await loadCatalogPage(
+    (index,options,requestSignal)=>fetchProducts(index,requestSignal,options),
+    page,filters,undefined,signal);
+   snapshotActive=false;
+   return result;
+  }catch(error){
+   if(!canShowPublicSnapshot(error))throw error;
+   snapshotActive=true;
+   return snapshotCatalogPage(page,filters);
+  }
+ });
  const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";
  loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
  let version=0,searchTimer=null,categoryWarning="";
@@ -332,39 +371,42 @@ async function initCatalog(){
  // Display the unfiltered catalog immediately. The categories endpoint is an
  // independent enhancement and must not block the first product listing.
  const categoryField=family.closest(".field");
- family.disabled=true;
- family.replaceChildren();
- const loadingOption=document.createElement("option");
- loadingOption.value="";loadingOption.textContent="Carregando categorias...";
- family.append(loadingOption);
+ const initialCategories=snapshotCategories();
+ function paintCategories(categories){
+  const selectedId=family.value;
+  family.replaceChildren();
+  const any=document.createElement("option");
+  any.value="";any.textContent="Todas as categorias";family.append(any);
+  for(const c of categories){
+   const option=document.createElement("option");option.value=String(c.id);
+   option.textContent=c.name;family.append(option);
+  }
+  if(selectedId&&categories.some(c=>String(c.id)===selectedId))family.value=selectedId;
+  else if(familyName&&new URLSearchParams(location.search).has("familia")){
+   const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
+   if(match)family.value=String(match.id);
+  }
+  family.disabled=false;
+ }
+ paintCategories(initialCategories);
  async function loadCategories(){
   try{
    const categories=await fetchCategories();
-   family.replaceChildren();
-   const any=document.createElement("option");any.value="";any.textContent="Todas as categorias";family.append(any);
-   for(const category of categories){
-    const option=document.createElement("option");option.value=String(category.id);option.textContent=category.name;family.append(option);
-   }
-   // A visitor can clear the category chip while categories are still loading.
-   // Do not resurrect a removed URL filter when this response arrives later.
-   if(familyName&&new URLSearchParams(location.search).has("familia")){
-    const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
-    if(match)family.value=String(match.id);
-    else categoryWarning="A categoria indicada no link não consta do catálogo real. ";
-   }
-   family.disabled=false;
+   const before=family.value;
+   paintCategories(categories);
+   if(before!==family.value)applyServerFilters();
   }catch(error){
-   categoryField.hidden=true;
-   categoryWarning="Categorias temporariamente indisponíveis; todos os produtos publicados continuam visíveis. ";
-  }finally{
-   toolbar.render();
-   if(familyName&&new URLSearchParams(location.search).has("familia"))applyServerFilters();
-  }
+   // Keep public cached categories rather than hiding the filter entirely.
+   categoryWarning="Categorias carregadas da vitrine salva. ";
+  }finally{toolbar.render();}
  }
  if(params.has("q"))queryField.value=params.get("q").slice(0,180);
  function render(){
   const state=search.state;
   grid.innerHTML=state.items.map(liveProductCard).join("")||'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>';
+  if(snapshotActive)
+   showSnapshotNotice(grid,SNAPSHOT_NOTICE+(form.elements.max?.value?" O filtro por preço não pode ser aplicado sem a API.":""));
+  else clearSnapshotNotice(grid);
   toolbar.render();
   count.textContent=categoryWarning+state.items.length+" produtos carregados"+
     (state.hasNext?" · mais páginas disponíveis":" · fim dos resultados");
@@ -374,12 +416,15 @@ async function initCatalog(){
  async function next(expectedVersion=version){
   if(expectedVersion!==version)return;
   loadMore.disabled=true;
-  if(!search.state.items.length){grid.innerHTML=catalogLoadingMarkup(6);grid.setAttribute("aria-busy","true");}
+  if(!search.state.items.length){
+   if(grid.dataset.snapshotPreview!=="true")grid.innerHTML=catalogLoadingMarkup(6);
+   grid.setAttribute("aria-busy","true");
+  }
   else loadMore.textContent="Carregando mais...";
   try{
    const state=await search.next();
    if(expectedVersion!==version||state.stale)return;
-   currentProducts=state.items;render();
+   currentProducts=state.items;grid.dataset.snapshotPreview="false";render();
   }catch(error){
    if(expectedVersion!==version)return;
    if(!search.state.items.length)grid.replaceChildren();
@@ -392,9 +437,15 @@ async function initCatalog(){
   search.setFilters({q:queryField.value,categoryId:family.closest(".field").hidden?null:family.value,
    sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value||null});
   version++;
-  currentProducts=[];grid.replaceChildren();
+  const preview=snapshotCatalogPage(0,{q:queryField.value,categoryId:family.value,
+   sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value});
+  currentProducts=preview.items;
+  grid.innerHTML=preview.items.map(liveProductCard).join("")||
+   '<div class="catalog-empty"><strong>Nenhum produto correspondente.</strong><p>Tente outro nome ou categoria.</p></div>';
+  grid.dataset.snapshotPreview="true";
+  showSnapshotNotice(grid,"Conferindo dados atualizados...");
   toolbar.render();
-  count.textContent="Buscando produtos no catálogo...";
+  count.textContent="Verificando os dados publicados...";
   loadMore.hidden=true;
   void next(version);
  }
@@ -406,8 +457,7 @@ async function initCatalog(){
  family.addEventListener("change",applyServerFilters);
  for(const field of ["sort","max"])form.elements[field]?.addEventListener("change",applyServerFilters);
  loadMore.addEventListener("click",()=>void next());
- if(familyName)count.textContent="Carregando categoria selecionada...";
- else applyServerFilters();
+ applyServerFilters();
  void loadCategories();
 }
 async function initProduct(){
@@ -418,12 +468,19 @@ async function initProduct(){
  if(!id){status(host,"Selecione um produto do catálogo real.");return;}
  status(host,"Carregando produto...");
  try{
-  const p=await fetchProduct(id);currentProducts=[p];
+  let p;
+  try{p=await fetchProduct(id);}
+  catch(error){
+   if(!canShowPublicSnapshot(error))throw error;
+   p=snapshotProduct(id);
+   if(!p)throw error;
+  }
+  currentProducts=[p];
   const price=currentPrice(p),fallback=imageFallback(p);
   const gallery=productGalleryImages(p,{origin:location.origin,fallback});
   const first=gallery[0]||{url:imageFromProduct(p),alt:p.name||"Produto"};
   const pricePending=price===null||price===0;
-  const priceLabel=pricePending?"Valor sob consulta":money(price);
+  const priceLabel=p.offlineSnapshot?"Preço atualizado indisponível":pricePending?"Valor sob consulta":money(price);
   const categories=(p.categories||[]).filter(c=>typeof c?.name==="string").slice(0,8);
   const meta=categories.map(c=>'<span>'+safe(c.name)+'</span>').join("");
   const thumbs=gallery.length>1?'<div class="product-gallery__thumbs" role="group" aria-label="Escolher imagem do produto">'+
@@ -445,7 +502,7 @@ async function initProduct(){
     (meta?'<div class="product-detail__meta">'+meta+'</div>':"")+
     '<p class="product-detail__price">'+priceLabel+'</p>'+
     '<div class="product-detail__availability">'+
-     (pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
+     (p.offlineSnapshot?'<span class="badge">Aguardando conexão para consultar</span>':pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
       '<span class="badge" aria-label="Indisponível">Indisponível</span>')+
     '</div><p class="product-detail__disclaimer">Imagens ilustram o produto cadastrado. Preço e disponibilidade são confirmados antes de qualquer solicitação.</p>'+
    '</div></section>';
@@ -471,6 +528,8 @@ async function initProduct(){
       other.setAttribute("aria-pressed",String(other===button)));
    });
   });
+  if(p.offlineSnapshot)showSnapshotNotice(host,SNAPSHOT_NOTICE);
+  else clearSnapshotNotice(host);
   document.title=(p.name||"Produto")+" | Lojinha da Kátia";
   if(relatedGrid){
    try{
