@@ -2,7 +2,7 @@
 
 **Edição:** 21/11/2026 · **Público:** proprietária e responsável pela operação  
 **Vitrine pública:** https://main.loja-online-frontend.pages.dev/  
-**Estado deste manual:** a vitrine está publicada, mas a homologação da API e a implantação do painel administrativo ainda têm pendências. Não interpretar a existência de um botão no código como garantia de que o fluxo foi testado em produção.
+**Estado deste manual:** a vitrine está publicada. Na revisão de 21/11, foram constatadas respostas HTTP 200 da API e do arquivo de login administrativo após aquecimento do serviço. O login real, os dados comerciais e a recuperação por e-mail ainda exigem homologação. As melhorias de preço/estoque/admin desta revisão dependem da release backend que inclui as migrações V18/V19.
 
 ## 1. O que a loja faz
 
@@ -36,7 +36,7 @@ A Lojinha da Kátia é uma **vitrine de produtos e experiências**. Ela permite 
 
 ## 4. Como funciona o WhatsApp
 
-Quando o produto ou serviço possui valor válido, está disponível e o backend permite, a página exibe um botão de consulta. A solicitação **confirma os dados no servidor** antes de abrir o WhatsApp. Revise o nome, preço e personalizações e confirme. Se a API não responder ou indicar alteração, não avance: recarregue a página. **Não há compra ou pagamento dentro do site.**
+Quando o produto ou serviço possui valor válido, está disponível e o backend permite, a página exibe um botão de consulta. A solicitação **confirma os dados no servidor** antes de abrir o WhatsApp. Revise o nome, preço e personalizações e confirme. Na versão revisada, também é possível copiar a mensagem confirmada; se os dados mudarem, use **Atualizar informações** e confira o novo valor antes de confirmar novamente. **Não há compra ou pagamento dentro do site.**
 
 ## 5. Experiências e Espaço das Velas
 
@@ -52,13 +52,13 @@ A página **Contato** reúne canais oficiais cadastrados pela proprietária, com
 
 ## 7. Painel administrativo: pré-requisito para acesso
 
-O código do painel está em `admin.html`, com páginas separadas para quizzes e recuperação da conta. O build público do Cloudflare **não inclui o painel**. Seu endereço de produção **não foi confirmado**. Não tente fazer login pela vitrine pública nem coloque senhas em sites de demonstração.
+O arquivo de login administrativo existe no endereço HTTPS do backend: https://lojinha-da-katia-api-rjvx.onrender.com/admin.html. O build público do Cloudflare **não inclui o painel**. Não tente fazer login pela vitrine pública nem coloque senhas em sites de demonstração.
 
-O painel **precisa ser implantado sob a mesma origem HTTPS da API Spring Boot**, com sessão segura e proteção CSRF, e então homologado. Após essa implantação, a pessoa responsável poderá informar o endereço HTTPS autorizado. Antes disso, as instruções das próximas seções descrevem a interface **implementada no código**, não um acesso já liberado.
+O painel é servido sob a mesma origem HTTPS da API Spring Boot, com sessão segura e proteção CSRF. Na revisão direta, a página respondeu HTTP 200 e a consulta administrativa sem login retornou 401, mas não foi realizada autenticação com credenciais reais. Valide a conta e a versão implantada antes de qualquer alteração comercial. Recursos novos desta revisão só aparecem depois da sincronização e release do backend.
 
 ### 7.1 Entrar e sair
 
-1. Abra o endereço administrativo HTTPS autorizado, quando estiver disponível.
+1. Abra o endereço administrativo HTTPS acima, utilizando apenas credenciais da proprietária.
 2. Digite o usuário e a senha da conta administrativa; clique **Entrar com segurança**.
 3. Se o sistema solicitar nova autenticação, entre novamente: a sessão é controlada pelo servidor, com expiração após 30 minutos de inatividade.
 4. Ao terminar, use **Encerrar sessão**. Nunca compartilhe senha, código de recuperação ou captura do token CSRF.
@@ -74,14 +74,14 @@ Cadastre primeiro as marcas e categorias necessárias. Cada uma recebe um ID usa
 ### 7.4 Produtos
 
 1. Em **Produtos**, escolha o cadastro existente ou **Novo cadastro**.
-2. Informe **Nome**, **Descrição**, **Preço vigente (R$)**, **ID da marca** e os **IDs das categorias** separados por vírgulas. O formulário atual exige preço; não atribua valores fictícios. Os itens sem valor confirmado precisam de revisão antes de ser ofertados.
+2. Informe **Nome**, **Descrição**, **Preço base (R$)**, **ID da marca** e os **IDs das categorias** separados por vírgulas. Após a nova release, escolha **Situação do preço**: preço confirmado (valor positivo informado) ou **Valor sob consulta** (sem preço numérico). Não atribua valores fictícios; produtos sem preço confirmado não liberam solicitação.
 3. Em **Imagens HTTPS**, forneça uma por linha no formato `URL|descrição`. Na publicação, o produto precisa de pelo menos uma imagem válida.
 4. Marque **Publicado** para exibir na vitrine; use **Disponível manualmente** somente quando o item puder de fato ser consultado.
 5. Salve e confira o cadastro no site público. Atualize a página caso exista cache no navegador.
 
 **Estoque:** no registro do produto, abra **Estoque**; use **Entrada**, **Saída** ou **Ajuste** com quantidade e motivo. Confira o saldo e o histórico após salvar. Não use o formulário para inventar unidades. Na conferência de 21/11, o banco tinha 65 produtos, todos cadastrados com uma unidade.
 
-**Promoções:** no registro do produto, abra **Promoções**, informe o preço promocional e as datas. Promoções encerradas devem permanecer no histórico; o preço vigente precisa ser conferido no catálogo após alteração.
+**Promoções:** no registro do produto, abra **Promoções**, informe o preço promocional e as datas locais. Na versão revisada, promoções programadas podem ser editadas; promoções encerradas permanecem no histórico. O preço vigente precisa ser conferido no catálogo após alteração.
 
 ### 7.5 Velas, oficinas e locações
 
