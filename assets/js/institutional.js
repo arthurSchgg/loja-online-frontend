@@ -95,28 +95,33 @@ function renderStory(section){
  }
  return article;
 }
+let aboutVersion=0;
 async function initAbout(){
  const story=host("official-story"),contacts=host("about-contacts");
  if(!story||!contacts)return;
+ const revision=++aboutVersion;
  storyNote(story,"Conheça um pouco mais sobre a nossa essência.");
  status(contacts,"Buscando os contatos oficiais...");
  const signature=document.querySelector(".quote-section__signature");
  if(signature)signature.textContent="Lojinha da Kátia";
- // One endpoint can fail without preventing the other from displaying.
- const [sections,store]=await Promise.allSettled([fetchContentSections(),fetchStore()]);
- if(sections.status==="fulfilled"){
-  const published=sections.value.filter(isAboutSection);
+ // Render independent results as soon as each arrives, even if the other
+ // endpoint is still waking up or unavailable.
+ const storyRequest=fetchContentSections().then(sections=>{
+  if(revision!==aboutVersion)return;
+  const published=sections.filter(isAboutSection);
   story.replaceChildren();
   if(published.length){
    for(const section of published)story.append(renderStory(section));
   }else storyNote(story,"Em breve, este espaço vai apresentar mais sobre a história da Lojinha da Kátia.");
- }else storyNote(story,"Nossa história está temporariamente indisponível. Você pode conhecer os produtos e as experiências da loja enquanto isso.",true);
- if(store.status==="fulfilled"){
+ }).catch(()=>{if(revision===aboutVersion)storyNote(story,"Nossa história está temporariamente indisponível. Você pode conhecer os produtos e as experiências da loja enquanto isso.",true);});
+ const contactRequest=fetchStore().then(store=>{
+  if(revision!==aboutVersion)return;
   const intro=host("about-summary");
-  if(intro&&typeof store.value.description==="string"&&store.value.description.trim())
-   intro.textContent=store.value.description;
-  renderContacts(contacts,store.value);
- }else contactNote(contacts,"Os canais oficiais estão temporariamente indisponíveis.",true);
+  if(intro&&typeof store.description==="string"&&store.description.trim())
+   intro.textContent=store.description;
+  renderContacts(contacts,store);
+ }).catch(()=>{if(revision===aboutVersion)contactNote(contacts,"Os canais oficiais estão temporariamente indisponíveis.",true);});
+ await Promise.allSettled([storyRequest,contactRequest]);
 }
 const typeLabels=Object.freeze({CANDLE:"Velas",WORKSHOP:"Oficinas",RENTAL:"Locações"});
 function createCard(item){

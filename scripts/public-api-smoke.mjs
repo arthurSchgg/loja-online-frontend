@@ -38,12 +38,20 @@ export async function runPublicSmoke(rawOrigin,fetchImpl=globalThis.fetch){
   assert.ok(Array.isArray(page1?.content),"Próxima página de produtos inválida.");
   products.push(...page1.content);
  }
- let previous=-Infinity,previousId=Infinity;
+ let previous=-Infinity,previousId=Infinity,pendingId=null;
  for(const p of products){
-  const amount=Number(p?.effectivePrice??p?.price);
-  assert.ok(Number.isFinite(amount)&&amount>=0,"Preço efetivo ausente ou inválido.");
   const id=Number(p?.id);
   assert.ok(Number.isSafeInteger(id)&&id>0,"ID de produto inválido.");
+  if(p.priceStatus==="ON_REQUEST"){
+   assert.equal(p.price,null,"Preço pendente não deve conter valor técnico.");
+   assert.equal(p.effectivePrice,null);
+   assert.equal(p.available,false,"Preço pendente não pode liberar consulta.");
+   if(pendingId!==null)assert.ok(id<pendingId,"Preços pendentes devem usar ID decrescente.");
+   pendingId=id;continue;
+  }
+  assert.equal(pendingId,null,"Preços confirmados devem vir antes dos valores sob consulta.");
+  const amount=Number(p?.effectivePrice??p?.price);
+  assert.ok(Number.isFinite(amount)&&amount>0,"Preço efetivo ausente ou inválido.");
   assert.ok(amount>=previous,"A API não ordenou globalmente por preço efetivo.");
   if(amount===previous)assert.ok(id<previousId,"Desempate da ordenação por preço deve usar ID decrescente.");
   previous=amount;previousId=id;

@@ -8,9 +8,11 @@ export function relatedCatalogProducts(product,candidates,limit=4){
  const categories=new Set((Array.isArray(product.categories)?product.categories:[])
   .map(c=>Number(c?.id)).filter(id=>Number.isSafeInteger(id)&&id>0));
  const ranked=[];
+ const seen=new Set();
  candidates.forEach((item,index)=>{
   const id=Number(item?.id);
-  if(!Number.isSafeInteger(id)||id<1||id===ownerId||item.published===false)return;
+  if(!Number.isSafeInteger(id)||id<1||id===ownerId||item.published===false||seen.has(id))return;
+  seen.add(id);
   const sameBrand=Number.isSafeInteger(brandId)&&brandId>0&&Number(item.brand?.id)===brandId;
   const categoryMatch=(Array.isArray(item.categories)?item.categories:[])
    .some(cat=>categories.has(Number(cat?.id)));

@@ -54,3 +54,15 @@ test("smoke rejects incorrect global ordering and exposed answer keys",async()=>
  };
  await assert.rejects(()=>runPublicSmoke("https://staging.example.com",mock),/exposta/);
 });
+
+test("native consultation prices are explicitly null, unavailable, and ordered last",async()=>{
+ const pending={id:9,price:null,effectivePrice:null,priceStatus:"ON_REQUEST",available:false};
+ const mock=products=>async(url)=>{
+  const path=new URL(url).pathname;
+  return {ok:true,status:200,json:async()=>path==="/api/v1/products"?
+   {content:products,last:true}:path==="/api/v1/store"?{}:[]};
+ };
+ assert.equal((await runPublicSmoke("https://staging.example.com",mock([{id:1,price:30},pending]))).productsChecked,2);
+ await assert.rejects(()=>runPublicSmoke("https://staging.example.com",mock([pending,{id:1,price:30}])),/confirmados/);
+ await assert.rejects(()=>runPublicSmoke("https://staging.example.com",mock([{id:1,price:0}])),/Preço efetivo/);
+});

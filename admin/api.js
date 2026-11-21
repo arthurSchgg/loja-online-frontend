@@ -32,9 +32,15 @@ export class AdminApi{
   if(body instanceof URLSearchParams){requestBody=body;headers["Content-Type"]="application/x-www-form-urlencoded";}
   else if(body!==undefined){requestBody=JSON.stringify(body);headers["Content-Type"]="application/json";}
   let response;
+  const deadline=new AbortController();
+  const timer=setTimeout(()=>deadline.abort(),25000);
   try{response=await this.fetchImpl("/api/v1"+path,{method,headers,body:requestBody,
-    credentials:"same-origin",cache:"no-store",redirect:"error",referrerPolicy:"same-origin"});}
-  catch{throw new AdminApiError("Servidor indisponível.");}
+    signal:deadline.signal,credentials:"same-origin",cache:"no-store",redirect:"error",referrerPolicy:"same-origin"});}
+  catch{
+   if(method!=="GET")throw new AdminApiError("Não foi possível confirmar a operação. Recarregue os dados antes de repetir uma gravação.");
+   throw new AdminApiError("Servidor indisponível. Tente novamente.");
+  }
+  finally{clearTimeout(timer);}
   if(!response.ok){
    if(response.status===401)this.#csrf=null;
    const map={400:"Confira os dados.",401:"Sessão expirada ou credenciais inválidas.",403:"Ação não autorizada ou CSRF inválido.",404:"Recurso não encontrado.",409:"Conflito de dados; recarregue antes de salvar.",429:"Muitas tentativas; tente mais tarde."};
