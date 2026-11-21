@@ -432,6 +432,7 @@ async function initProduct(){
     const index=Number(button.dataset.productThumb);
     if(!Number.isSafeInteger(index)||index<0||index>=gallery.length||!mainImage)return;
     const chosen=gallery[index];
+    mainImage.dataset.imageFallback=fallback;
     mainImage.src=chosen.url;
     mainImage.alt=chosen.alt;
     main?.setAttribute("aria-pressed","false");
