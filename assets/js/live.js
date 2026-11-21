@@ -223,10 +223,26 @@ async function initHome(){
  void initContact();
  const grid=document.getElementById("featured-grid");
  if(grid){
-  grid.innerHTML=catalogLoadingMarkup(4);grid.setAttribute("aria-busy","true");
-  try{const page=await loadCatalogPage((index)=>fetchProducts(index),0);currentProducts=page.items;grid.innerHTML=currentProducts.length?currentProducts.slice(0,8).map(liveProductCard).join(""):"<p>Nenhum produto publicado no momento.</p>";}
-  catch(err){grid.replaceChildren();status(grid,err.message,true);}
-  finally{grid.removeAttribute("aria-busy");}
+  const loadFeatured=async()=>{
+   grid.innerHTML=catalogLoadingMarkup(4);
+   grid.setAttribute("aria-busy","true");
+   try{
+    const page=await loadCatalogPage((index)=>fetchProducts(index),0);
+    currentProducts=page.items;
+    grid.innerHTML=currentProducts.length?
+      currentProducts.slice(0,8).map(liveProductCard).join(""):
+      '<div class="catalog-empty"><strong>Nenhum produto publicado ainda.</strong><p>Explore outras experiências da loja enquanto o catálogo é preparado.</p></div>';
+   }catch(err){
+    grid.replaceChildren();
+    status(grid,"Não foi possível carregar os produtos da loja.",true);
+    const retry=document.createElement("button");
+    retry.type="button";retry.className="btn btn--secondary";
+    retry.textContent="Tentar novamente";
+    retry.addEventListener("click",()=>void loadFeatured(),{once:true});
+    grid.append(retry);
+   }finally{grid.removeAttribute("aria-busy");}
+  };
+  await loadFeatured();
  }
  // Replace local demonstration quiz with the actual backend question contract.
  const quiz=document.getElementById("quiz-form");
@@ -319,7 +335,9 @@ async function initCatalog(){
    for(const category of categories){
     const option=document.createElement("option");option.value=String(category.id);option.textContent=category.name;family.append(option);
    }
-   if(familyName){
+   // A visitor can clear the category chip while categories are still loading.
+   // Do not resurrect a removed URL filter when this response arrives later.
+   if(familyName&&new URLSearchParams(location.search).has("familia")){
     const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
     if(match)family.value=String(match.id);
     else categoryWarning="A categoria indicada no link não consta do catálogo real. ";
