@@ -316,13 +316,15 @@ async function initCatalog(){
    categoryField.hidden=true;
    categoryWarning="Categorias temporariamente indisponíveis; todos os produtos publicados continuam visíveis. ";
   }finally{
-   if(familyName)applyServerFilters();
+   toolbar.render();
+   if(familyName&&new URLSearchParams(location.search).has("familia"))applyServerFilters();
   }
  }
  if(params.has("q"))queryField.value=params.get("q").slice(0,180);
  function render(){
   const state=search.state;
-  grid.innerHTML=state.items.map(liveProductCard).join("")||'<p>Nenhum produto encontrado com estes filtros.</p>';
+  grid.innerHTML=state.items.map(liveProductCard).join("")||'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>';
+  toolbar.render();
   count.textContent=categoryWarning+state.items.length+" produtos carregados"+
     (state.hasNext?" · mais páginas disponíveis":" · fim dos resultados");
   loadMore.hidden=!state.hasNext;
@@ -330,7 +332,9 @@ async function initCatalog(){
  }
  async function next(expectedVersion=version){
   if(expectedVersion!==version)return;
-  loadMore.disabled=true;status(grid,"Carregando produtos publicados...");
+  loadMore.disabled=true;
+  if(!search.state.items.length){grid.innerHTML=catalogLoadingMarkup(6);grid.setAttribute("aria-busy","true");}
+  else loadMore.textContent="Carregando mais...";
   try{
    const state=await search.next();
    if(expectedVersion!==version||state.stale)return;
@@ -340,7 +344,7 @@ async function initCatalog(){
    if(!search.state.items.length)grid.replaceChildren();
    status(grid,"Não foi possível carregar esta página: "+(error?.message||"Tente novamente."),true);
    loadMore.textContent="Tentar novamente";loadMore.hidden=false;
-  }finally{if(expectedVersion===version)loadMore.disabled=false;}
+  }finally{if(expectedVersion===version){loadMore.disabled=false;grid.removeAttribute("aria-busy");}}
  }
  function applyServerFilters(){
   window.clearTimeout(searchTimer);
@@ -348,10 +352,12 @@ async function initCatalog(){
    sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value||null});
   version++;
   currentProducts=[];grid.replaceChildren();
+  toolbar.render();
   count.textContent="Buscando produtos no catálogo...";
   loadMore.hidden=true;
   void next(version);
  }
+ const toolbar=setupCatalogToolbar({form,count,onChange:applyServerFilters});
  queryField.addEventListener("input",()=>{
   window.clearTimeout(searchTimer);
   searchTimer=window.setTimeout(applyServerFilters,300);
