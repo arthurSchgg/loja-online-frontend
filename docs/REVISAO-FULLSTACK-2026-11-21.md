@@ -37,6 +37,10 @@ O serviço publicado está em `b6963adb192fa3d6c740d3e4748fa1250140edcd` (17/11)
 | Frontend | 172 testes Node aprovados; sintaxe de 98 arquivos JS e imagens verificadas |
 | Build | Demo, release live, admin, HML e separação de segurança aprovados |
 | Browser automatizado local | Tentativa bloqueada pelo ambiente de execução: Chromium não iniciou por restrição de socket/processo. Não considerar os testes Playwright executados nem reprovados por assertion do site. |
+| Prévia Cloudflare, PR #112 | Build bem-sucedido com o quality gate; conferência manual da home, busca por Malbec e detalhes do produto, incluindo a recuperação segura quando a API não respondeu. |
+| CI remota | Os jobs do GitHub Actions terminaram com falha em poucos segundos, sem etapas ou logs de execução disponíveis. Testes locais e quality gate do Cloudflare são evidências distintas; não declarar CI remota aprovada. |
+
+Diagnóstico complementar: durante a conferência da prévia, tanto o domínio atual quanto o da prévia responderam HTTP 504 na consulta ao catálogo, enquanto a origem Render também excedeu 25 segundos. Os logs do serviço mostram inicialização anterior do Spring Boot em 135,996 segundos e uma nova inicialização no momento da conferência. Isso confirma a necessidade de considerar o tempo de inicialização do plano gratuito; aumentar indiscriminadamente o tempo de espera não substitui o modo seguro de recuperação nem uma hospedagem adequada.
 
 Referências do backend: [contrato REST](https://github.com/arthurSchgg/loja-online-backend/blob/develop/docs/API.md), [issue #190](https://github.com/arthurSchgg/loja-online-backend/issues/190) e [release #189](https://github.com/arthurSchgg/loja-online-backend/issues/189).
 
