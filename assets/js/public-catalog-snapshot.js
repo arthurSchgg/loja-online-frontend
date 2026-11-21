@@ -1472,6 +1472,7 @@ export const SNAPSHOT_NOTICE="Exibindo fotos e descrições salvas enquanto a co
 export function canShowPublicSnapshot(error){
  if(error?.name==="AbortError")return false;
  const status=Number(error?.status??0);
+ if(status===0&&error?.name!=="ApiError")return false;
  return [0,400,404,408,429,500,502,503,504].includes(status);
 }
 export function snapshotCategories(){
