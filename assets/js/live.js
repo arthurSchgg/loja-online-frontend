@@ -471,7 +471,9 @@ async function initProduct(){
   let p;
   try{p=await fetchProduct(id);}
   catch(error){
-   if(!canShowPublicSnapshot(error))throw error;
+   // A real 404/400 for a product may mean it was unpublished or removed.
+   // Never resurrect it from an older public preview.
+   if([400,404].includes(Number(error?.status))||!canShowPublicSnapshot(error))throw error;
    p=snapshotProduct(id);
    if(!p)throw error;
   }
