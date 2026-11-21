@@ -99,3 +99,28 @@ test("changing price ceiling or global order restarts server pagination",async()
  assert.throws(()=>catalog.setFilters({sort:"unknown"}),/Ordenação inválida/);
  assert.throws(()=>catalog.setFilters({maxPrice:-1}),/Preço máximo inválido/);
 });
+
+test("changing filters aborts the previous in-flight request immediately",async()=>{
+ let firstSignal;
+ let observeAbort;
+ const aborted=new Promise(resolve=>{observeAbort=resolve;});
+ const catalog=createCatalogSearch((page,filters,signal)=>{
+  if(filters.q==="old"){
+   firstSignal=signal;
+   signal.addEventListener("abort",observeAbort,{once:true});
+   return new Promise((resolve,reject)=>{
+    signal.addEventListener("abort",()=>reject(Object.assign(new Error("aborted"),{name:"AbortError"})),{once:true});
+   });
+  }
+  return Promise.resolve({items:[{id:7,name:"new"}],hasNext:false});
+ });
+ catalog.setFilters({q:"old"});
+ const oldPromise=catalog.next();
+ catalog.setFilters({q:"new"});
+ await aborted;
+ assert.equal(firstSignal.aborted,true);
+ const latest=await catalog.next();
+ const outdated=await oldPromise;
+ assert.equal(outdated.stale,true);
+ assert.deepEqual(latest.items.map(p=>p.name),["new"]);
+});
