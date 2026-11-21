@@ -48,9 +48,10 @@ export async function onRequest(context){
   }catch{return problem(400,"Corpo inválido.");}
   headers.set("Content-Type","application/json");
  }
+ const upstreamDeadline=AbortSignal.timeout(18000);
  try{
   const fetchImpl=context.fetchImpl||globalThis.fetch;
-  const response=await fetchImpl(upstream.toString(),{method,headers,body,redirect:"manual"});
+  const response=await fetchImpl(upstream.toString(),{method,headers,body,redirect:"manual",signal:upstreamDeadline});
   if(response.status>=300&&response.status<400)return problem(502,"Resposta inesperada da API.");
   const contentType=response.headers.get("content-type")||"";
   if(!/^application\/(?:json|problem\+json)(?:\s*;|$)/i.test(contentType))
@@ -59,5 +60,9 @@ export async function onRequest(context){
    status:response.status,
    headers:{"Content-Type":contentType,"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}
   });
- }catch{return problem(502,"Não foi possível conectar à API.");}
+ }catch(error){
+  if(upstreamDeadline.aborted||error?.name==="TimeoutError")
+   return problem(504,"A API demorou a responder. Tente novamente.");
+  return problem(502,"Não foi possível conectar à API.");
+ }
 }
