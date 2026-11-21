@@ -373,3 +373,44 @@ test("live | homepage displays eight published but unavailable products without 
  await expect(page.locator("#featured-grid .badge")).toHaveCount(8);
  await expect(page.locator("#mais-amados")).toContainText("Produtos para descobrir");
 });
+
+
+test("live | 65 published product photos remain visible while public API returns 503",async({page})=>{
+ await page.route("**/api/v1/**",route=>route.fulfill({
+  status:503,contentType:"application/problem+json",body:'{"title":"API temporarily unavailable"}'
+ }));
+ await page.goto("/catalogo.html");
+ const live=await page.evaluate(async()=>(await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires SITE_MODE=live");
+ await expect(page.locator("#catalog-grid .product-card")).toHaveCount(12,{timeout:6000});
+ await expect(page.locator("#catalog-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#catalog-grid")).toContainText("Informações em atualização");
+ await expect(page.locator("#family option").count()).resolves.toBeGreaterThan(1);
+ await expect(page.locator("#catalog-grid img")).toHaveCount(12);
+ const names=await page.locator("#catalog-grid .product-card__meta h3").allTextContents();
+ expect(new Set(names).size).toBe(12);
+});
+
+test("live | home displays eight safe product previews during upstream outage",async({page})=>{
+ await page.route("**/api/v1/**",route=>route.fulfill({
+  status:503,contentType:"application/problem+json",body:'{"title":"API temporarily unavailable"}'
+ }));
+ await page.goto("/index.html");
+ const live=await page.evaluate(async()=>(await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires SITE_MODE=live");
+ await expect(page.locator("#featured-grid .product-card")).toHaveCount(8,{timeout:6000});
+ await expect(page.locator("#featured-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#featured-grid")).toContainText("Informações em atualização");
+});
+
+test("live | product details show photo but never a checkout from stale snapshot",async({page})=>{
+ await page.route("**/api/v1/**",route=>route.fulfill({
+  status:503,contentType:"application/problem+json",body:'{"title":"API temporarily unavailable"}'
+ }));
+ await page.goto("/produto.html?productId=65");
+ const live=await page.evaluate(async()=>(await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires SITE_MODE=live");
+ await expect(page.locator("#product-content .product-detail h1")).toContainText("Demaquilante",{timeout:8000});
+ await expect(page.locator("#product-content [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#product-content")).toContainText("Preço atualizado indisponível");
+});
