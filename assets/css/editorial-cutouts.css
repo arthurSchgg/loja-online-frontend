@@ -1,0 +1,87 @@
+/*
+ * Editorial packshot silhouettes | Lojinha da Kátia
+ * The source photographs are still the real fragrances already approved.
+ * Local SVG alpha silhouettes clip away rectangular photo backgrounds;
+ * multiply only blends any remaining pale antialiasing at the edges.
+ * They do not claim a commercially licensed source photo or replace the SKU art.
+ */
+.chapter-hero__art .editorial-cutout-shell{mix-blend-mode:normal!important;isolation:auto}
+img[data-editorial-photo]:not(.editorial-product-photo--scene){
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  mix-blend-mode:multiply!important;
+  object-fit:contain!important;
+  filter:contrast(1.055) saturate(1.015) drop-shadow(0 16px 19px rgba(85,46,40,.14))!important;
+  -webkit-mask-repeat:no-repeat!important;
+  mask-repeat:no-repeat!important;
+  -webkit-mask-size:100% 100%!important;
+  mask-size:100% 100%!important;
+  -webkit-mask-position:center!important;
+  mask-position:center!important;
+}
+img[data-editorial-photo][src*="Lily-Eau-de-Parfum"]{
+  -webkit-mask-image:url("../images/editorial/masks/lily.svg")!important;
+  mask-image:url("../images/editorial/masks/lily.svg")!important;
+  /* The official Lily studio crop fills more of its JPEG canvas than the cutout reference. */
+  -webkit-mask-size:128% 114%!important;
+  mask-size:128% 114%!important;
+}
+img[data-editorial-photo][src*="1013877_21.jpg"]{
+  -webkit-mask-image:url("../images/editorial/masks/egeo.svg")!important;
+  mask-image:url("../images/editorial/masks/egeo.svg")!important;
+  -webkit-mask-size:100% 111%!important;
+  mask-size:100% 111%!important;
+}
+img[data-editorial-photo][src*="Malbec_O_Boticario"]{
+  -webkit-mask-image:url("../images/editorial/masks/malbec.svg")!important;
+  mask-image:url("../images/editorial/masks/malbec.svg")!important;
+}
+img[data-editorial-photo][src*="sg-11134201-7rasu"]{
+  -webkit-mask-image:url("../images/editorial/masks/floratta.svg")!important;
+  mask-image:url("../images/editorial/masks/floratta.svg")!important;
+  -webkit-mask-size:115% 100%!important;
+  mask-size:115% 100%!important;
+}
+/* The candle/flowers are an environmental photo, not a packshot with a white
+   matte. Treat it as a deliberate photographic editorial scene, with a
+   feathered edge so it joins the section without a visible rectangle. */
+img[data-editorial-photo].editorial-product-photo--scene{
+  mix-blend-mode:normal!important;
+  border:0!important;
+  box-shadow:none!important;
+  border-radius:20px;
+  object-fit:cover!important;
+  object-position:center!important;
+  -webkit-mask-image:radial-gradient(ellipse 81% 83% at center,#000 60%,rgba(0,0,0,.92) 73%,transparent 100%)!important;
+  mask-image:radial-gradient(ellipse 81% 83% at center,#000 60%,rgba(0,0,0,.92) 73%,transparent 100%)!important;
+}
+.chapter-hero__art .editorial-cutout-shell,
+.chapter-story__art .chapter-story__visual{
+  transform-origin:50% 60%;
+}
+@media(max-width:768px){
+  .chapter-hero__art .editorial-cutout-shell{width:min(68vw,325px)!important;max-height:380px}
+  .chapter-hero__art .editorial-cutout-shell img{max-width:100%!important;max-height:380px!important}
+  .chapter-story__art .chapter-story__visual{width:min(72vw,300px)!important;max-height:325px!important}
+  .collection-tile img[data-editorial-photo]:not(.editorial-product-photo--scene){
+    width:min(49vw,215px)!important;
+    max-width:49%!important;
+    opacity:1!important;
+  }
+}
+@media(max-width:560px){
+  .chapter-hero__art .editorial-cutout-shell{width:min(68vw,285px)!important;max-height:315px}
+  .chapter-hero__art .editorial-cutout-shell img{max-height:315px!important}
+  .chapter-story__art .chapter-story__visual{width:min(70vw,270px)!important;max-height:280px!important}
+  img[data-editorial-photo].editorial-product-photo--scene{border-radius:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  img[data-editorial-photo],.chapter-hero__art .editorial-cutout-shell{
+    animation:none!important;transition:none!important
+  }
+}
+html[data-motion="off"] .chapter-hero__art .editorial-cutout-shell{
+  animation:none!important;transition:none!important
+}
