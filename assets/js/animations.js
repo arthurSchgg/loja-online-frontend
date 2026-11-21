@@ -33,7 +33,8 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
  const once = new WeakSet();
  const observedImages = new WeakSet();
  const visibleImages = new Set();
- const imageSelector = "[data-parallax], .product-visual img, .collection-tile img, .editorial-visual img";
+ // Product cards keep their elegant hover/reveal, but do not repaint every image on scroll.
+ const imageSelector = "[data-parallax], .collection-tile img, .editorial-visual img";
  // Gentle image depth is available on mobile too. Previously it was entirely
  // disabled below 769px, which made touch devices look static.
  const imageMotion = canAnimate && "IntersectionObserver" in win;
@@ -74,9 +75,9 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
     if (!el.isConnected || el.closest("[hidden]")) continue;
     const index = [...(el.parentElement?.children ?? [])].indexOf(el);
     el.animate([
-     {opacity: 0, transform: "translate3d(0, 26px, 0) scale(.985)"},
+     {opacity: 0, transform: "translate3d(0, 20px, 0) scale(.988)"},
      {opacity: 1, transform: "translate3d(0, 0, 0) scale(1)"}
-    ], {duration: 820, delay: revealDelay(index), easing: "cubic-bezier(.22,1,.36,1)"});
+    ], {duration: 720, delay: revealDelay(index), easing: "cubic-bezier(.22,1,.36,1)"});
    }
   }, {threshold: 0.12, rootMargin: "0px 0px -4% 0px"});
   const observe = node => {
@@ -146,7 +147,7 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
    if(!el.isConnected){visibleImages.delete(el);continue;}
    const bounds=el.getBoundingClientRect();
    // Intentionally perceptible on desktop, softer on narrow touch viewports.
-   const limit=win.innerWidth<=768?12:28;
+   const limit=win.innerWidth<=768?8:20;
    const offset=imageScrollOffset(bounds.top+bounds.height/2,win.innerHeight,limit);
    el.style.setProperty("--motion-shift",offset.toFixed(2)+"px");
   }

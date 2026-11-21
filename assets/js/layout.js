@@ -70,6 +70,7 @@ function renderShell(){
   drawer?.remove();
   const footerLabel=footer?.querySelector(".footer-end span");
   if(footerLabel)footerLabel.textContent="© Lojinha da Kátia · Catálogo publicado";
+  footer?.querySelector('a[href^="https://github.com/"]')?.remove();
  }
  renderBag();
 }
