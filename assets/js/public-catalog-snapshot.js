@@ -1500,5 +1500,5 @@ export function snapshotCatalogPage(page=0,filters={}){
  const size=12,offset=index*size;
  return {items:filtered.slice(offset,offset+size).map(p=>({...p,offlineSnapshot:true})),
   hasNext:offset+size<filtered.length,offlineSnapshot:true,total:filtered.length,
-  priceFilterUnavailable:filters.maxPrice!==null&&filters.maxPrice!==undefined&&filters.maxPrice!==""};
+  priceFilterUnavailable:(filters.maxPrice!==null&&filters.maxPrice!==undefined&&filters.maxPrice!=="")||String(filters.sort||"").startsWith("price-")};
 }
