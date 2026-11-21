@@ -14,6 +14,26 @@ export function activeCatalogFilters({q="",categoryId="",categoryName="",maxPric
  }
  return result;
 }
+/** Keep independent catalog URL filters intact when one chip is cleared.
+ * A not-yet-loaded category is preserved from the existing URL so a slow
+ * categories response cannot silently erase the visitor's deep link.
+ */
+export function catalogAddressAfterClear(raw,{key,q="",family="",categoryReady=false}={}){
+ const url=new URL(raw);
+ if(key==="query"||key==="all")url.searchParams.delete("q");
+ else{
+  const search=String(q??"").trim().slice(0,180);
+  if(search)url.searchParams.set("q",search);
+  else url.searchParams.delete("q");
+ }
+ if(key==="family"||key==="all")url.searchParams.delete("familia");
+ else if(categoryReady){
+  const name=String(family??"").trim().slice(0,120);
+  if(name)url.searchParams.set("familia",name);
+  else url.searchParams.delete("familia");
+ }
+ return url.pathname+url.search+url.hash;
+}
 export function setupCatalogToolbar({form,count,onChange,doc=globalThis.document,win=globalThis.window}={}){
  if(!doc||!form||!count||typeof onChange!=="function")return {render(){},destroy(){}};
  const toolbar=doc.createElement("div");
@@ -26,13 +46,17 @@ export function setupCatalogToolbar({form,count,onChange,doc=globalThis.document
  chips.setAttribute("aria-label","Filtros ativos");
  toolbar.after(chips);
 
- const updateAddress=()=>{
+ const updateAddress=key=>{
   if(!win?.history?.replaceState||!win?.location)return;
   try{
-   const url=new URL(win.location.href);
-   url.searchParams.delete("q");url.searchParams.delete("familia");
-   win.history.replaceState(win.history.state,"",url.pathname+url.search+url.hash);
-  }catch{ /* UI still clears even if URL history is unavailable. */ }
+   const category=form.elements.family;
+   const categoryReady=!!category&&!category.disabled&&!category.closest(".field")?.hidden;
+   const family=categoryReady&&category.value?category.selectedOptions?.[0]?.textContent:"";
+   const path=catalogAddressAfterClear(win.location.href,{
+    key,q:form.elements.query?.value,categoryReady,family
+   });
+   win.history.replaceState(win.history.state,"",path);
+  }catch{ /* The filter still clears if browser history is unavailable. */ }
  };
  const reset=key=>{
   if(key==="query")form.elements.query.value="";
@@ -44,7 +68,7 @@ export function setupCatalogToolbar({form,count,onChange,doc=globalThis.document
    form.elements.max.value="";
    if(form.elements.sort)form.elements.sort.value="recent";
   }
-  updateAddress();
+  updateAddress(key);
   onChange();
  };
  const makeButton=(label,key,clearAll=false)=>{

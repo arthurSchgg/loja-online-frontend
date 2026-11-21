@@ -203,6 +203,34 @@ async function initLiveCategoryHighlights(){
   grid.replaceChildren();status(grid,"Categorias indisponíveis. Use a busca do catálogo.",true);
  }
 }
+async function initHomeOfferings(){
+ const sec=document.querySelector("#experiencias .editorial-copy");
+ if(sec){
+  const box=document.createElement("div");box.className="service-preview-list";sec.append(box);
+  try{
+   currentOfferings=await fetchOfferings();
+   const published=currentOfferings.filter(item=>item.published!==false).slice(0,3);
+   for(const offering of published){
+    const card=document.createElement("article");card.className="service-preview";
+    const head=document.createElement("div");head.className="service-preview__copy";
+    const name=document.createElement("h3");name.textContent=String(offering.title||"Serviço");
+    const kind=document.createElement("span");kind.className="service-preview__kind";
+    kind.textContent=String(offering.type||"Experiência");
+    const price=document.createElement("p");price.textContent=offering.price===null?"Valor sob consulta":money(offering.price);
+    head.append(kind,name,price);card.append(head);
+    if(offering.available){
+     const btn=document.createElement("button");btn.type="button";btn.className="btn btn--ghost";
+     btn.textContent="Consultar";btn.dataset.confirmOffering=offering.id;card.append(btn);
+    }else{
+     const badge=document.createElement("span");badge.className="badge";badge.textContent="Indisponível";card.append(badge);
+    }
+    box.append(card);
+   }
+   if(!published.length)box.remove();
+  }catch{box.remove();}
+ }
+}
+
 async function initHome(){
  const cta=document.querySelector(".hero-copy .btn--primary");
  if(cta?.firstChild?.nodeType===Node.TEXT_NODE)cta.firstChild.textContent="Explorar produtos ";
@@ -221,6 +249,8 @@ async function initHome(){
  // The editorial uses the licensed photograph already declared in HTML. Do not replace it with a logo.
  void initLiveCategoryHighlights();
  void initContact();
+ // Service discovery is independent of slow product and quiz endpoints.
+ void initHomeOfferings();
  const grid=document.getElementById("featured-grid");
  if(grid){
   const loadFeatured=async()=>{
@@ -242,7 +272,9 @@ async function initHome(){
     grid.append(retry);
    }finally{grid.removeAttribute("aria-busy");}
   };
-  await loadFeatured();
+  // Homepage sections are independent: a sleeping API must not hold the quiz
+  // and service discovery until the featured-products retry window finishes.
+  void loadFeatured();
  }
  // Replace local demonstration quiz with the actual backend question contract.
  const quiz=document.getElementById("quiz-form");
@@ -270,31 +302,7 @@ async function initHome(){
    }
   }catch(err){quiz.replaceChildren();status(quiz,"Experiência indisponível: "+err.message,true);}
  }
- const sec=document.querySelector("#experiencias .editorial-copy");
- if(sec){
-  const box=document.createElement("div");box.className="service-preview-list";sec.append(box);
-  try{
-   currentOfferings=await fetchOfferings();
-   const published=currentOfferings.filter(item=>item.published!==false).slice(0,3);
-   for(const offering of published){
-    const card=document.createElement("article");card.className="service-preview";
-    const head=document.createElement("div");head.className="service-preview__copy";
-    const name=document.createElement("h3");name.textContent=String(offering.title||"Serviço");
-    const kind=document.createElement("span");kind.className="service-preview__kind";
-    kind.textContent=String(offering.type||"Experiência");
-    const price=document.createElement("p");price.textContent=offering.price===null?"Valor sob consulta":money(offering.price);
-    head.append(kind,name,price);card.append(head);
-    if(offering.available){
-     const btn=document.createElement("button");btn.type="button";btn.className="btn btn--ghost";
-     btn.textContent="Consultar";btn.dataset.confirmOffering=offering.id;card.append(btn);
-    }else{
-     const badge=document.createElement("span");badge.className="badge";badge.textContent="Indisponível";card.append(badge);
-    }
-    box.append(card);
-   }
-   if(!published.length)box.remove();
-  }catch{box.remove();}
- }
+
 
 }
 async function initCatalog(){

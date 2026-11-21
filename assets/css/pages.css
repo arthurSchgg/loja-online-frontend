@@ -448,3 +448,22 @@ html[data-motion="off"] .editorial-visual img[data-parallax]{transform:none!impo
 }
 html[data-motion="off"] .hero-live-frame::after{animation:none!important;opacity:0!important}
 html[data-motion="off"] .hero-image .hero-live-frame > video.hero-live-video{display:none!important}
+
+
+/* Match the clean institutional packshot treatment in the home collections.
+   Studio-white pixels visually disappear into the tile, while a generous
+   soft edge masks any residual JPEG background. Lifestyle scenes retain their
+   own photographic setting and are not falsely presented as cutouts. */
+.collection-tile img.editorial-product-photo:not(.editorial-product-photo--scene){
+ background:transparent;
+ mix-blend-mode:multiply;
+ filter:brightness(1.065) contrast(1.075) saturate(.96);
+ -webkit-mask-image:radial-gradient(ellipse 58% 66% at 50% 51%,#000 0 56%,rgba(0,0,0,.96) 66%,rgba(0,0,0,.45) 82%,transparent 100%);
+ mask-image:radial-gradient(ellipse 58% 66% at 50% 51%,#000 0 56%,rgba(0,0,0,.96) 66%,rgba(0,0,0,.45) 82%,transparent 100%);
+}
+@media(max-width:560px){
+ .collection-tile img.editorial-product-photo:not(.editorial-product-photo--scene){
+  -webkit-mask-image:radial-gradient(ellipse 61% 68% at 50% 50%,#000 0 55%,rgba(0,0,0,.94) 66%,transparent 100%);
+  mask-image:radial-gradient(ellipse 61% 68% at 50% 50%,#000 0 55%,rgba(0,0,0,.94) 66%,transparent 100%);
+ }
+}

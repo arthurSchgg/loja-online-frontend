@@ -324,3 +324,48 @@ html[data-motion="off"] .chapter-hero__art .editorial-cutout{transform:none!impo
  .chapter-hero__art .editorial-cutout-shell{width:min(59vw,205px)}
  .chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){max-height:220px}
 }
+
+
+/* Editorial product packshots · soft-matte v3
+   A photographed bottle may carry a nearly-white JPEG studio background.
+   Multiply neutralizes the pale matte against the warm section, while the
+   soft elliptical edge removes the last visible rectangular boundary.
+   Compositing is performed exactly once on the image, not its parent shell.
+   Still-life/candle scenes are intentional full photographs, not packshots.
+   This is an optical treatment; original photography is not an alpha cutout. */
+.chapter-hero__art .editorial-cutout-shell{
+ mix-blend-mode:normal;
+ isolation:auto;
+}
+.chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene),
+.chapter-story__art .editorial-product-photo{
+ mix-blend-mode:multiply;
+ background:transparent;
+ border:0;
+ box-shadow:none;
+ filter:brightness(1.065) contrast(1.075) saturate(.96);
+ -webkit-mask-image:radial-gradient(ellipse 58% 66% at 50% 50%,#000 0 56%,rgba(0,0,0,.96) 65%,rgba(0,0,0,.52) 80%,transparent 100%);
+ mask-image:radial-gradient(ellipse 58% 66% at 50% 50%,#000 0 56%,rgba(0,0,0,.96) 65%,rgba(0,0,0,.52) 80%,transparent 100%);
+}
+.chapter-hero__art--candle .editorial-product-photo--scene{
+ mix-blend-mode:normal;
+ filter:contrast(1.025) saturate(.95);
+}
+/* Avoid visible square edges behind the decorative K monogram. */
+.chapter-story__art .editorial-product-photo{
+ position:relative;
+ z-index:1;
+}
+@media(max-width:560px){
+ .chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene),
+ .chapter-story__art .editorial-product-photo{
+  -webkit-mask-image:radial-gradient(ellipse 62% 69% at 50% 50%,#000 0 55%,rgba(0,0,0,.96) 67%,transparent 100%);
+  mask-image:radial-gradient(ellipse 62% 69% at 50% 50%,#000 0 55%,rgba(0,0,0,.96) 67%,transparent 100%);
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .chapter-hero__art .editorial-product-photo,
+ .chapter-story__art .editorial-product-photo{
+  transition:none!important;
+ }
+}
