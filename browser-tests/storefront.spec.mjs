@@ -385,7 +385,7 @@ test("live | 65 published product photos remain visible while public API returns
  await expect(page.locator("#catalog-grid .product-card")).toHaveCount(12,{timeout:6000});
  await expect(page.locator("#catalog-grid [data-confirm-product]")).toHaveCount(0);
  await expect(page.locator("#catalog-grid")).toContainText("Informações em atualização");
- await expect(page.locator("#family option").count()).resolves.toBeGreaterThan(1);
+ expect(await page.locator("#family option").count()).toBeGreaterThan(1);
  await expect(page.locator("#catalog-grid img")).toHaveCount(12);
  const names=await page.locator("#catalog-grid .product-card__meta h3").allTextContents();
  expect(new Set(names).size).toBe(12);
