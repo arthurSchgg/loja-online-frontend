@@ -417,7 +417,7 @@ async function initProduct(){
     '<div class="product-detail__availability">'+
      (p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
       '<span class="badge" aria-label="Indisponível">Indisponível</span>')+
-    '</div><p class="product-detail__disclaimer">Fotos ilustram o produto cadastrado. Preço e disponibilidade são confirmados antes de qualquer solicitação.</p>'+
+    '</div><p class="product-detail__disclaimer">Imagens ilustram o produto cadastrado. Preço e disponibilidade são confirmados antes de qualquer solicitação.</p>'+
    '</div></section>';
   const galleryHost=host.querySelector("[data-product-gallery]");
   const main=galleryHost?.querySelector(".product-gallery__main-button");
