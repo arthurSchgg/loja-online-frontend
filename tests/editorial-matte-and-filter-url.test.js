@@ -35,24 +35,17 @@ test("editing search and removing price also keeps the selected named category",
   {key:"max",q:"lily",family:"Floral",categoryReady:true});
  assert.equal(result,"/catalogo.html?q=lily&familia=Floral");
 });
-test("real perfume packshots use a soft matte with no image replacement",()=>{
- const pages=["index.html","conheca-a-loja.html","contato.html","viva-sua-experiencia.html"];
+test("alpha editorials replace the outdated studio-background workaround",()=>{
+ const pages=["index.html","conheca-a-loja.html","contato.html","viva-sua-experiencia.html","espaco-das-velas.html"];
  for(const page of pages){
   const html=read(page);
-  assert.match(html,/data-editorial-photo/);
+  assert.match(html,/editorial-product-photo--alpha/);
+  assert.match(html,/assets\/images\/editorial\/transparent\//);
  }
- const institutional=read("assets/css/institutional.css");
- const home=read("assets/css/pages.css");
- assert.match(institutional,/Editorial product packshots · soft-matte v3/);
- assert.match(institutional,/\.editorial-product-photo:not\(\.editorial-product-photo--scene\)/);
- assert.match(institutional,/\.chapter-hero__art \.editorial-cutout-shell\{\s*mix-blend-mode:normal/);
- assert.match(institutional,/\.chapter-hero__art--candle \.editorial-product-photo--scene\{\s*mix-blend-mode:normal/);
- assert.match(institutional,/-webkit-mask-image:radial-gradient/);
- assert.match(home,/\.collection-tile img\.editorial-product-photo:not\(\.editorial-product-photo--scene\)/);
- assert.match(home,/mix-blend-mode:multiply/);
- assert.match(home,/mask-image:radial-gradient/);
- // Do not convert third-party still lifes into fake transparent product images.
- assert.match(read("espaco-das-velas.html"),/editorial-product-photo--scene/);
+ const finish=read("assets/css/editorial-cutouts.css");
+ assert.match(finish,/mask:none!important/);
+ assert.match(finish,/mix-blend-mode:normal!important/);
+ assert.doesNotMatch(finish,/mask-image:url\(/);
  assert.match(read("index.html"),/hero-live-poster\.webp/);
 });
 

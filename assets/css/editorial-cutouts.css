@@ -1,87 +1,174 @@
 /*
- * Editorial packshot silhouettes | Lojinha da Kátia
- * The source photographs are still the real fragrances already approved.
- * Local SVG alpha silhouettes clip away rectangular photo backgrounds;
- * multiply only blends any remaining pale antialiasing at the edges.
- * They do not claim a commercially licensed source photo or replace the SKU art.
+ * Lojinha da Kátia · transparent editorial assets.
+ * The previous SVG-shaped clipping masks were designed for remote JPEGs and
+ * could cut through caps, packaging and candle details. These new local WebP
+ * pictures already contain real alpha; NEVER apply a mask or multiply blend.
+ * Product catalog images remain from the public API, not these illustrations.
  */
-.chapter-hero__art .editorial-cutout-shell{mix-blend-mode:normal!important;isolation:auto}
-img[data-editorial-photo]:not(.editorial-product-photo--scene){
+.chapter-hero__art .editorial-cutout-shell{
+  display:grid;
+  place-items:center;
+  mix-blend-mode:normal!important;
+  isolation:auto;
+  width:min(78%,390px);
+  max-height:none;
+  margin-inline:auto;
+}
+img[data-editorial-photo].editorial-product-photo--alpha{
+  display:block;
   background:transparent!important;
   border:0!important;
   border-radius:0!important;
   box-shadow:none!important;
-  mix-blend-mode:multiply!important;
+  opacity:1!important;
   object-fit:contain!important;
-  filter:contrast(1.055) saturate(1.015) drop-shadow(0 16px 19px rgba(85,46,40,.14))!important;
-  -webkit-mask-repeat:no-repeat!important;
-  mask-repeat:no-repeat!important;
-  -webkit-mask-size:100% 100%!important;
-  mask-size:100% 100%!important;
-  -webkit-mask-position:center!important;
-  mask-position:center!important;
-}
-img[data-editorial-photo][src*="Lily-Eau-de-Parfum"]{
-  -webkit-mask-image:url("../images/editorial/masks/lily.svg")!important;
-  mask-image:url("../images/editorial/masks/lily.svg")!important;
-  /* The official Lily studio crop fills more of its JPEG canvas than the cutout reference. */
-  -webkit-mask-size:128% 114%!important;
-  mask-size:128% 114%!important;
-}
-img[data-editorial-photo][src*="1013877_21.jpg"]{
-  -webkit-mask-image:url("../images/editorial/masks/egeo.svg")!important;
-  mask-image:url("../images/editorial/masks/egeo.svg")!important;
-  -webkit-mask-size:100% 111%!important;
-  mask-size:100% 111%!important;
-}
-img[data-editorial-photo][src*="Malbec_O_Boticario"]{
-  -webkit-mask-image:url("../images/editorial/masks/malbec.svg")!important;
-  mask-image:url("../images/editorial/masks/malbec.svg")!important;
-}
-img[data-editorial-photo][src*="sg-11134201-7rasu"]{
-  -webkit-mask-image:url("../images/editorial/masks/floratta.svg")!important;
-  mask-image:url("../images/editorial/masks/floratta.svg")!important;
-  -webkit-mask-size:115% 100%!important;
-  mask-size:115% 100%!important;
-}
-/* The candle/flowers are an environmental photo, not a packshot with a white
-   matte. Treat it as a deliberate photographic editorial scene, with a
-   feathered edge so it joins the section without a visible rectangle. */
-img[data-editorial-photo].editorial-product-photo--scene{
-  mix-blend-mode:normal!important;
-  border:0!important;
-  box-shadow:none!important;
-  border-radius:20px;
-  object-fit:cover!important;
   object-position:center!important;
-  -webkit-mask-image:radial-gradient(ellipse 81% 83% at center,#000 60%,rgba(0,0,0,.92) 73%,transparent 100%)!important;
-  mask-image:radial-gradient(ellipse 81% 83% at center,#000 60%,rgba(0,0,0,.92) 73%,transparent 100%)!important;
+  mix-blend-mode:normal!important;
+  -webkit-mask:none!important;
+  mask:none!important;
+  -webkit-mask-image:none!important;
+  mask-image:none!important;
+  -webkit-mask-size:auto!important;
+  mask-size:auto!important;
+  filter:drop-shadow(0 22px 24px rgba(70,39,33,.12))!important;
+  image-rendering:auto;
 }
-.chapter-hero__art .editorial-cutout-shell,
-.chapter-story__art .chapter-story__visual{
-  transform-origin:50% 60%;
+.chapter-hero__art img.editorial-product-photo--alpha{
+  display:block;
+  width:100%!important;
+  height:auto!important;
+  max-height:420px!important;
+  aspect-ratio:1/1;
+}
+.chapter-hero__art--candle .editorial-cutout-shell{
+  width:min(88%,460px);
+}
+.chapter-hero__art--candle img.editorial-product-photo--alpha{
+  max-height:450px!important;
+}
+.chapter-story__art img.editorial-product-photo--alpha{
+  width:min(74%,345px)!important;
+  max-height:355px!important;
+  height:auto!important;
+  position:relative;
+  z-index:1;
+}
+.collection-tile img.editorial-product-photo--alpha{
+  right:3%!important;
+  bottom:3%!important;
+  width:clamp(145px,31%,270px)!important;
+  max-width:43%!important;
+  height:85%!important;
+  opacity:1!important;
+}
+.collection-tile .copy{position:relative;z-index:2;width:min(64%,350px)}
+.collection-tile h3{max-width:14ch;text-wrap:balance}
+.editorial-visual__float{
+  width:min(89%,440px);
+  height:auto;
+  max-height:none;
+  display:grid;
+  place-items:center;
+}
+.editorial-visual img.editorial-product-photo--alpha{
+  width:min(88%,410px)!important;
+  height:auto!important;
+  max-width:100%;
+  max-height:430px!important;
+  aspect-ratio:1/1;
+  margin-inline:auto;
+}
+/* Keep the stage clean; do not draw another photography rectangle behind it. */
+.editorial-visual{
+  overflow:hidden;
+  background:linear-gradient(145deg,#e7c7b9,#f0dcd0);
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .collection-tile:hover img.editorial-product-photo--alpha,
+  .collection-tile:focus-visible img.editorial-product-photo--alpha{
+    filter:drop-shadow(0 28px 30px rgba(70,39,33,.16))!important;
+    transform:translate3d(0,-5px,0) scale(1.02)!important;
+  }
 }
 @media(max-width:768px){
-  .chapter-hero__art .editorial-cutout-shell{width:min(68vw,325px)!important;max-height:380px}
-  .chapter-hero__art .editorial-cutout-shell img{max-width:100%!important;max-height:380px!important}
-  .chapter-story__art .chapter-story__visual{width:min(72vw,300px)!important;max-height:325px!important}
-  .collection-tile img[data-editorial-photo]:not(.editorial-product-photo--scene){
-    width:min(49vw,215px)!important;
-    max-width:49%!important;
-    opacity:1!important;
+  .chapter-hero__art .editorial-cutout-shell{
+    width:min(72vw,345px)!important;
+    max-height:none!important;
+  }
+  .chapter-hero__art img.editorial-product-photo--alpha{
+    max-height:345px!important;
+  }
+  .chapter-hero__art--candle .editorial-cutout-shell{
+    width:min(85vw,400px)!important;
+  }
+  .chapter-story__art img.editorial-product-photo--alpha{
+    width:min(75vw,300px)!important;
+    max-height:310px!important;
+  }
+  .collection-tile img.editorial-product-photo--alpha{
+    right:1%!important;
+    width:min(42%,240px)!important;
+    max-width:42%!important;
+    height:79%!important;
   }
 }
 @media(max-width:560px){
-  .chapter-hero__art .editorial-cutout-shell{width:min(68vw,285px)!important;max-height:315px}
-  .chapter-hero__art .editorial-cutout-shell img{max-height:315px!important}
-  .chapter-story__art .chapter-story__visual{width:min(70vw,270px)!important;max-height:280px!important}
-  img[data-editorial-photo].editorial-product-photo--scene{border-radius:16px}
+  .chapter-hero__art .editorial-cutout-shell{
+    width:min(72vw,300px)!important;
+  }
+  .chapter-hero__art img.editorial-product-photo--alpha{
+    max-height:300px!important;
+  }
+  .chapter-hero__art--candle .editorial-cutout-shell{
+    width:min(87vw,335px)!important;
+  }
+  .chapter-story__art img.editorial-product-photo--alpha{
+    width:min(74vw,270px)!important;
+    max-height:275px!important;
+  }
+  .collection-tile{min-height:320px}
+  .collection-tile .copy{width:65%}
+  .collection-tile img.editorial-product-photo--alpha{
+    width:45%!important;
+    max-width:45%!important;
+    height:72%!important;
+    right:-2%!important;
+    bottom:3%!important;
+  }
+  .editorial-visual__float{width:min(87vw,340px);max-height:340px}
+  .editorial-visual img.editorial-product-photo--alpha{
+    width:100%!important;
+    max-height:330px!important;
+  }
+}
+@media(max-width:375px){
+  .collection-tile .copy{width:70%}
+  .collection-tile img.editorial-product-photo--alpha{width:40%!important;max-width:40%!important}
 }
 @media(prefers-reduced-motion:reduce){
-  img[data-editorial-photo],.chapter-hero__art .editorial-cutout-shell{
-    animation:none!important;transition:none!important
+  img.editorial-product-photo--alpha,
+  .chapter-hero__art .editorial-cutout-shell{
+    animation:none!important;
+    transition:none!important;
+    transform:none!important;
   }
 }
 html[data-motion="off"] .chapter-hero__art .editorial-cutout-shell{
-  animation:none!important;transition:none!important
+  animation:none!important;
+  transition:none!important;
+}
+
+
+/* A single, clear route from the homepage showcase to the full live catalog. */
+.editorial-catalog-link{
+  display:flex;
+  justify-content:center;
+  margin-top:clamp(24px,4vw,48px);
+}
+.editorial-catalog-link .btn{
+  min-height:52px;
+  padding-inline:clamp(24px,4vw,44px);
+}
+@media(max-width:560px){
+  .editorial-catalog-link .btn{width:min(100%,370px);justify-content:center}
 }

@@ -235,9 +235,10 @@ async function initHomeOfferings(){
 async function initHome(){
  const cta=document.querySelector(".hero-copy .btn--primary");
  if(cta?.firstChild?.nodeType===Node.TEXT_NODE)cta.firstChild.textContent="Explorar produtos ";
- // Concept-only collection tiles must never imply fictitious products are on sale.
- const demoCollections=document.getElementById("colecoes");
- if(demoCollections)demoCollections.hidden=true;
+ // Curated editorial tiles now link to real published product categories
+ // (Perfumaria and Kits para presente), not fictional olfactory families.
+ const collectionSection=document.getElementById("colecoes");
+ if(collectionSection)collectionSection.hidden=false;
  const showcase=document.getElementById("mais-amados");
  if(showcase){
   const eyebrow=showcase.querySelector(".eyebrow"),heading=showcase.querySelector("h2");
@@ -247,7 +248,7 @@ async function initHome(){
  const quizLead=document.querySelector("#quiz p.lead");
  if(quizLead)quizLead.textContent="Responda às experiências da loja sem armazenar suas respostas.";
  const editorialImage=document.querySelector("#experiencias img[data-parallax]");
- // The editorial uses the licensed photograph already declared in HTML. Do not replace it with a logo.
+ // The home uses self-hosted, transparent editorial illustrations. SKU photos remain API-owned.
  void initLiveCategoryHighlights();
  void initContact();
  // Service discovery is independent of slow product and quiz endpoints.
