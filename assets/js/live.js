@@ -242,7 +242,9 @@ async function initHome(){
     grid.append(retry);
    }finally{grid.removeAttribute("aria-busy");}
   };
-  await loadFeatured();
+  // Homepage sections are independent: a sleeping API must not hold the quiz
+  // and service discovery until the featured-products retry window finishes.
+  void loadFeatured();
  }
  // Replace local demonstration quiz with the actual backend question contract.
  const quiz=document.getElementById("quiz-form");
