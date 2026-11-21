@@ -7,6 +7,8 @@ test("initial catalog page does not require a search or availability filter",()=
  assert.equal(isUnfilteredFirstPage(0,{q:"",categoryId:null,maxPrice:null,sort:"recent"}),true);
  assert.equal(isUnfilteredFirstPage(0,{q:"lily"}),false);
  assert.equal(isUnfilteredFirstPage(0,{categoryId:3}),false);
+ assert.equal(isUnfilteredFirstPage(0,{brandId:3}),false);
+ assert.equal(isUnfilteredFirstPage(0,{sort:"price-asc"}),false);
  assert.equal(isUnfilteredFirstPage(1,{}),false);
 });
 test("retry only temporary connection and server outages",()=>{
@@ -23,7 +25,7 @@ test("first unfiltered page recovers automatically from a temporary failure",asy
   return {items:[{id:1,published:true,available:false}],hasNext:false};
  },0,{},async delay=>{waits.push(delay);});
  assert.equal(calls,2);
- assert.deepEqual(waits,[1400]);
+ assert.deepEqual(waits,[700]);
  assert.equal(page.items[0].available,false);
 });
 test("a filtered search fails immediately without retrying obsolete results",async()=>{
@@ -34,5 +36,42 @@ test("a filtered search fails immediately without retrying obsolete results",asy
 test("first page gives a useful failure after bounded retries",async()=>{
  let calls=0;
  await assert.rejects(()=>loadCatalogPage(async()=>{calls++;throw {status:503}},0,{},async()=>{}));
- assert.equal(calls,4);
+ assert.equal(calls,3);
+});
+
+test("a full upstream timeout does not repeat the long wait",async()=>{
+ let attempts=0;
+ await assert.rejects(()=>loadCatalogPage(async()=>{attempts++;throw {status:504};},0,{},async()=>{
+  assert.fail("Timeout must not queue another automatic retry");
+ }));
+ assert.equal(attempts,1);
+});
+
+test("abort stops a delayed retry without another network request",async()=>{
+ const controller=new AbortController();
+ let requests=0;
+ let delayStarted;
+ const started=new Promise(resolve=>{delayStarted=resolve;});
+ const promise=loadCatalogPage(async()=>{
+  requests++;
+  throw {status:503};
+ },0,{},async(delay,signal)=>{
+  delayStarted();
+  await new Promise((resolve,reject)=>{
+   signal.addEventListener("abort",()=>reject(Object.assign(new Error("aborted"),{name:"AbortError"})),{once:true});
+  });
+ },controller.signal);
+ await started;
+ controller.abort();
+ await assert.rejects(()=>promise,error=>error.name==="AbortError");
+ assert.equal(requests,1);
+});
+
+test("no HTTP retry is attempted for canceled requests",async()=>{
+ const controller=new AbortController();
+ controller.abort();
+ let calls=0;
+ await assert.rejects(()=>loadCatalogPage(async()=>{calls++;},0,{},undefined,controller.signal),
+  error=>error.name==="AbortError");
+ assert.equal(calls,0);
 });

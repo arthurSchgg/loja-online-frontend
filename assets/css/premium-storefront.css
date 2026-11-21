@@ -256,3 +256,32 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
  .service-preview .btn{white-space:normal;text-align:center;max-width:125px}
  .service-preview .badge{white-space:nowrap}
 }
+
+
+/* Public catalog resilience: previously published photos are visible while
+ * prices and availability are revalidated. No actions until live API returns. */
+.catalog-snapshot-notice{
+ grid-column:1/-1;
+ display:block;
+ margin:18px 0 24px;
+ padding:15px 19px;
+ border:1px solid rgba(151,99,77,.25);
+ border-inline-start:3px solid #97634d;
+ border-radius:8px;
+ background:#fff7ef;
+ color:#5f463c;
+ font-size:clamp(.85rem,1.5vw,.95rem);
+ line-height:1.65;
+ max-width:100%;
+}
+[data-home-retry]{margin:22px 0 0;min-height:48px}
+.product-card .badge[aria-label="Dados comerciais temporariamente indisponíveis"]{
+ display:inline-flex;max-width:100%;white-space:normal;
+ line-height:1.45;padding:8px 11px;
+ border-radius:7px;background:#efe7e0;color:#6a5146;
+}
+#catalog-grid[aria-busy="true"] .product-card,
+#featured-grid[aria-busy="true"] .product-card{opacity:1}
+@media(max-width:560px){
+ .catalog-snapshot-notice{margin:14px 0 20px;padding:13px 15px}
+}

@@ -129,8 +129,9 @@ test("live | failed public API never falls back to fictitious products",async({p
  const errors=collectPageErrors(page);
  await mockPublicBackend(page,{status:503});
  await page.goto("/catalogo.html");
- await expect(page.locator("#catalog-grid .product-card")).toHaveCount(0);
- await expect(page.locator("#catalog-grid [data-api-status]")).toContainText("Não foi possível");
+ await expect(page.locator("#catalog-grid .product-card")).toHaveCount(12);
+ await expect(page.locator("#catalog-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("[data-snapshot-for='catalog-grid']")).toContainText("Preços e disponibilidade");
  expect(errors).toEqual([]);
 });
 
@@ -141,8 +142,9 @@ for(const width of [375,1440]){
   const errors=collectPageErrors(page);
   await page.goto("/index.html");
   const hero=page.locator("[data-hero-bottle]");
-  await expect(hero).toHaveCSS("animation-name",/hero-bottle-float/);
-  const image=page.locator("#experiencias img[data-parallax]");
+  // The approved Live Photo's poster remains still; the video supplies motion.
+  await expect(hero).toHaveCSS("animation-name","none");
+  const image=page.locator("#experiencias .editorial-visual img");
   await image.scrollIntoViewIfNeeded();
   await expect.poll(()=>image.evaluate(el=>el.style.getPropertyValue("--motion-shift"))).toMatch(/px$/);
   const before=Number.parseFloat(await image.evaluate(el=>el.style.getPropertyValue("--motion-shift")));
@@ -160,7 +162,7 @@ test("motion | reduced-motion preference disables floating hero and scroll-linke
  const errors=collectPageErrors(page);
  await page.goto("/index.html");
  await expect(page.locator("[data-hero-bottle]")).toHaveCSS("animation-name","none");
- const image=page.locator("#experiencias img[data-parallax]");
+ const image=page.locator("#experiencias .editorial-visual img");
  await image.scrollIntoViewIfNeeded();
  await page.evaluate(()=>window.scrollBy({top:180,behavior:"instant"}));
  await expect(image).toHaveCSS("transform","none");
@@ -285,23 +287,19 @@ test("motion | reduced motion avoids downloading Live Photo video",async({page})
 
 test("demo | real perfume photos load and layouts remain responsive",async({page})=>{
  const errors=collectPageErrors(page);
- const picture=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nAAAAABJRU5ErkJggg==","base64");
- await page.route(/https:\/\/(?:res\.cloudinary\.com|shopsupermercadobrazil\.com|tiendacdn\.farmashop\.com\.uy|down-br\.img\.susercontent\.com|images\.pexels\.com)\//,route=>
-  route.fulfill({status:200,contentType:"image/png",body:picture})
- );
  const pages=[
-  ["/conheca-a-loja.html","res.cloudinary.com"],
-  ["/viva-sua-experiencia.html","tiendacdn.farmashop.com.uy"],
-  ["/contato.html","shopsupermercadobrazil.com"],
-  ["/espaco-das-velas.html","images.pexels.com"]
+  ["/conheca-a-loja.html","lily"],
+  ["/viva-sua-experiencia.html","egeo"],
+  ["/contato.html","malbec"],
+  ["/espaco-das-velas.html","vela"]
  ];
  for(const width of [320,390,768]){
   await page.setViewportSize({width,height:820});
-  for(const [url,host] of pages){
+  for(const [url,name] of pages){
    await page.goto(url);
    const image=page.locator(".chapter-hero__art .editorial-product-photo");
    await expect(image).toHaveCount(1);
-   await expect(image).toHaveAttribute("src",new RegExp("^https://"+host.replaceAll(".","\\.")));
+   await expect(image).toHaveAttribute("src","assets/images/editorial/transparent/"+name+".webp");
    await expect.poll(()=>image.evaluate(el=>el.complete&&el.naturalWidth>0)).toBe(true);
    await expectNoHorizontalOverflow(page,width);
   }
@@ -309,8 +307,8 @@ test("demo | real perfume photos load and layouts remain responsive",async({page
  expect(errors).toEqual([]);
 });
 
-test("demo | unavailable remote product photo gets a neutral fallback, not a drawing",async({page})=>{
- await page.route(/https:\/\/res\.cloudinary\.com\//,route=>route.abort());
+test("demo | unavailable editorial photo gets a neutral fallback, not a drawing",async({page})=>{
+ await page.route("**/assets/images/editorial/transparent/lily.webp",route=>route.abort());
  await page.goto("/conheca-a-loja.html");
  await expect(page.locator(".chapter-hero__art .editorial-photo-placeholder")).toBeVisible();
  await expect(page.locator(".chapter-hero__art .editorial-photo-placeholder")).toContainText("Fotografia temporariamente indisponível");
@@ -372,4 +370,92 @@ test("live | homepage displays eight published but unavailable products without 
  await expect(page.locator("#featured-grid [data-confirm-product]")).toHaveCount(0);
  await expect(page.locator("#featured-grid .badge")).toHaveCount(8);
  await expect(page.locator("#mais-amados")).toContainText("Produtos para descobrir");
+});
+
+
+test("live | 65 published product photos remain visible while public API returns 503",async({page})=>{
+ await page.route("**/api/v1/**",route=>route.fulfill({
+  status:503,contentType:"application/problem+json",body:'{"title":"API temporarily unavailable"}'
+ }));
+ await page.goto("/catalogo.html");
+ const live=await page.evaluate(async()=>(await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires SITE_MODE=live");
+ await expect(page.locator("#catalog-grid .product-card")).toHaveCount(12,{timeout:6000});
+ await expect(page.locator("#catalog-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#catalog-grid")).toContainText("Informações em atualização");
+ expect(await page.locator("#family option").count()).toBeGreaterThan(1);
+ await expect(page.locator("#catalog-grid img")).toHaveCount(12);
+ const names=await page.locator("#catalog-grid .product-card__meta h3").allTextContents();
+ expect(new Set(names).size).toBe(12);
+});
+
+test("live | home displays eight safe product previews during upstream outage",async({page})=>{
+ await page.route("**/api/v1/**",route=>route.fulfill({
+  status:503,contentType:"application/problem+json",body:'{"title":"API temporarily unavailable"}'
+ }));
+ await page.goto("/index.html");
+ const live=await page.evaluate(async()=>(await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires SITE_MODE=live");
+ await expect(page.locator("#featured-grid .product-card")).toHaveCount(8,{timeout:6000});
+ await expect(page.locator("#featured-grid [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#featured-grid")).toContainText("Informações em atualização");
+});
+
+test("live | product details show photo but never a checkout from stale snapshot",async({page})=>{
+ await page.route("**/api/v1/**",route=>route.fulfill({
+  status:503,contentType:"application/problem+json",body:'{"title":"API temporarily unavailable"}'
+ }));
+ await page.goto("/produto.html?productId=65");
+ const live=await page.evaluate(async()=>(await import("/assets/js/config.js")).isLive);
+ test.skip(!live,"Requires SITE_MODE=live");
+ await expect(page.locator("#product-content .product-detail h1")).toContainText("Demaquilante",{timeout:8000});
+ await expect(page.locator("#product-content [data-confirm-product]")).toHaveCount(0);
+ await expect(page.locator("#product-content")).toContainText("Preço atualizado indisponível");
+});
+
+test("live | loading a later page preserves existing cards and never mixes the snapshot",async({page})=>{
+ const first={...product,id:71,name:"Primeiro produto",images:[{url:"assets/images/brand/product-photo-pending.svg",position:0}]};
+ const second={...first,id:72,name:"Segundo produto"};
+ let failNext=true;
+ await page.route("**/api/v1/**",async route=>{
+  const url=new URL(route.request().url());
+  if(url.pathname==="/api/v1/products"){
+   if(url.searchParams.get("page")==="1"&&failNext)
+    return route.fulfill({status:503,contentType:"application/problem+json",body:"{}"});
+   const page1=url.searchParams.get("page")==="1";
+   return route.fulfill({status:200,contentType:"application/json",
+    body:JSON.stringify({content:[page1?second:first],last:page1})});
+  }
+  return route.fulfill({status:200,contentType:"application/json",body:"[]"});
+ });
+ await page.goto("/catalogo.html");
+ const cards=page.locator("#catalog-grid .product-card");
+ await expect(cards).toHaveCount(1);
+ await expect(cards.first()).toContainText("Primeiro produto");
+ await cards.first().evaluate(el=>window.__originalCard=el);
+ await page.getByRole("button",{name:"Carregar mais produtos"}).click();
+ await expect(page.getByRole("button",{name:"Tentar novamente"})).toBeVisible();
+ await expect(cards).toHaveCount(1);
+ expect(await cards.first().evaluate(el=>el===window.__originalCard)).toBe(true);
+ failNext=false;
+ await page.getByRole("button",{name:"Tentar novamente"}).click();
+ await expect(cards).toHaveCount(2);
+ expect(await cards.first().evaluate(el=>el===window.__originalCard)).toBe(true);
+ await expect(cards.last()).toContainText("Segundo produto");
+});
+
+test("live | definitive unpublication removes an initially visible saved product",async({page})=>{
+ let release;
+ const gate=new Promise(resolve=>{release=resolve;});
+ await page.route("**/api/v1/products/65",async route=>{
+  await gate;
+  await route.fulfill({status:404,contentType:"application/problem+json",body:"{}"});
+ });
+ try{
+  await page.goto("/produto.html?productId=65",{waitUntil:"domcontentloaded"});
+  await expect(page.locator("#product-content .product-detail h1")).toContainText("Demaquilante");
+  await expect(page.locator("#product-content [data-confirm-product]")).toHaveCount(0);
+ }finally{release();}
+ await expect(page.locator("#product-content .product-detail")).toHaveCount(0);
+ await expect(page.locator("#product-content")).toContainText("Conteúdo não encontrado");
 });

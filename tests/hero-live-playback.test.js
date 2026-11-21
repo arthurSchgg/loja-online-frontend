@@ -5,7 +5,7 @@ import {heroMotionAllowed,setupHeroLivePhoto} from "../assets/js/hero-live-photo
 
 const css=readFileSync(new URL("../assets/css/pages.css",import.meta.url),"utf8");
 
-function harness({reducedMotion=false,saveData=false,failPlayback=false}={}){
+function harness({reducedMotion=false,saveData=false,failPlayback=false,withPoster=false}={}){
  class Emitter {
   listeners=new Map();
   addEventListener(type,handler){const list=this.listeners.get(type)||[];list.push(handler);this.listeners.set(type,list);}
@@ -27,9 +27,11 @@ function harness({reducedMotion=false,saveData=false,failPlayback=false}={}){
   hidden:true,attrs:{},
   setAttribute(name,value){this.attrs[name]=value;}
  });
+ const poster=withPoster?Object.assign(new Emitter(),{complete:false,naturalWidth:0}):null;
  const frame={dataset:{},querySelector(selector){
   if(selector==="[data-hero-video]")return video;
   if(selector==="[data-hero-toggle]")return control;
+  if(selector==="[data-hero-bottle]")return poster;
   return null;
  }};
  const preference=Object.assign(new Emitter(),{matches:reducedMotion});
@@ -56,9 +58,21 @@ function harness({reducedMotion=false,saveData=false,failPlayback=false}={}){
    trigger(){this.callback([]);}
   }
  });
- return {video,control,frame,preference,connection,doc,win,observerState};
+ return {video,control,poster,frame,preference,connection,doc,win,observerState};
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+
+test("video waits until the priority poster has loaded",async()=>{
+ const h=harness({withPoster:true});
+ const dispose=setupHeroLivePhoto({win:h.win,doc:h.doc});
+ h.observerState.intersection.trigger(true);
+ assert.equal(h.video.src,"");
+ h.poster.complete=true;h.poster.naturalWidth=900;h.poster.emit("load");
+ await settle();
+ assert.equal(h.video.loadCount,1);
+ assert.equal(h.frame.dataset.liveReady,"true");
+ dispose();
+});
 
 test("Live Photo remains lazy until an eligible visible intersection",async()=>{
  const h=harness();

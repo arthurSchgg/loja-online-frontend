@@ -1,0 +1,174 @@
+/*
+ * Lojinha da Kátia · transparent editorial assets.
+ * The previous SVG-shaped clipping masks were designed for remote JPEGs and
+ * could cut through caps, packaging and candle details. These new local WebP
+ * pictures already contain real alpha; NEVER apply a mask or multiply blend.
+ * Product catalog images remain from the public API, not these illustrations.
+ */
+.chapter-hero__art .editorial-cutout-shell{
+  display:grid;
+  place-items:center;
+  mix-blend-mode:normal!important;
+  isolation:auto;
+  width:min(78%,390px);
+  max-height:none;
+  margin-inline:auto;
+}
+img[data-editorial-photo].editorial-product-photo--alpha{
+  display:block;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  opacity:1!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  mix-blend-mode:normal!important;
+  -webkit-mask:none!important;
+  mask:none!important;
+  -webkit-mask-image:none!important;
+  mask-image:none!important;
+  -webkit-mask-size:auto!important;
+  mask-size:auto!important;
+  filter:drop-shadow(0 22px 24px rgba(70,39,33,.12))!important;
+  image-rendering:auto;
+}
+.chapter-hero__art img.editorial-product-photo--alpha{
+  display:block;
+  width:100%!important;
+  height:auto!important;
+  max-height:420px!important;
+  aspect-ratio:1/1;
+}
+.chapter-hero__art--candle .editorial-cutout-shell{
+  width:min(88%,460px);
+}
+.chapter-hero__art--candle img.editorial-product-photo--alpha{
+  max-height:450px!important;
+}
+.chapter-story__art img.editorial-product-photo--alpha{
+  width:min(74%,345px)!important;
+  max-height:355px!important;
+  height:auto!important;
+  position:relative;
+  z-index:1;
+}
+.collection-tile img.editorial-product-photo--alpha{
+  right:3%!important;
+  bottom:3%!important;
+  width:clamp(145px,31%,270px)!important;
+  max-width:43%!important;
+  height:85%!important;
+  opacity:1!important;
+}
+.collection-tile .copy{position:relative;z-index:2;width:min(64%,350px)}
+.collection-tile h3{max-width:14ch;text-wrap:balance}
+.editorial-visual__float{
+  width:min(89%,440px);
+  height:auto;
+  max-height:none;
+  display:grid;
+  place-items:center;
+}
+.editorial-visual img.editorial-product-photo--alpha{
+  width:min(88%,410px)!important;
+  height:auto!important;
+  max-width:100%;
+  max-height:430px!important;
+  aspect-ratio:1/1;
+  margin-inline:auto;
+}
+/* Keep the stage clean; do not draw another photography rectangle behind it. */
+.editorial-visual{
+  overflow:hidden;
+  background:linear-gradient(145deg,#e7c7b9,#f0dcd0);
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .collection-tile:hover img.editorial-product-photo--alpha,
+  .collection-tile:focus-visible img.editorial-product-photo--alpha{
+    filter:drop-shadow(0 28px 30px rgba(70,39,33,.16))!important;
+    transform:translate3d(0,-5px,0) scale(1.02)!important;
+  }
+}
+@media(max-width:768px){
+  .chapter-hero__art .editorial-cutout-shell{
+    width:min(72vw,345px)!important;
+    max-height:none!important;
+  }
+  .chapter-hero__art img.editorial-product-photo--alpha{
+    max-height:345px!important;
+  }
+  .chapter-hero__art--candle .editorial-cutout-shell{
+    width:min(85vw,400px)!important;
+  }
+  .chapter-story__art img.editorial-product-photo--alpha{
+    width:min(75vw,300px)!important;
+    max-height:310px!important;
+  }
+  .collection-tile img.editorial-product-photo--alpha{
+    right:1%!important;
+    width:min(42%,240px)!important;
+    max-width:42%!important;
+    height:79%!important;
+  }
+}
+@media(max-width:560px){
+  .chapter-hero__art .editorial-cutout-shell{
+    width:min(72vw,300px)!important;
+  }
+  .chapter-hero__art img.editorial-product-photo--alpha{
+    max-height:300px!important;
+  }
+  .chapter-hero__art--candle .editorial-cutout-shell{
+    width:min(87vw,335px)!important;
+  }
+  .chapter-story__art img.editorial-product-photo--alpha{
+    width:min(74vw,270px)!important;
+    max-height:275px!important;
+  }
+  .collection-tile{min-height:320px}
+  .collection-tile .copy{width:65%}
+  .collection-tile img.editorial-product-photo--alpha{
+    width:45%!important;
+    max-width:45%!important;
+    height:72%!important;
+    right:-2%!important;
+    bottom:3%!important;
+  }
+  .editorial-visual__float{width:min(87vw,340px);max-height:340px}
+  .editorial-visual img.editorial-product-photo--alpha{
+    width:100%!important;
+    max-height:330px!important;
+  }
+}
+@media(max-width:375px){
+  .collection-tile .copy{width:70%}
+  .collection-tile img.editorial-product-photo--alpha{width:40%!important;max-width:40%!important}
+}
+@media(prefers-reduced-motion:reduce){
+  img.editorial-product-photo--alpha,
+  .chapter-hero__art .editorial-cutout-shell{
+    animation:none!important;
+    transition:none!important;
+    transform:none!important;
+  }
+}
+html[data-motion="off"] .chapter-hero__art .editorial-cutout-shell{
+  animation:none!important;
+  transition:none!important;
+}
+
+
+/* A single, clear route from the homepage showcase to the full live catalog. */
+.editorial-catalog-link{
+  display:flex;
+  justify-content:center;
+  margin-top:clamp(24px,4vw,48px);
+}
+.editorial-catalog-link .btn{
+  min-height:52px;
+  padding-inline:clamp(24px,4vw,44px);
+}
+@media(max-width:560px){
+  .editorial-catalog-link .btn{width:min(100%,370px);justify-content:center}
+}

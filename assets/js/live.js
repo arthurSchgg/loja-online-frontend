@@ -2,7 +2,7 @@
  * All prices/availability in live mode originate from the backend.
  */
 import {isLive} from "./config.js";
-import {fetchProducts,fetchProduct,fetchOfferings,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
+import {fetchProducts,fetchProduct,fetchRelatedProducts,fetchOfferings,fetchOffering,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
 import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
 import {setupCatalogToolbar} from "./catalog-toolbar.js";
@@ -14,7 +14,20 @@ import {UI_ICONS} from "./ui-icons.js";
 import {officialStoreLinks} from "./official-contact.js";
 import {safeNumericId as numberId} from "./render-safety.js";
 import {createConfirmationGate} from "./confirmation-gate.js";
+import {setupCommercialRefresh} from "./commercial-refresh.js";
 const safe=value=>escapeHtml(value??"");
+// Institutional and service pages do not need to download the catalog snapshot.
+let snapshotPromise,SNAPSHOT_NOTICE="Fotos e descrições salvas; dados comerciais precisam de confirmação.";
+function loadSnapshot(){
+ return snapshotPromise??=import("./public-catalog-snapshot.js").then(module=>{
+  SNAPSHOT_NOTICE=module.SNAPSHOT_NOTICE;
+  return module;
+ }).catch(()=>{
+  // A missing optional preview must not prevent the real API from loading.
+  return {snapshotCatalogPage:()=>({items:[],hasNext:false}),snapshotCategories:()=>[],
+   snapshotProduct:()=>null,canShowPublicSnapshot:()=>false};
+ });
+}
 
 const productTitle=p=>safe(p.name||"Produto sem nome");
 // The eight previously supplied Skelt miniatures are kept only as an offline
@@ -68,9 +81,27 @@ function liveProductCard(p){
  const id=numberId(p?.id);
  if(id===null)return ""; // API data must never become unescaped HTML attributes.
  const img=safe(imageFromProduct(p)),fallback=safe(imageFallback(p)),price=currentPrice(p),available=!!p.available;
- const label=price===null?"Valor sob consulta":money(price);
- const action=available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
+ const preview=p?.offlineSnapshot===true;
+ const pricePending=preview||price===null||price===0;
+ const label=preview?"Preço a confirmar":pricePending?"Valor sob consulta":money(price);
+ const action=preview?'<span class="badge" aria-label="Dados comerciais temporariamente indisponíveis">Informações em atualização</span>':pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
  return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#faf9f6"><img src="'+img+'" data-image-fallback="'+fallback+'" loading="lazy" decoding="async" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div><a class="product-card__details" href="produto.html?productId='+id+'" aria-label="Ver detalhes de '+productTitle(p)+'">Ver detalhes</a></div></article>';
+}
+/** Show previously public photos without using stale stock/prices for sale. */
+function showSnapshotNotice(grid,message=SNAPSHOT_NOTICE){
+ if(!grid?.parentNode)return;
+ let note=grid.parentNode.querySelector('[data-snapshot-for="'+grid.id+'"]');
+ if(!note){
+  note=document.createElement("p");
+  note.className="catalog-snapshot-notice";
+  note.dataset.snapshotFor=grid.id;
+  note.setAttribute("role","status");
+  grid.before(note);
+ }
+ note.textContent=message;
+}
+function clearSnapshotNotice(grid){
+ grid?.parentNode?.querySelector('[data-snapshot-for="'+grid.id+'"]')?.remove();
 }
 /** Perceived-loading placeholder; never substitute fake products for API data. */
 function catalogLoadingMarkup(count=4){
@@ -105,10 +136,47 @@ function ensureDialog(){
    const response=await confirmWhatsApp({...selection,customizations});
    if(!confirmationGate.isCurrent(revision)||!dlg.open)return;
    const a=document.createElement("a");a.href=response.url;a.target="_blank";a.rel="noopener noreferrer";a.className="btn btn--secondary btn--full";a.textContent="Abrir WhatsApp com informações confirmadas";link.append(a);
+   if(response.message){
+    const copy=document.createElement("button");copy.type="button";copy.className="btn btn--ghost btn--full";
+    copy.textContent="Copiar mensagem confirmada";
+    copy.addEventListener("click",async()=>{
+     if(!confirmationGate.isCurrent(revision)||!dlg.open)return;
+     try{await navigator.clipboard.writeText(response.message);if(confirmationGate.isCurrent(revision)&&dlg.open)feedback.textContent="Mensagem copiada.";}
+     catch{if(confirmationGate.isCurrent(revision)&&dlg.open)feedback.textContent="Não foi possível copiar. Utilize o link confirmado.";}
+    });
+    link.append(copy);
+   }
    feedback.textContent="Informações atualizadas confirmadas. Revise o resumo no WhatsApp antes de enviar.";
   }catch(err){
-   if(confirmationGate.isCurrent(revision)&&dlg.open)
+   if(confirmationGate.isCurrent(revision)&&dlg.open){
     feedback.textContent=err instanceof ApiError?err.message:"Não foi possível validar. Tente novamente.";
+    if(err instanceof ApiError&&[404,409].includes(err.status)){
+     const reload=document.createElement("button");reload.type="button";reload.className="btn btn--secondary btn--full";
+     reload.textContent="Atualizar informações";
+     reload.addEventListener("click",async()=>{
+      if(!confirmationGate.isCurrent(revision)||!dlg.open)return;
+      const refreshRevision=confirmationGate.begin();
+      reload.disabled=true;btn.disabled=true;feedback.textContent="Consultando os dados atuais...";
+      try{
+       const fresh=selection.type==="PRODUCT"?await fetchProduct(selection.id):await fetchOffering(selection.id);
+       if(!confirmationGate.isCurrent(refreshRevision)||!dlg.open)return;
+       const newPrice=currentPrice(fresh);
+       if(!fresh?.available||(selection.type==="PRODUCT"&&(newPrice===null||newPrice<=0))){
+        requestConfirmation=null;link.replaceChildren();
+        feedback.textContent="Este item não está disponível para consulta agora.";return;
+       }
+       showConfirmation({type:selection.type,item:fresh});
+       feedback.textContent="As informações foram atualizadas. Revise e confirme novamente.";
+      }catch(error){
+       if(confirmationGate.isCurrent(refreshRevision)&&dlg.open){
+        requestConfirmation=null;link.replaceChildren();
+        feedback.textContent=error instanceof ApiError?error.message:"Não foi possível atualizar agora.";
+       }
+      }
+     },{once:true});
+     link.append(reload);
+    }
+   }
   }finally{
    if(confirmationGate.isCurrent(revision))btn.disabled=false;
   }
@@ -118,6 +186,7 @@ function ensureDialog(){
 function showConfirmation({type,item}){
  if(!item||!item.available)return;
  const dlg=ensureDialog(),price=currentPrice(item),name=item.name||item.title;
+ if(type==="PRODUCT"&&(item.offlineSnapshot||price===null||price<=0))return;
  confirmationGate.invalidate();
  dlg.querySelector("#send-confirm").disabled=false;
  requestConfirmation={type,id:Number(item.id),expectedPrice:price};
@@ -135,7 +204,7 @@ function showConfirmation({type,item}){
    label.append(select);options.append(label);
   }
  }
- dlg.showModal();
+ if(!dlg.open)dlg.showModal();
 }
 let currentProducts=[],currentOfferings=[];
 /** Enable the existing WhatsApp confirmation dialog on dedicated public service pages. */
@@ -144,9 +213,9 @@ export function registerPublicOfferings(items){
 }
 document.addEventListener("click",e=>{
  const item=e.target.closest("[data-confirm-product]");
- if(item){const p=currentProducts.find(x=>x.id===Number(item.dataset.confirmProduct));if(p)showConfirmation({type:"PRODUCT",item:p});}
+ if(item){const p=currentProducts.find(x=>numberId(x.id)===Number(item.dataset.confirmProduct));if(p)showConfirmation({type:"PRODUCT",item:p});}
  const offer=e.target.closest("[data-confirm-offering]");
- if(offer){const o=currentOfferings.find(x=>x.id===Number(offer.dataset.confirmOffering));if(o)showConfirmation({type:"OFFERING",item:o});}
+ if(offer){const o=currentOfferings.find(x=>numberId(x.id)===Number(offer.dataset.confirmOffering));if(o)showConfirmation({type:"OFFERING",item:o});}
 });
 async function initContact(){
  const section=document.getElementById("contato"),container=section?.querySelector(".container");
@@ -203,57 +272,7 @@ async function initLiveCategoryHighlights(){
   grid.replaceChildren();status(grid,"Categorias indisponíveis. Use a busca do catálogo.",true);
  }
 }
-async function initHome(){
- const cta=document.querySelector(".hero-copy .btn--primary");
- if(cta?.firstChild?.nodeType===Node.TEXT_NODE)cta.firstChild.textContent="Explorar produtos ";
- // Concept-only collection tiles must never imply fictitious products are on sale.
- const demoCollections=document.getElementById("colecoes");
- if(demoCollections)demoCollections.hidden=true;
- const showcase=document.getElementById("mais-amados");
- if(showcase){
-  const eyebrow=showcase.querySelector(".eyebrow"),heading=showcase.querySelector("h2");
-  if(eyebrow)eyebrow.textContent="CATÁLOGO PUBLICADO";
-  if(heading)heading.textContent="Produtos para descobrir.";
- }
- const quizLead=document.querySelector("#quiz p.lead");
- if(quizLead)quizLead.textContent="Responda às experiências da loja sem armazenar suas respostas.";
- const editorialImage=document.querySelector("#experiencias img[data-parallax]");
- // The editorial uses the licensed photograph already declared in HTML. Do not replace it with a logo.
- void initLiveCategoryHighlights();
- void initContact();
- const grid=document.getElementById("featured-grid");
- if(grid){
-  grid.innerHTML=catalogLoadingMarkup(4);grid.setAttribute("aria-busy","true");
-  try{const page=await loadCatalogPage((index)=>fetchProducts(index),0);currentProducts=page.items;grid.innerHTML=currentProducts.length?currentProducts.slice(0,8).map(liveProductCard).join(""):"<p>Nenhum produto publicado no momento.</p>";}
-  catch(err){grid.replaceChildren();status(grid,err.message,true);}
-  finally{grid.removeAttribute("aria-busy");}
- }
- // Replace local demonstration quiz with the actual backend question contract.
- const quiz=document.getElementById("quiz-form");
- if(quiz){
-  quiz.replaceChildren();status(quiz,"Buscando experiências da loja...");
-  try{
-   const experiences=await fetchExperiences(),e=experiences?.[0];
-   if(!e){quiz.replaceChildren();status(quiz,"Nenhuma experiência publicada no momento.");}
-   else{
-    const full=await fetchExperience(e.id);quiz.replaceChildren();
-    for(const question of full.questions||[]){
-     const fieldset=document.createElement("fieldset");fieldset.className="fieldset";const legend=document.createElement("legend");legend.textContent=question.title;fieldset.append(legend);
-     for(const option of question.options||[]){
-      const label=document.createElement("label");label.className="quiz-choice";const input=document.createElement("input");input.type="radio";input.name="q-"+question.id;input.value=option.id;input.required=true;label.append(input,document.createTextNode(" "+option.label));fieldset.append(label);
-     }
-     quiz.append(fieldset);
-    }
-    const button=document.createElement("button");button.type="submit";button.className="btn btn--primary";button.textContent="Descobrir resultado";quiz.append(button);
-    const out=document.createElement("div");out.setAttribute("role","status");out.setAttribute("aria-live","polite");quiz.append(out);
-    quiz.addEventListener("submit",async event=>{
-     event.preventDefault();button.disabled=true;out.textContent="Avaliando respostas...";
-     const form=new FormData(quiz);const answers=(full.questions||[]).map(q=>({questionId:Number(q.id),optionId:Number(form.get("q-"+q.id))}));
-     try{const result=await evaluateExperience(full.id,answers);out.textContent="Seu perfil: "+String(result.title||result.key||"").slice(0,120);if(result.recommendations?.length)out.textContent+=" — "+result.recommendations.map(p=>p.name).join(", ");}catch(err){out.textContent=err.message;}finally{button.disabled=false;}
-    });
-   }
-  }catch(err){quiz.replaceChildren();status(quiz,"Experiência indisponível: "+err.message,true);}
- }
+async function initHomeOfferings(){
  const sec=document.querySelector("#experiencias .editorial-copy");
  if(sec){
   const box=document.createElement("div");box.className="service-preview-list";sec.append(box);
@@ -279,9 +298,110 @@ async function initHome(){
    if(!published.length)box.remove();
   }catch{box.remove();}
  }
+}
+
+async function initHome(){
+ const {snapshotCatalogPage,canShowPublicSnapshot}=await loadSnapshot();
+ const cta=document.querySelector(".hero-copy .btn--primary");
+ if(cta?.firstChild?.nodeType===Node.TEXT_NODE)cta.firstChild.textContent="Explorar produtos ";
+ // Curated editorial tiles now link to real published product categories
+ // (Perfumaria and Kits para presente), not fictional olfactory families.
+ const collectionSection=document.getElementById("colecoes");
+ if(collectionSection)collectionSection.hidden=false;
+ const showcase=document.getElementById("mais-amados");
+ if(showcase){
+  const eyebrow=showcase.querySelector(".eyebrow"),heading=showcase.querySelector("h2");
+  if(eyebrow)eyebrow.textContent="CATÁLOGO PUBLICADO";
+  if(heading)heading.textContent="Produtos para descobrir.";
+ }
+ const quizLead=document.querySelector("#quiz p.lead");
+ if(quizLead)quizLead.textContent="Responda às experiências da loja sem armazenar suas respostas.";
+ const editorialImage=document.querySelector("#experiencias img[data-parallax]");
+ // The home uses self-hosted, transparent editorial illustrations. SKU photos remain API-owned.
+ void initLiveCategoryHighlights();
+ void initContact();
+ // Service discovery is independent of slow product and quiz endpoints.
+ void initHomeOfferings();
+ const grid=document.getElementById("featured-grid");
+ if(grid){
+  let loadingFeatured=false;
+  const paintFeatured=page=>{
+   currentProducts=page.items;
+   grid.innerHTML=currentProducts.length?
+    currentProducts.slice(0,8).map(liveProductCard).join(""):
+    '<div class="catalog-empty"><strong>Nenhum produto publicado ainda.</strong><p>Explore outras experiências da loja enquanto o catálogo é preparado.</p></div>';
+   clearSnapshotNotice(grid);
+  };
+  const loadFeatured=async()=>{
+   if(loadingFeatured)return;
+   loadingFeatured=true;
+   grid.parentNode?.querySelector("[data-home-retry]")?.remove();
+   const preview=snapshotCatalogPage(0);
+   currentProducts=preview.items;
+   grid.innerHTML=preview.items.slice(0,8).map(liveProductCard).join("");
+   showSnapshotNotice(grid,"Conferindo preços e disponibilidade atualizados...");
+   grid.setAttribute("aria-busy","true");
+   try{
+    const page=await loadCatalogPage((index)=>fetchProducts(index),0);
+    paintFeatured(page);
+   }catch(err){
+    if(!canShowPublicSnapshot(err)){
+     grid.replaceChildren();clearSnapshotNotice(grid);
+     status(grid,"Não foi possível carregar os produtos da loja.",true);
+    }else showSnapshotNotice(grid);
+    const retry=document.createElement("button");
+    retry.type="button";retry.className="btn btn--secondary";
+    retry.dataset.homeRetry="";
+    retry.textContent="Tentar novamente";
+    retry.addEventListener("click",()=>void loadFeatured(),{once:true});
+    grid.after(retry);
+   }finally{loadingFeatured=false;grid.removeAttribute("aria-busy");}
+  };
+  // Homepage sections are independent: a sleeping API must not hold the quiz
+  // and service discovery until the featured-products retry window finishes.
+  void loadFeatured();
+  setupCommercialRefresh(async()=>{
+   if(loadingFeatured)return;
+   loadingFeatured=true;
+   try{
+    const page=await fetchProducts(0);
+    grid.parentNode?.querySelector("[data-home-retry]")?.remove();
+    paintFeatured(page);
+   }catch{/* Keep the existing view; confirmation still checks actual prices. */}
+   finally{loadingFeatured=false;}
+  });
+ }
+ // Replace local demonstration quiz with the actual backend question contract.
+ const quiz=document.getElementById("quiz-form");
+ if(quiz){
+  quiz.replaceChildren();status(quiz,"Buscando experiências da loja...");
+  try{
+   const experiences=await fetchExperiences(),e=experiences?.[0];
+   if(!e){quiz.replaceChildren();status(quiz,"Nenhuma experiência publicada no momento.");}
+   else{
+    const full=Array.isArray(e.questions)&&e.questions.length?e:await fetchExperience(e.id);quiz.replaceChildren();
+    for(const question of full.questions||[]){
+     const fieldset=document.createElement("fieldset");fieldset.className="fieldset";const legend=document.createElement("legend");legend.textContent=question.title;fieldset.append(legend);
+     for(const option of question.options||[]){
+      const label=document.createElement("label");label.className="quiz-choice";const input=document.createElement("input");input.type="radio";input.name="q-"+question.id;input.value=option.id;input.required=true;label.append(input,document.createTextNode(" "+option.label));fieldset.append(label);
+     }
+     quiz.append(fieldset);
+    }
+    const button=document.createElement("button");button.type="submit";button.className="btn btn--primary";button.textContent="Descobrir resultado";quiz.append(button);
+    const out=document.createElement("div");out.setAttribute("role","status");out.setAttribute("aria-live","polite");quiz.append(out);
+    quiz.addEventListener("submit",async event=>{
+     event.preventDefault();button.disabled=true;out.textContent="Avaliando respostas...";
+     const form=new FormData(quiz);const answers=(full.questions||[]).map(q=>({questionId:Number(q.id),optionId:Number(form.get("q-"+q.id))}));
+     try{const result=await evaluateExperience(full.id,answers);out.textContent="Seu perfil: "+String(result.title||result.key||"").slice(0,120);if(result.recommendations?.length)out.textContent+=" — "+result.recommendations.map(p=>p.name).join(", ");}catch(err){out.textContent=err.message;}finally{button.disabled=false;}
+    });
+   }
+  }catch(err){quiz.replaceChildren();status(quiz,"Experiência indisponível: "+err.message,true);}
+ }
+
 
 }
 async function initCatalog(){
+ const {snapshotCatalogPage,snapshotCategories,canShowPublicSnapshot}=await loadSnapshot();
  const grid=document.getElementById("catalog-grid"),form=document.getElementById("filters"),count=document.getElementById("result-count");
  if(!grid||!form)return;
  // Attributes not exposed by ProductResponse cannot be used as live filters.
@@ -297,76 +417,124 @@ async function initCatalog(){
  const featured=form.elements.sort?.querySelector('option[value="featured"]');
  if(featured){featured.value="recent";featured.textContent="Mais recentes";}
  form.elements.sort?.querySelector('option[value="new"]')?.remove();
- const search=createCatalogSearch((page,filters)=>loadCatalogPage((index,options)=>fetchProducts(index,undefined,options),page,filters));
+ const search=createCatalogSearch(async(page,filters,signal,context)=>{
+  if(context.refresh)return {...await fetchProducts(page,signal,filters),source:"live"};
+  if(context.source==="snapshot"&&page>0)return {...snapshotCatalogPage(page,filters),source:"snapshot"};
+  try{
+   const result=await loadCatalogPage(
+    (index,options,requestSignal)=>fetchProducts(index,requestSignal,options),
+    page,filters,undefined,signal);
+   return {...result,source:"live"};
+  }catch(error){
+   // A later live page must be retried, never mixed with old preview rows.
+   if(page>0||!canShowPublicSnapshot(error))throw error;
+   return {...snapshotCatalogPage(page,filters),source:"snapshot"};
+  }
+ });
  const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";
  loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
- let version=0,searchTimer=null,categoryWarning="";
+ const retryLive=document.createElement("button");retryLive.type="button";retryLive.className="btn btn--secondary";
+ retryLive.textContent="Atualizar dados da loja";retryLive.hidden=true;loadMore.after(retryLive);
+ let version=0,searchTimer=null,categoryWarning="",hasLiveView=false;
  const params=new URLSearchParams(location.search),familyName=params.get("familia");
  // Display the unfiltered catalog immediately. The categories endpoint is an
  // independent enhancement and must not block the first product listing.
  const categoryField=family.closest(".field");
- family.disabled=true;
- family.replaceChildren();
- const loadingOption=document.createElement("option");
- loadingOption.value="";loadingOption.textContent="Carregando categorias...";
- family.append(loadingOption);
+ const initialCategories=snapshotCategories();
+ function paintCategories(categories){
+  const selectedId=family.value;
+  family.replaceChildren();
+  const any=document.createElement("option");
+  any.value="";any.textContent="Todas as categorias";family.append(any);
+  for(const c of categories){
+   const option=document.createElement("option");option.value=String(c.id);
+   option.textContent=c.name;family.append(option);
+  }
+  if(selectedId&&categories.some(c=>String(c.id)===selectedId))family.value=selectedId;
+  else if(familyName&&new URLSearchParams(location.search).has("familia")){
+   const requestedName=new URLSearchParams(location.search).get("familia");
+   const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===requestedName.toLocaleLowerCase("pt-BR"));
+   if(match)family.value=String(match.id);
+  }
+  family.disabled=false;
+ }
+ paintCategories(initialCategories);
  async function loadCategories(){
   try{
    const categories=await fetchCategories();
-   family.replaceChildren();
-   const any=document.createElement("option");any.value="";any.textContent="Todas as categorias";family.append(any);
-   for(const category of categories){
-    const option=document.createElement("option");option.value=String(category.id);option.textContent=category.name;family.append(option);
-   }
-   if(familyName){
-    const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===familyName.toLocaleLowerCase("pt-BR"));
-    if(match)family.value=String(match.id);
-    else categoryWarning="A categoria indicada no link não consta do catálogo real. ";
-   }
-   family.disabled=false;
+   categoryWarning="";
+   const before=family.value;
+   paintCategories(categories);
+   if(before!==family.value)applyServerFilters();
   }catch(error){
-   categoryField.hidden=true;
-   categoryWarning="Categorias temporariamente indisponíveis; todos os produtos publicados continuam visíveis. ";
-  }finally{
-   toolbar.render();
-   if(familyName&&new URLSearchParams(location.search).has("familia"))applyServerFilters();
-  }
+   // Keep public cached categories rather than hiding the filter entirely.
+   categoryWarning="Categorias carregadas da vitrine salva. ";
+  }finally{toolbar.render();}
  }
  if(params.has("q"))queryField.value=params.get("q").slice(0,180);
- function render(){
+ function render(appendFrom=0){
   const state=search.state;
-  grid.innerHTML=state.items.map(liveProductCard).join("")||'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>';
+  const snapshotActive=state.source==="snapshot";
+  hasLiveView=state.source==="live";
+  grid.querySelector("[data-api-status]")?.remove();
+  if(appendFrom>0&&grid.querySelector(".product-card"))
+   grid.insertAdjacentHTML("beforeend",state.items.slice(appendFrom).map(liveProductCard).join(""));
+  else grid.innerHTML=state.items.map(liveProductCard).join("")||'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>';
+  if(snapshotActive)
+   showSnapshotNotice(grid,SNAPSHOT_NOTICE+((form.elements.max?.value||String(form.elements.sort?.value||"").startsWith("price-"))?" A filtragem e a ordenação por preço dependem da API.":""));
+  else clearSnapshotNotice(grid);
   toolbar.render();
   count.textContent=categoryWarning+state.items.length+" produtos carregados"+
     (state.hasNext?" · mais páginas disponíveis":" · fim dos resultados");
   loadMore.hidden=!state.hasNext;
   loadMore.textContent="Carregar mais produtos";
+  retryLive.hidden=!snapshotActive;
  }
  async function next(expectedVersion=version){
   if(expectedVersion!==version)return;
+  const previousCount=search.state.items.length;
   loadMore.disabled=true;
-  if(!search.state.items.length){grid.innerHTML=catalogLoadingMarkup(6);grid.setAttribute("aria-busy","true");}
+  if(!search.state.items.length){
+   if(grid.dataset.snapshotPreview!=="true"&&grid.dataset.preserveView!=="true")grid.innerHTML=catalogLoadingMarkup(6);
+   grid.setAttribute("aria-busy","true");
+  }
   else loadMore.textContent="Carregando mais...";
   try{
    const state=await search.next();
    if(expectedVersion!==version||state.stale)return;
-   currentProducts=state.items;render();
+   currentProducts=state.items;grid.dataset.snapshotPreview="false";render(previousCount);
   }catch(error){
    if(expectedVersion!==version)return;
-   if(!search.state.items.length)grid.replaceChildren();
+   if(!search.state.items.length){grid.replaceChildren();hasLiveView=false;clearSnapshotNotice(grid);}
    status(grid,"Não foi possível carregar esta página: "+(error?.message||"Tente novamente."),true);
    loadMore.textContent="Tentar novamente";loadMore.hidden=false;
-  }finally{if(expectedVersion===version){loadMore.disabled=false;grid.removeAttribute("aria-busy");}}
+  }finally{if(expectedVersion===version){loadMore.disabled=false;grid.removeAttribute("aria-busy");grid.inert=false;grid.dataset.preserveView="false";}}
  }
  function applyServerFilters(){
   window.clearTimeout(searchTimer);
+  const wasLive=hasLiveView;
   search.setFilters({q:queryField.value,categoryId:family.closest(".field").hidden?null:family.value,
    sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value||null});
   version++;
-  currentProducts=[];grid.replaceChildren();
+  if(wasLive){
+   // Keep decoded cards stable during a new search, but don't allow clicks
+   // on results that belong to the previous set of filters.
+   grid.inert=true;grid.dataset.preserveView="true";
+   grid.dataset.snapshotPreview="false";clearSnapshotNotice(grid);
+  }else{
+   const preview=snapshotCatalogPage(0,{q:queryField.value,categoryId:family.value,
+    sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value});
+   currentProducts=preview.items;
+   grid.innerHTML=preview.items.map(liveProductCard).join("")||
+    '<div class="catalog-empty"><strong>Nenhum produto correspondente.</strong><p>Tente outro nome ou categoria.</p></div>';
+   grid.dataset.snapshotPreview="true";
+   showSnapshotNotice(grid,"Conferindo dados atualizados...");
+  }
   toolbar.render();
-  count.textContent="Buscando produtos no catálogo...";
+  count.textContent="Verificando os dados publicados...";
   loadMore.hidden=true;
+  retryLive.hidden=true;
+  retryLive.disabled=false;
   void next(version);
  }
  const toolbar=setupCatalogToolbar({form,count,onChange:applyServerFilters});
@@ -374,11 +542,34 @@ async function initCatalog(){
   window.clearTimeout(searchTimer);
   searchTimer=window.setTimeout(applyServerFilters,300);
  });
- family.addEventListener("change",applyServerFilters);
+ family.addEventListener("change",()=>{
+  const url=new URL(location.href);
+  if(family.value)url.searchParams.set("familia",family.selectedOptions[0].textContent);
+  else url.searchParams.delete("familia");
+  history.replaceState(history.state,"",url.pathname+url.search+url.hash);
+  applyServerFilters();
+ });
+ form.addEventListener("submit",event=>{event.preventDefault();applyServerFilters();});
  for(const field of ["sort","max"])form.elements[field]?.addEventListener("change",applyServerFilters);
  loadMore.addEventListener("click",()=>void next());
- if(familyName)count.textContent="Carregando categoria selecionada...";
- else applyServerFilters();
+ const refresh=async()=>{
+  if(grid.hasAttribute("aria-busy")||loadMore.disabled)return;
+  const expectedVersion=version;
+  grid.setAttribute("aria-busy","true");loadMore.disabled=true;retryLive.disabled=true;
+  try{
+   const state=await search.refreshLoaded();
+   if(expectedVersion!==version||state.stale)return;
+   currentProducts=state.items;render();
+  }catch{
+   if(expectedVersion===version)
+    count.textContent="Não foi possível atualizar agora. Os dados serão novamente confirmados antes da consulta.";
+  }finally{
+   if(expectedVersion===version){grid.removeAttribute("aria-busy");loadMore.disabled=false;retryLive.disabled=false;}
+  }
+ };
+ retryLive.addEventListener("click",()=>void refresh());
+ setupCommercialRefresh(refresh);
+ applyServerFilters();
  void loadCategories();
 }
 async function initProduct(){
@@ -388,24 +579,34 @@ async function initProduct(){
  const query=new URLSearchParams(location.search),id=numberId(query.get("productId"));
  if(!id){status(host,"Selecione um produto do catálogo real.");return;}
  status(host,"Carregando produto...");
- try{
-  const p=await fetchProduct(id);currentProducts=[p];
+ let current=null,viewVersion=0,loading=false;
+ const clearRelated=()=>{
+  if(relatedSection)relatedSection.hidden=true;
+  relatedGrid?.replaceChildren();
+ };
+ function renderProduct(p){
+  current=p;viewVersion++;clearRelated();
+  currentProducts=[p];
   const price=currentPrice(p),fallback=imageFallback(p);
   const gallery=productGalleryImages(p,{origin:location.origin,fallback});
   const first=gallery[0]||{url:imageFromProduct(p),alt:p.name||"Produto"};
-  const priceLabel=price===null?"Valor sob consulta":money(price);
+  const pricePending=price===null||price===0;
+  const priceLabel=p.offlineSnapshot?"Preço atualizado indisponível":pricePending?"Valor sob consulta":money(price);
+  const quantity=Number(p.stockQuantity);
+  const stockLabel=!p.offlineSnapshot&&!pricePending&&p.available&&Number.isSafeInteger(quantity)&&quantity>0
+    ?'<small class="muted">'+quantity+(quantity===1?" unidade disponível":" unidades disponíveis")+'</small>':"";
   const categories=(p.categories||[]).filter(c=>typeof c?.name==="string").slice(0,8);
   const meta=categories.map(c=>'<span>'+safe(c.name)+'</span>').join("");
   const thumbs=gallery.length>1?'<div class="product-gallery__thumbs" role="group" aria-label="Escolher imagem do produto">'+
    gallery.map((image,index)=>'<button type="button" class="product-gallery__thumb" data-product-thumb="'+index+
     '" aria-label="Ver imagem '+(index+1)+' de '+gallery.length+'" aria-pressed="'+(index===0)+'">'+
-    '<img src="'+safe(image.url)+'" alt="" loading="lazy" decoding="async" width="72" height="80"></button>').join("")+
+    '<img src="'+safe(image.url)+'" data-image-fallback="'+safe(fallback)+'" alt="" loading="lazy" decoding="async" width="72" height="80"></button>').join("")+
    '</div>':"";
   host.innerHTML='<section class="container product-view">'+
    '<div class="product-gallery" data-product-gallery>'+
     '<div class="product-main-art product-gallery__main" style="--product-theme:#f6f0eb">'+
      '<button type="button" class="product-gallery__main-button" aria-label="Ampliar imagem do produto" aria-pressed="false">'+
-      '<img src="'+safe(first.url)+'" data-image-fallback="'+safe(fallback)+'" loading="eager" decoding="async" width="400" height="530" alt="'+safe(first.alt)+'">'+
+      '<img src="'+safe(first.url)+'" data-image-fallback="'+safe(fallback)+'" loading="eager" fetchpriority="high" decoding="async" width="400" height="530" alt="'+safe(first.alt)+'">'+
      '</button><span class="product-gallery__zoom-tip" aria-hidden="true">Toque para ampliar</span></div>'+thumbs+
    '</div><div class="product-detail">'+
     '<nav class="product-breadcrumb" aria-label="Caminho de navegação"><a href="catalogo.html">Catálogo</a><span aria-hidden="true">/</span><span>Detalhes</span></nav>'+
@@ -415,9 +616,9 @@ async function initProduct(){
     (meta?'<div class="product-detail__meta">'+meta+'</div>':"")+
     '<p class="product-detail__price">'+priceLabel+'</p>'+
     '<div class="product-detail__availability">'+
-     (p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
+     (p.offlineSnapshot?'<span class="badge">Aguardando conexão para consultar</span>':pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
       '<span class="badge" aria-label="Indisponível">Indisponível</span>')+
-    '</div><p class="product-detail__disclaimer">Imagens ilustram o produto cadastrado. Preço e disponibilidade são confirmados antes de qualquer solicitação.</p>'+
+    stockLabel+'</div><p class="product-detail__disclaimer">Imagens ilustram o produto cadastrado. Preço e disponibilidade são confirmados antes de qualquer solicitação.</p>'+
    '</div></section>';
   const galleryHost=host.querySelector("[data-product-gallery]");
   const main=galleryHost?.querySelector(".product-gallery__main-button");
@@ -441,19 +642,76 @@ async function initProduct(){
       other.setAttribute("aria-pressed",String(other===button)));
    });
   });
+  if(p.offlineSnapshot)showSnapshotNotice(host,SNAPSHOT_NOTICE);
+  else clearSnapshotNotice(host);
   document.title=(p.name||"Produto")+" | Lojinha da Kátia";
-  if(relatedGrid){
+ }
+ async function loadRelated(p,revision){
+  if(!relatedGrid||p.offlineSnapshot)return;
+  try{
+   let recommendations;
    try{
-    const nearby=await fetchProducts(0);
-    const recommendations=relatedCatalogProducts(p,nearby.items,4);
-    if(recommendations.length){
-     currentProducts=[p,...recommendations];
-     relatedGrid.innerHTML=recommendations.map(liveProductCard).join("");
-     if(relatedSection)relatedSection.hidden=false;
+    recommendations=relatedCatalogProducts(p,await fetchRelatedProducts(id),4);
+   }catch(error){
+    // Transitional compatibility with the previously deployed API: use its
+    // actual brand/category filters rather than scanning an unrelated page.
+    if(![401,403,404,405].includes(Number(error?.status)))throw error;
+    const candidates=[],brandId=numberId(p.brand?.id);
+    if(brandId)candidates.push(...(await fetchProducts(0,undefined,{brandId})).items);
+    for(const category of (p.categories||[]).slice(0,2)){
+     if(relatedCatalogProducts(p,candidates,4).length>=4)break;
+     const categoryId=numberId(category.id);
+     if(categoryId)candidates.push(...(await fetchProducts(0,undefined,{categoryId})).items);
     }
-   }catch{/* Related products are optional; the main product remains visible. */}
+    recommendations=relatedCatalogProducts(p,candidates,4);
+   }
+   if(revision!==viewVersion||!recommendations.length)return;
+   currentProducts=[p,...recommendations];
+   relatedGrid.innerHTML=recommendations.map(liveProductCard).join("");
+   if(relatedSection)relatedSection.hidden=false;
+  }catch{/* Related products are optional; the main product remains visible. */}
+ }
+ function showRetry(){
+  host.parentNode?.querySelector("[data-product-retry]")?.remove();
+  const button=document.createElement("button");button.type="button";button.className="btn btn--secondary";
+  button.dataset.productRetry="";button.textContent="Atualizar produto";
+  button.addEventListener("click",()=>void refresh(),{once:true});host.after(button);
+ }
+ async function refresh({initial=false}={}){
+  if(loading)return;
+  loading=true;host.parentNode?.querySelector("[data-product-retry]")?.remove();
+  let remoteSettled=false;
+  const remote=fetchProduct(id).then(value=>{remoteSettled=true;return {value};},
+   error=>{remoteSettled=true;return {error};});
+  try{
+   const {snapshotProduct,canShowPublicSnapshot}=await loadSnapshot();
+   const preview=initial?snapshotProduct(id):null;
+   if(preview&&!remoteSettled){
+    renderProduct(preview);
+    showSnapshotNotice(host,"Conferindo preço e disponibilidade atualizados...");
+   }
+   const result=await remote;
+   if(result.error){
+    // A definitive not-found/invalid response must remove an outdated preview.
+    if([400,404].includes(Number(result.error?.status))||!canShowPublicSnapshot(result.error))throw result.error;
+    const display=current||preview;
+    if(!display)throw result.error;
+    renderProduct({...display,offlineSnapshot:true,price:null,effectivePrice:null,available:false,stockQuantity:undefined});
+    showRetry();
+    return;
+   }
+   const p=result.value;
+   if(numberId(p?.id)!==id||p.published===false)throw new ApiError("Produto não encontrado.",404);
+   if(!current||JSON.stringify(current)!==JSON.stringify(p))renderProduct(p);
+   else {current=p;currentProducts=[p];clearRelated();viewVersion++;}
+   void loadRelated(p,viewVersion);
+  }catch(error){
+   current=null;currentProducts=[];viewVersion++;clearRelated();clearSnapshotNotice(host);
+   host.replaceChildren();status(host,"Não foi possível carregar: "+error.message,true);showRetry();
+  }finally{loading=false;}
   }
- }catch(err){host.replaceChildren();status(host,"Não foi possível carregar: "+err.message,true);}
+ setupCommercialRefresh(()=>refresh());
+ await refresh({initial:true});
 }
 if(isLive){
  // The hero uses a licensed editorial photograph, not a fictitious SKU or the logo.

@@ -24,6 +24,20 @@ test("public list preserves query, strips cookies and never caches",async()=>{
  assert.equal(response.headers.get("set-cookie"),null);
  assert.equal(response.headers.get("cache-control"),"no-store");
 });
+test("metadata has a short cache; commercial and error responses never do",async()=>{
+ for(const path of ["/api/v1/categories","/api/v1/store","/api/v1/brands","/api/v1/content-sections"]){
+  const context=make(path);
+  context.fetchImpl=async()=>new Response("[]",{headers:{"Content-Type":"application/json"}});
+  assert.equal((await onRequest(context)).headers.get("cache-control"),"public, max-age=30, must-revalidate");
+  context.fetchImpl=async()=>new Response("{}",{status:503,headers:{"Content-Type":"application/json"}});
+  assert.equal((await onRequest(context)).headers.get("cache-control"),"no-store");
+ }
+ const related=make("/api/v1/products/1/related?limit=4");
+ related.fetchImpl=async()=>new Response("[]",{headers:{"Content-Type":"application/json"}});
+ const result=await onRequest(related);
+ assert.equal(result.status,200);
+ assert.equal(result.headers.get("cache-control"),"no-store");
+});
 test("public API never exposes admin or auth routes",async()=>{
  for(const path of ["/api/v1/admin/products","/api/v1/auth/login","/api/v1/actuator/health",
   "/api/v1/products/1/../../admin/products","/api/v1/products/1/delete"]){
@@ -59,4 +73,19 @@ test("rejects misconfigured upstream and non-JSON or redirect responses",async()
 test("rejects excessively large POST payload",async()=>{
  const request=make("/api/v1/experiences/123/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({answers:"x".repeat(12200)})});
  assert.equal((await onRequest(request)).status,413);
+});
+
+test("slow public upstream is bounded and produces a retryable 504 without leaking data",async()=>{
+ const context=make("/api/v1/products?page=0");
+ context.fetchImpl=async(url,options)=>{
+  assert.ok(options.signal instanceof AbortSignal);
+  assert.equal(options.signal.aborted,false);
+  assert.equal(options.method,"GET");
+  throw Object.assign(new Error("upstream deadline"),{name:"TimeoutError"});
+ };
+ const response=await onRequest(context);
+ assert.equal(response.status,504);
+ assert.equal(response.headers.get("cache-control"),"no-store");
+ assert.equal(response.headers.get("set-cookie"),null);
+ assert.match((await response.json()).title,/demorou a responder/);
 });

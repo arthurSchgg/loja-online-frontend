@@ -99,3 +99,59 @@ test("changing price ceiling or global order restarts server pagination",async()
  assert.throws(()=>catalog.setFilters({sort:"unknown"}),/Ordenação inválida/);
  assert.throws(()=>catalog.setFilters({maxPrice:-1}),/Preço máximo inválido/);
 });
+
+test("changing filters aborts the previous in-flight request immediately",async()=>{
+ let firstSignal;
+ let observeAbort;
+ const aborted=new Promise(resolve=>{observeAbort=resolve;});
+ const catalog=createCatalogSearch((page,filters,signal)=>{
+  if(filters.q==="old"){
+   firstSignal=signal;
+   signal.addEventListener("abort",observeAbort,{once:true});
+   return new Promise((resolve,reject)=>{
+    signal.addEventListener("abort",()=>reject(Object.assign(new Error("aborted"),{name:"AbortError"})),{once:true});
+   });
+  }
+  return Promise.resolve({items:[{id:7,name:"new"}],hasNext:false});
+ });
+ catalog.setFilters({q:"old"});
+ const oldPromise=catalog.next();
+ catalog.setFilters({q:"new"});
+ await aborted;
+ assert.equal(firstSignal.aborted,true);
+ const latest=await catalog.next();
+ const outdated=await oldPromise;
+ assert.equal(outdated.stale,true);
+ assert.deepEqual(latest.items.map(p=>p.name),["new"]);
+});
+
+test("a live pagination failure cannot append outdated snapshot rows",async()=>{
+ let temporary=true;
+ const catalog=createCatalogSearch(async(page)=>{
+  if(page===0)return {items:[{id:1}],hasNext:true,source:"live"};
+  if(temporary)return {items:[{id:3}],hasNext:false,source:"snapshot"};
+  return {items:[{id:2}],hasNext:false,source:"live"};
+ });
+ await catalog.next();
+ await assert.rejects(()=>catalog.next(),/origem/i);
+ assert.equal(catalog.state.page,1);
+ assert.deepEqual(catalog.state.items.map(p=>p.id),[1]);
+ temporary=false;
+ assert.deepEqual((await catalog.next()).items.map(p=>p.id),[1,2]);
+});
+
+test("returning to the page revalidates loaded pages atomically",async()=>{
+ let broken=false;
+ const catalog=createCatalogSearch(async(page,filters,signal,context)=>{
+  if(context.refresh&&page===1&&broken)throw new Error("offline");
+  return {items:[{id:page+1,price:context.refresh?45:20}],hasNext:page===0,source:"live"};
+ });
+ await catalog.next();await catalog.next();
+ broken=true;
+ await assert.rejects(()=>catalog.refreshLoaded(),/offline/);
+ assert.deepEqual(catalog.state.items.map(p=>p.price),[20,20]);
+ broken=false;
+ const state=await catalog.refreshLoaded();
+ assert.equal(state.page,2);
+ assert.deepEqual(state.items.map(p=>p.price),[45,45]);
+});

@@ -61,10 +61,10 @@ for(const width of [320,375,768,1024,1440]){
   expect(errors).toEqual([]);
  });
 }
-test("demo | candle flame honors reduced-motion preference",async({page})=>{
+test("demo | candle photography honors reduced-motion preference",async({page})=>{
  await page.emulateMedia({reducedMotion:"reduce"});
  await page.goto("/espaco-das-velas.html");
- await expect(page.locator(".candle-art__flame")).toHaveCSS("animation-name","none");
+ await expect(page.locator(".chapter-hero__art .editorial-cutout-shell")).toHaveCSS("animation-name","none");
 });
 test("live | about page reads official story and validated contact channels",async({page})=>{
  const errors=errorsOn(page);
@@ -107,6 +107,7 @@ test("live | API failure or empty catalog hides illustrative offerings",async({p
  await expect(page.locator("[data-confirm-offering]")).toHaveCount(0);
  await page.goto("/conheca-a-loja.html");
  await expect(page.locator("#official-story .official-story-entry")).toHaveCount(0);
- await expect(page.locator("#official-story [data-api-error]")).toBeVisible();
+ await expect(page.locator("#official-story .institutional-story-note")).toContainText("temporariamente indisponível");
+ await expect(page.locator("#official-story").getByRole("button",{name:"Tentar novamente"})).toBeVisible();
  expect(errors).toEqual([]);
 });

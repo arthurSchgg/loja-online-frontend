@@ -5,6 +5,8 @@ dist-hml/
 node_modules/
 coverage/
 .playwright/
+test-results/
+playwright-report/
 .DS_Store
 *.log
 # Local credentials are never committed

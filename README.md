@@ -2,9 +2,17 @@
 
 Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem framework de interface. Identidade rosé/cobre, tipografia editorial, fotografias reais de frascos nas seções institucionais, Live Photo na home e animações nativas com IntersectionObserver/Web Animations API, sem scripts de animação de terceiros.
 
-> **PRODUÇÃO = MODO LIVE:** o Cloudflare Pages publica a vitrine usando a API pública Spring Boot/Render e dados do PostgreSQL/Neon. Os oito produtos Skelt cadastrados em 20/11/2026 estão publicados, mas continuam **indisponíveis para solicitação** enquanto não houver estoque real confirmado. A sacola e os perfumes fictícios existem **apenas no modo demo local**, sem checkout, pedido ou pagamento. Consultas por WhatsApp exigem validação atual pelo backend.
+> **PRODUÇÃO = MODO LIVE:** o Cloudflare Pages publica a vitrine usando a API pública Spring Boot/Render e dados do PostgreSQL/Neon. Na conferência de 21/11/2026 havia **65 produtos publicados, todos com fotografias**: 11 com preço maior que zero/disponibilidade registrada e 54 com preço técnico zero ainda pendente de confirmação. A vitrine não deve liberar solicitações quando preço ou disponibilidade atuais não estiverem validados. A sacola e os perfumes fictícios existem **apenas no modo demo local**, sem checkout, pedido ou pagamento. Consultas por WhatsApp exigem validação atual pelo backend.
 >
 > **Versão main publicada:** [Cloudflare Pages — main](https://main.loja-online-frontend.pages.dev/). Fotos editoriais de marcas de terceiros exigem confirmação de direitos de uso comercial antes de promoção pública definitiva; não equivalem ao catálogo à venda.
+
+## Manual para a proprietária e estado da produção
+
+- [Manual de utilização do site e do painel](docs/MANUAL-UTILIZACAO-LOJINHA-2026-11-21.md)
+- [Estado de homologação e checklist de liberação](docs/GO-LIVE-ESTADO-E-ACEITE-2026-11-21.md)
+- [Revisão full-stack de desempenho, qualidade e release](docs/REVISAO-FULLSTACK-2026-11-21.md)
+
+**Administração:** [painel no host HTTPS do backend](https://lojinha-da-katia-api-rjvx.onrender.com/admin.html), separado da vitrine publicada. A entrega HTML (200) e a restrição de leitura anônima (401) foram verificadas em 21/11/2026; login e recuperação reais ainda exigem homologação. Não tente login pela Cloudflare Pages pública. O novo bundle administrativo deve acompanhar a release de backend.
 
 ## Como executar
 
@@ -24,7 +32,7 @@ Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módul
 - `espaco-das-velas.html`: apresentação editorial e filtros de velas, oficinas e locações publicados, com confirmação pelo WhatsApp.
 - `catalogo.html`: listagem automática dos produtos publicados; busca, categoria, preço e ordenação realizados no backend no modo live.
 - `produto.html?productId=1`: detalhe real por ID do produto publicado, com preço vigente, foto e disponibilidade obtidos da API.
-- `privacidade.html`: aviso de demonstração e uso de dados.
+- `privacidade.html`: informações de privacidade; revisar e aprovar o texto final antes de considerá-lo uma política institucional homologada.
 - `assets/css/tokens.css`: seis cores centrais, tipografia, escala 4/8px, sombras, raios, movimento.
 - `assets/css/base.css`, `components.css`, `pages.css`, `institutional.css`: base, componentes e layouts responsivos.
 - `assets/js/data.js`: catálogo fictício usado somente na prévia demo; em produção, `assets/js/live.js` consome a API.
@@ -96,8 +104,8 @@ API_BASE_URL=/api/v1 npm run build:release
 
 Ele força `SITE_MODE=live`, exige `API_BASE_URL` explícito, valida URLs externas HTTPS e impede que o painel administrativo seja incluído no artefato `dist/`. Para consumir API pública de outra origem, configure também `ALLOW_EXTERNAL_PUBLIC_API=true` e CORS público restrito no backend. A administração deve permanecer **na mesma origem HTTPS da API**, com seu build `npm run build:admin` implantado separadamente e com autenticação Spring Security.
 
-O CI verifica que `build:release` **falha sem API_BASE_URL** e passa com caminho válido. O processo não implanta na AWS; HML-FE-001, identidade e dados oficiais continuam bloqueantes.
+O release build verifica que `build:release` **falha sem API_BASE_URL** e passa com caminho válido. O site é publicado no Cloudflare Pages, não na AWS. Permanecem bloqueantes: API pública testada ao vivo, painel administrativo sob mesma origem HTTPS da API, dados oficiais, restauração de backup, testes de navegador e direitos de uso das imagens.
 
 ## Qualidade e produção
 
-CI executa `npm run check`, `npm test` e `npm run build`. A aprovação do CI não substitui a homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade ou AWS. `main` permanece reservada a releases aprovados.
+O build Cloudflare executa `npm run check` e `npm test`; os jobs GitHub Actions recentes não receberam runners e **não executaram** os testes. A aprovação do build não substitui homologação de conteúdo real, WCAG 2.2 AA, Core Web Vitals, SMTP/segredos, identidade visual, privacidade e infraestrutura. `main` permanece reservada a releases aprovados.

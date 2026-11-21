@@ -1,7 +1,7 @@
 import {AdminApi,AdminApiError,adminOriginAllowed} from "./api.js";
 import {setupSecurityPanel} from "./security.js";
 import {validateProductImages} from "./product-validation.js";
-import {parseCategoryIds,validateProductFields,validateStockMovement,validatePromotion} from "./catalog-validation.js";
+import {parseCategoryIds,validateProductFields,validateStockMovement,validatePromotion,localDateTimeInput} from "./catalog-validation.js";
 import {createRequestGuard} from "./request-guard.js";
 import {captureEditorDraft,restoreEditorDraft} from "./editor-draft.js";
 import {promotionStatus,promotionClosePayload} from "./promotion-lifecycle.js";
@@ -19,7 +19,7 @@ const recordsGate=createRequestGuard(),toolGate=createRequestGuard(),saveGate=cr
 const formDefs={
  brands:[["name","Nome da marca","text",true]],
  categories:[["name","Nome da categoria","text",true]],
- products:[["name","Nome do produto","text",true],["description","Descrição","textarea"],["price","Preço vigente (R$)","number",true],["brandId","ID da marca","number",true],["categoryIds","IDs de categorias (1,2,3)","text"],["images","Imagens HTTPS (URL|descrição por linha)","textarea"],["published","Publicado","checkbox"],["available","Disponível manualmente","checkbox"]],
+ products:[["name","Nome do produto","text",true],["description","Descrição","textarea"],["priceStatus","Situação do preço","select",true,["CONFIRMED","ON_REQUEST"]],["price","Preço base (R$)","number",true],["brandId","ID da marca","number",true],["categoryIds","IDs de categorias (1,2,3)","text"],["images","Imagens HTTPS (URL|descrição por linha)","textarea"],["published","Publicado","checkbox"],["available","Disponível manualmente","checkbox"]],
  offerings:[["title","Título","text",true],["description","Descrição","textarea"],["type","Tipo de serviço","select",true,["CANDLE","WORKSHOP","RENTAL"]],["price","Preço (vazio = sob consulta)","number"],["imageUrl","URL HTTPS da imagem","text"],["published","Publicado","checkbox"],["available","Disponível","checkbox"]],
  content:[["slug","Identificador","text",true],["title","Título","text",true],["body","Conteúdo","textarea"],["imageUrl","URL HTTPS da imagem","text"],["position","Ordem","number"],["published","Publicado","checkbox"]],
  campaigns:[["title","Título","text",true],["subtitle","Subtítulo","text"],["imageUrl","URL HTTPS da imagem","text"],["linkUrl","Destino","text"],["position","Ordem","number"],["startsAt","Data início","datetime-local"],["endsAt","Data fim","datetime-local"],["published","Publicado","checkbox"]],
@@ -56,6 +56,7 @@ function showWorkspace(name){
   editing=draft.editing;
   buildForm();
   if(restoreEditorDraft(draft,$("#edit-form"))){
+   $("#edit-form").elements.priceStatus?.dispatchEvent(new Event("change"));
    dirty=true;
    info("Edição não salva recuperada na aba. Revise os campos e salve novamente.");
   }
@@ -64,7 +65,7 @@ function showWorkspace(name){
 async function bootstrap(){
  if(!adminOriginAllowed(window.location)){info("Painel exige HTTPS e API sob a mesma origem. Bloqueado neste endereço.",true);$("#login-form").querySelector("button").disabled=true;return;}
  try{await api.refreshCsrf();const user=await api.me();if(user?.authenticated)showWorkspace(user.username);else showLogin();}
- catch{showLogin();}
+ catch(error){showLogin();if(error?.status!==401)info("Não foi possível verificar a sessão. Aguarde o servidor e tente entrar novamente.",true);}
 }
 $("#login-form").addEventListener("submit",async event=>{
  event.preventDefault();const btn=event.submitter,username=$("#admin-username").value.trim(),password=$("#admin-password").value;
@@ -89,7 +90,8 @@ function fieldValue(field,values){
  if(name==="brandId")return values.brand?.id??"";
  if(name==="categoryIds")return (values.categories||[]).map(x=>x.id).join(",");
  if(name==="images")return (values.images||[]).map(x=>x.url+"|"+(x.altText||"")).join("\n");
- if(field[2]==="datetime-local"&&v){const d=new Date(v);if(Number.isFinite(d.getTime()))return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+ if(name==="priceStatus")return values.priceStatus??(values.id&&!(Number(values.price)>0)?"ON_REQUEST":"CONFIRMED");
+ if(field[2]==="datetime-local"&&v)return localDateTimeInput(v);
  return v??"";
 }
 function buildForm(values={}){
@@ -101,13 +103,26 @@ function buildForm(values={}){
   const wrapper=el("label",label,"field"+(["description","images","body"].includes(name)?" wide":""));
   let input;
   if(type==="textarea"){input=document.createElement("textarea");input.rows=4;}
-  else if(type==="select"){input=document.createElement("select");for(const opt of options){const op=el("option",opt);op.value=opt;input.append(op);}}
+  else if(type==="select"){input=document.createElement("select");for(const opt of options){const op=el("option",({CONFIRMED:"Preço confirmado",ON_REQUEST:"Valor sob consulta"})[opt]||opt);op.value=opt;input.append(op);}}
   else{input=document.createElement("input");input.type=type; if(type==="number"){input.step=name==="position"||name==="brandId"?"1":".01";input.min="0";}}
   input.name=name;input.required=required;
-  if(type==="checkbox")input.checked=values[name]===undefined?(moduleName==="offerings"&&name==="available"):Boolean(values[name]);
+  if(type==="checkbox"){
+   const selected=moduleName==="products"&&name==="available"?values.manualAvailable??values.available:values[name];
+   input.checked=selected===undefined?(moduleName==="offerings"&&name==="available"):Boolean(selected);
+  }
   else input.value=String(fieldValue(field,values));
   input.addEventListener("input",()=>{dirty=true;saveGate.invalidate();});
   wrapper.append(input);root.append(wrapper);
+ }
+ if(moduleName==="products"){
+  const price=root.elements.price,status=root.elements.priceStatus;
+  const syncPrice=()=>{
+   const pending=status.value==="ON_REQUEST";
+   price.disabled=pending;price.required=!pending;
+  };
+  status.addEventListener("change",syncPrice);syncPrice();
+  if(editing!==null&&typeof values.manualAvailable!=="boolean"&&values.available===false)
+   root.append(el("p","A versão antiga da API não distingue falta de estoque de indisponibilidade manual. Confira a seleção antes de salvar.","muted wide"));
  }
  $("#reset-form").hidden=moduleName==="store";
  $("#save-button").hidden=moduleName==="audit";
@@ -129,7 +144,10 @@ function collectForm(){
   }
   data[name]=v;
  }
- if(moduleName==="products")validateProductFields(data);
+ if(moduleName==="products"){
+  if(data.priceStatus==="ON_REQUEST")data.price=null;
+  validateProductFields(data);
+ }
  if(moduleName==="products")validateProductImages(data.images,data.published);
  if(moduleName==="offerings"){validateOfferingFields(data);if(data.price===null)delete data.price;}
  if(moduleName==="store")validateStoreFields(data);
@@ -209,16 +227,32 @@ async function loadRecords(){
    card.append(desc);list.append(card);continue;
   }
   desc.append(el("strong",item.name||item.title||item.displayName||"Registro #"+(item.id||"")));
-  desc.append(el("small",item.id?"ID "+item.id+" · "+(item.published===true?"Publicado":item.published===false?"Rascunho":"Cadastro"):"Configuração única"));card.append(desc);
+  const lookup=["brands","categories"].includes(requestedModule);
+  const recordStatus=lookup&&typeof item.active==="boolean"?(item.active?"Ativa":"Inativa"):
+   item.published===true?"Publicado":item.published===false?"Rascunho":"Cadastro";
+  desc.append(el("small",item.id?"ID "+item.id+" · "+recordStatus:"Configuração única"));
+  if(requestedModule==="products"&&item.priceStatus==="ON_REQUEST")desc.append(el("small","Valor sob consulta · solicitação bloqueada"));
+  if(requestedModule==="products"&&Number.isInteger(item.stockQuantity))
+   desc.append(el("small","Estoque: "+item.stockQuantity+" · Disponibilidade manual: "+(item.manualAvailable?"Sim":"Não")));
+  card.append(desc);
   if(requestedModule!=="store"){
    const actions=el("div","","admin-record__actions");
    if(requestedModule==="products"){addAction(actions,"Estoque",()=>openTool(item.id,"stock"));addAction(actions,"Promoções",()=>openTool(item.id,"promotions",item.price));}
    if(requestedModule==="offerings"&&item.type==="CANDLE")addAction(actions,"Aromas / cores",()=>openTool(item.id,"options"));
-   addAction(actions,"Editar",()=>{saveGate.invalidate();editing=item.id;buildForm(item);window.scrollTo({top:0,behavior:"smooth"});});
-   addAction(actions,"Excluir",async()=>{
-    if(!confirm("Confirmar exclusão/arquivamento definitivo deste cadastro?"))return;
-    try{await api.write("DELETE","/admin/"+endpoint+"/"+Number(item.id));info("Operação concluída.");recordsPage=0;await loadRecords();}
-    catch(error){info(error.message,true);}
+   addAction(actions,"Editar",()=>{
+    if(dirty&&!confirm("Descartar alterações não salvas?"))return;
+    saveGate.invalidate();editing=item.id;buildForm(item);window.scrollTo({top:0,behavior:"smooth"});
+   });
+   const reactivate=lookup&&item.active===false;
+   addAction(actions,reactivate?"Reativar":lookup?"Desativar":"Excluir",async()=>{
+    if(!confirm(reactivate?"Confirmar reativação?":lookup?"Confirmar desativação do cadastro?":"Confirmar exclusão definitiva? Registros com histórico devem ser despublicados."))return;
+    const sameContext=()=>recordsGate.isCurrent(ticket)&&sessionUser===requestedSession&&moduleName===requestedModule;
+    try{
+     const path="/admin/"+endpoint+"/"+Number(item.id)+(reactivate?"/activate":"");
+     await api.write(reactivate?"PUT":"DELETE",path);
+     if(!sameContext())return;
+     info("Operação concluída.");recordsPage=0;await loadRecords();
+    }catch(error){if(sameContext()){if(error.status===401)showLogin();info(error.message,true);}}
    });
    card.append(actions);
   }
@@ -233,10 +267,15 @@ function field(parent,name,label,type="text"){
  input.name=name;input.type=type;input.required=true;if(type==="number"){input.min="0";input.step="1";}
  wrap.append(input);parent.append(wrap);return input;
 }
-async function openTool(id,kind,basePrice=null){
+async function openTool(id,kind,basePrice=null,successMessage=""){
  if(!sessionUser)return;
  const requestedSession=sessionUser,ticket=toolGate.begin();
  const isActive=()=>toolGate.isCurrent(ticket)&&sessionUser===requestedSession&&tool.open;
+ const toolError=error=>{
+  if(!isActive())return;
+  if(error.status===401){showLogin();info("Sessão expirada. Entre novamente.",true);}
+  else toolInfo(error.message,true);
+ };
  const root=$("#record-tool-body");root.replaceChildren();
  $("#record-tool-heading").textContent=(kind==="stock"?"Movimentação de estoque":kind==="promotions"?"Promoções":"Personalização de velas")+" · #"+id;
  if(!tool.open)tool.showModal();toolInfo("Carregando...");
@@ -250,12 +289,18 @@ async function openTool(id,kind,basePrice=null){
    const qty=field(form,"quantity","Quantidade / novo saldo","number");qty.min="0";
    const reason=field(form,"reason","Justificativa");reason.maxLength=500;
    const btn=el("button","Registrar movimentação","btn btn--primary");btn.type="submit";form.append(btn);
-   form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;try{const movement=validateStockMovement({type:sel.value,quantity:qty.value,reason:reason.value});await api.write("POST","/admin/products/"+id+"/stock/movements",movement);await openTool(id,kind);toolInfo("Movimentação registrada.");}catch(e){toolInfo(e.message,true);}finally{btn.disabled=false;}});
+   form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;try{const movement=validateStockMovement({type:sel.value,quantity:qty.value,reason:reason.value});await api.write("POST","/admin/products/"+id+"/stock/movements",movement);if(isActive())await openTool(id,kind,null,"Movimentação registrada.");}catch(e){toolError(e);}finally{btn.disabled=false;}});
    root.append(form,el("h3","Últimas movimentações"));
    for(const h of history.content||[]){root.append(el("p",(h.createdAt||"")+" · "+h.type+" "+h.quantity+" · saldo "+h.resultingQuantity+" · "+(h.reason||""),"tool-entry"));}
   }else if(kind==="promotions"){
    const all=await api.get("/admin/products/"+id+"/promotions");
    if(!isActive())return;
+   let editingPromotion=null;
+   const form=el("form","","admin-form"),value=field(form,"promotionalPrice","Preço promocional","number"),start=field(form,"startsAt","Início","datetime-local"),end=field(form,"endsAt","Fim","datetime-local");value.step=".01";
+   const button=el("button","Criar promoção","btn btn--primary");button.type="submit";form.append(button);
+   const cancel=addAction(form,"Cancelar edição",()=>{
+    editingPromotion=null;form.reset();button.textContent="Criar promoção";cancel.hidden=true;
+   });cancel.hidden=true;
    for(const p of all){
     const row=el("div","","tool-entry"),status=promotionStatus(p);
     const labels={active:"Ativa",future:"Programada",ended:"Encerrada por prazo",closed:"Encerrada manualmente",unknown:"Status desconhecido"};
@@ -269,16 +314,31 @@ async function openTool(id,kind,basePrice=null){
       if(reason===null)return;
       let payload;try{payload=promotionClosePayload(reason);}catch(error){toolInfo(error.message,true);return;}
       if(!confirm("Confirmar encerramento? A promoção ficará no histórico e perderá vigência imediatamente."))return;
-      try{await api.write("POST","/admin/products/"+id+"/promotions/"+p.id+"/close",payload);await openTool(id,kind,basePrice);toolInfo("Promoção encerrada; histórico preservado.");}
-      catch(error){toolInfo(error.message,true);}
+      try{await api.write("POST","/admin/products/"+id+"/promotions/"+p.id+"/close",payload);if(isActive())await openTool(id,kind,basePrice,"Promoção encerrada; histórico preservado.");}
+      catch(error){toolError(error);}
+     });
+    }
+    if(status==="future"){
+     addAction(row,"Editar promoção programada",()=>{
+      editingPromotion=p.id;
+      value.value=String(p.promotionalPrice);
+      start.value=localDateTimeInput(p.startsAt);end.value=localDateTimeInput(p.endsAt);
+      button.textContent="Salvar promoção programada";cancel.hidden=false;
+      value.focus();
      });
     }
     root.append(row);
    }
-   const form=el("form","","admin-form"),value=field(form,"promotionalPrice","Preço promocional","number"),start=field(form,"startsAt","Início","datetime-local"),end=field(form,"endsAt","Fim","datetime-local");value.step=".01";
    root.append(el("p","Preço base do produto: R$ "+String(basePrice??"não informado"),"muted"));
-   const button=el("button","Criar promoção","btn btn--primary");button.type="submit";form.append(button);
-   form.addEventListener("submit",async e=>{e.preventDefault();button.disabled=true;try{const promotion=validatePromotion({price:value.value,basePrice,startsAt:start.value,endsAt:end.value});await api.write("POST","/admin/products/"+id+"/promotions",promotion);await openTool(id,kind,basePrice);toolInfo("Promoção registrada.");}catch(e){toolInfo(e.message,true);}finally{button.disabled=false;}});
+   form.addEventListener("submit",async e=>{
+    e.preventDefault();button.disabled=true;cancel.disabled=true;
+    try{
+     const promotion=validatePromotion({price:value.value,basePrice,startsAt:start.value,endsAt:end.value});
+     const basePath="/admin/products/"+id+"/promotions";
+     await api.write(editingPromotion===null?"POST":"PUT",basePath+(editingPromotion===null?"":"/"+Number(editingPromotion)),promotion);
+     if(isActive())await openTool(id,kind,basePrice,"Promoção registrada.");
+    }catch(error){toolError(error);}finally{button.disabled=false;cancel.disabled=false;}
+   });
    root.append(form);
   }else{
    const offering=await api.get("/admin/offerings/"+id);
@@ -289,10 +349,10 @@ async function openTool(id,kind,basePrice=null){
     const wrap=el("label",kind,"field wide"),area=document.createElement("textarea");area.rows=4;area.value=(offering.options||[]).filter(o=>o.kind===kind).map(o=>(o.active?"":"!")+o.label).join("\n");wrap.append(area);form.append(wrap);editors[kind]=area;
    }
    const btn=el("button","Salvar opções","btn btn--primary");btn.type="submit";form.append(btn);
-   form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;try{const options=[];for(const [kind,area] of Object.entries(editors)){for(const raw of area.value.split("\n").map(x=>x.trim()).filter(Boolean)){const active=!raw.startsWith("!"),label=(active?raw:raw.slice(1)).trim();if(!label||label.length>120)throw new Error("Rótulo inválido.");options.push({kind,label,position:options.length,active});}}if(options.length>48)throw new Error("Limite de 48 opções.");await api.write("PUT","/admin/offerings/"+id+"/options",{options});await openTool(id,kind);toolInfo("Personalizações atualizadas.");}catch(e){toolInfo(e.message,true);}finally{btn.disabled=false;}});
+   form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;try{const options=[];for(const [kind,area] of Object.entries(editors)){for(const raw of area.value.split("\n").map(x=>x.trim()).filter(Boolean)){const active=!raw.startsWith("!"),label=(active?raw:raw.slice(1)).trim();if(!label||label.length>120)throw new Error("Rótulo inválido.");options.push({kind,label,position:options.length,active});}}if(options.length>48)throw new Error("Limite de 48 opções.");await api.write("PUT","/admin/offerings/"+id+"/options",{options});if(isActive())await openTool(id,kind,null,"Personalizações atualizadas.");}catch(e){toolError(e);}finally{btn.disabled=false;}});
    root.append(form);
   }
-  if(isActive())toolInfo("");
+  if(isActive())toolInfo(successMessage);
  }catch(error){
   if(!isActive())return;
   if(error.status===401){showLogin();info("Sessão expirada. Entre novamente.",true);}
