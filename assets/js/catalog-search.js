@@ -17,6 +17,7 @@ export function createCatalogSearch(fetchPage) {
    const maxPrice=rawPrice===null||rawPrice===undefined||rawPrice===""?null:Number(rawPrice);
    if(maxPrice!==null&&(!Number.isFinite(maxPrice)||maxPrice<0))
     throw new TypeError("Preço máximo inválido.");
+   pending?.controller?.abort();
    filters={q,categoryId:id,sort,maxPrice};
    items=[];page=0;hasNext=true;version++;
    return version;
@@ -25,9 +26,10 @@ export function createCatalogSearch(fetchPage) {
    if(pending?.version===version)return pending.promise;
    if(!hasNext)return snapshot();
    const requestedVersion=version,requestedPage=page,requestedFilters={...filters};
+   const controller=new AbortController();
    const request=(async()=>{
     try{
-     const result=await fetchPage(requestedPage,requestedFilters);
+     const result=await fetchPage(requestedPage,requestedFilters,controller.signal);
      if(requestedVersion!==version)return snapshot(true);
      if(!result||!Array.isArray(result.items)||typeof result.hasNext!=="boolean")
       throw new TypeError("Página inválida retornada pela API.");
@@ -44,7 +46,7 @@ export function createCatalogSearch(fetchPage) {
      throw error;
     }
    })();
-   pending={version:requestedVersion,promise:request};
+   pending={version:requestedVersion,promise:request,controller};
    try{return await request;}
    finally{if(pending?.promise===request)pending=null;}
   }

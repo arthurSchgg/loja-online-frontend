@@ -36,3 +36,32 @@ test("first page gives a useful failure after bounded retries",async()=>{
  await assert.rejects(()=>loadCatalogPage(async()=>{calls++;throw {status:503}},0,{},async()=>{}));
  assert.equal(calls,4);
 });
+
+test("abort stops a delayed retry without another network request",async()=>{
+ const controller=new AbortController();
+ let requests=0;
+ let delayStarted;
+ const started=new Promise(resolve=>{delayStarted=resolve;});
+ const promise=loadCatalogPage(async()=>{
+  requests++;
+  throw {status:503};
+ },0,{},async(delay,signal)=>{
+  delayStarted();
+  await new Promise((resolve,reject)=>{
+   signal.addEventListener("abort",()=>reject(Object.assign(new Error("aborted"),{name:"AbortError"})),{once:true});
+  });
+ },controller.signal);
+ await started;
+ controller.abort();
+ await assert.rejects(()=>promise,error=>error.name==="AbortError");
+ assert.equal(requests,1);
+});
+
+test("no HTTP retry is attempted for canceled requests",async()=>{
+ const controller=new AbortController();
+ controller.abort();
+ let calls=0;
+ await assert.rejects(()=>loadCatalogPage(async()=>{calls++;},0,{},undefined,controller.signal),
+  error=>error.name==="AbortError");
+ assert.equal(calls,0);
+});

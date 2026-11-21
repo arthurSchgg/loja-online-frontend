@@ -297,7 +297,8 @@ async function initCatalog(){
  const featured=form.elements.sort?.querySelector('option[value="featured"]');
  if(featured){featured.value="recent";featured.textContent="Mais recentes";}
  form.elements.sort?.querySelector('option[value="new"]')?.remove();
- const search=createCatalogSearch((page,filters)=>loadCatalogPage((index,options)=>fetchProducts(index,undefined,options),page,filters));
+ const search=createCatalogSearch((page,filters,signal)=>loadCatalogPage(
+  (index,options,requestSignal)=>fetchProducts(index,requestSignal,options),page,filters,undefined,signal));
  const loadMore=document.createElement("button");loadMore.type="button";loadMore.className="btn btn--secondary";
  loadMore.textContent="Carregar mais produtos";grid.after(loadMore);
  let version=0,searchTimer=null,categoryWarning="";
