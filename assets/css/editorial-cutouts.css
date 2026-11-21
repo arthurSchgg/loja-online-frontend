@@ -157,3 +157,18 @@ html[data-motion="off"] .chapter-hero__art .editorial-cutout-shell{
   animation:none!important;
   transition:none!important;
 }
+
+
+/* A single, clear route from the homepage showcase to the full live catalog. */
+.editorial-catalog-link{
+  display:flex;
+  justify-content:center;
+  margin-top:clamp(24px,4vw,48px);
+}
+.editorial-catalog-link .btn{
+  min-height:52px;
+  padding-inline:clamp(24px,4vw,44px);
+}
+@media(max-width:560px){
+  .editorial-catalog-link .btn{width:min(100%,370px);justify-content:center}
+}
