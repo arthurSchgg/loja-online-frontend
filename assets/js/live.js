@@ -68,8 +68,9 @@ function liveProductCard(p){
  const id=numberId(p?.id);
  if(id===null)return ""; // API data must never become unescaped HTML attributes.
  const img=safe(imageFromProduct(p)),fallback=safe(imageFallback(p)),price=currentPrice(p),available=!!p.available;
- const label=price===null?"Valor sob consulta":money(price);
- const action=available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
+ const pricePending=price===null||price===0;
+ const label=pricePending?"Valor sob consulta":money(price);
+ const action=pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
  return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#faf9f6"><img src="'+img+'" data-image-fallback="'+fallback+'" loading="lazy" decoding="async" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div><a class="product-card__details" href="produto.html?productId='+id+'" aria-label="Ver detalhes de '+productTitle(p)+'">Ver detalhes</a></div></article>';
 }
 /** Perceived-loading placeholder; never substitute fake products for API data. */
@@ -420,7 +421,8 @@ async function initProduct(){
   const price=currentPrice(p),fallback=imageFallback(p);
   const gallery=productGalleryImages(p,{origin:location.origin,fallback});
   const first=gallery[0]||{url:imageFromProduct(p),alt:p.name||"Produto"};
-  const priceLabel=price===null?"Valor sob consulta":money(price);
+  const pricePending=price===null||price===0;
+  const priceLabel=pricePending?"Valor sob consulta":money(price);
   const categories=(p.categories||[]).filter(c=>typeof c?.name==="string").slice(0,8);
   const meta=categories.map(c=>'<span>'+safe(c.name)+'</span>').join("");
   const thumbs=gallery.length>1?'<div class="product-gallery__thumbs" role="group" aria-label="Escolher imagem do produto">'+
@@ -442,7 +444,7 @@ async function initProduct(){
     (meta?'<div class="product-detail__meta">'+meta+'</div>':"")+
     '<p class="product-detail__price">'+priceLabel+'</p>'+
     '<div class="product-detail__availability">'+
-     (p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
+     (pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
       '<span class="badge" aria-label="Indisponível">Indisponível</span>')+
     '</div><p class="product-detail__disclaimer">Imagens ilustram o produto cadastrado. Preço e disponibilidade são confirmados antes de qualquer solicitação.</p>'+
    '</div></section>';
