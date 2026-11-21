@@ -11,6 +11,7 @@ Esta revisão realizou somente consultas de leitura no Neon, inspeção do GitHu
 | Vitrine Cloudflare | `main` commit `7af4ad54fe6c854ed60862de44af1c07325f1103` com check Cloudflare Pages `success` | Publicação confirmada pelo provedor |
 | Dados de produtos | 65 registros, 65 publicados, 65 com foto | Cadastrado |
 | Preço comercial | 11 itens publicados com `price > 0`; 54 com `price = 0` | Pendente revisão do valor dos 54 |
+| Integridade básica do catálogo | 71 imagens, todas com URL HTTPS e texto alternativo; 0 duplicatas de nome dentro da marca, 0 publicações sem foto, 0 preços negativos e 0 itens disponíveis sem preço/estoque | **Verificado por SQL de leitura** |
 | Disponibilidade | 11 marcados `available=true` | Validar com a proprietária |
 | Conteúdo institucional | `store_information` sem linhas; `content_sections` sem linhas | Pendente conteúdo oficial |
 | Experiências | `experiences` sem registros | Não há quiz publicado |
