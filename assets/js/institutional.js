@@ -34,10 +34,43 @@ function status(target,message,error=false){
  if(error)paragraph.dataset.apiError="";
  target.append(paragraph);
 }
+function contactNote(target,message,retry=false){
+ target.replaceChildren();
+ const note=document.createElement("p");
+ note.className="institutional-contact-note";
+ note.textContent=message;
+ target.append(note);
+ if(retry){
+  const button=document.createElement("button");
+  button.className="btn btn--secondary";button.type="button";
+  button.textContent="Tentar novamente";
+  button.addEventListener("click",()=>void initAbout(),{once:true});
+  target.append(button);
+ }
+}
+function storyNote(target,message,retry=false){
+ target.replaceChildren();
+ const note=document.createElement("p");
+ note.className="institutional-story-note";
+ note.setAttribute("role","status");
+ note.textContent=message;
+ target.append(note);
+ if(retry){
+  const button=document.createElement("button");
+  button.className="text-link institutional-retry";
+  button.type="button";
+  button.textContent="Tentar novamente";
+  button.addEventListener("click",()=>void initAbout(),{once:true});
+  target.append(button);
+ }
+}
 function renderContacts(target,store){
  target.replaceChildren();
  const links=officialStoreLinks(store);
- if(!links.length){status(target,"Os canais oficiais ainda não foram publicados.");return;}
+ if(!links.length){
+  contactNote(target,"Os canais de atendimento serão exibidos aqui quando forem confirmados pela loja.");
+  return;
+ }
  for(const channel of links){
   const a=document.createElement("a");
   a.href=channel.href;
@@ -65,7 +98,7 @@ function renderStory(section){
 async function initAbout(){
  const story=host("official-story"),contacts=host("about-contacts");
  if(!story||!contacts)return;
- status(story,"Carregando a história publicada pela loja...");
+ storyNote(story,"Conheça um pouco mais sobre a nossa essência.");
  status(contacts,"Buscando os contatos oficiais...");
  const signature=document.querySelector(".quote-section__signature");
  if(signature)signature.textContent="Lojinha da Kátia";
@@ -76,14 +109,14 @@ async function initAbout(){
   story.replaceChildren();
   if(published.length){
    for(const section of published)story.append(renderStory(section));
-  }else status(story,"A história oficial ainda não foi publicada pela loja.");
- }else status(story,"Não foi possível carregar a história oficial. Tente novamente mais tarde.",true);
+  }else storyNote(story,"Em breve, este espaço vai apresentar mais sobre a história da Lojinha da Kátia.");
+ }else storyNote(story,"Nossa história está temporariamente indisponível. Você pode conhecer os produtos e as experiências da loja enquanto isso.",true);
  if(store.status==="fulfilled"){
   const intro=host("about-summary");
   if(intro&&typeof store.value.description==="string"&&store.value.description.trim())
    intro.textContent=store.value.description;
   renderContacts(contacts,store.value);
- }else status(contacts,"Não foi possível carregar os contatos oficiais.",true);
+ }else contactNote(contacts,"Os canais oficiais estão temporariamente indisponíveis.",true);
 }
 const typeLabels=Object.freeze({CANDLE:"Velas",WORKSHOP:"Oficinas",RENTAL:"Locações"});
 function createCard(item){
