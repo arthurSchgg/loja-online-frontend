@@ -58,6 +58,8 @@ async function initContact(){
    if(channel.external){a.target="_blank";a.rel="noopener noreferrer";}
    links.append(a);
   }
+  // The empty-contact card may have inserted a placeholder; real published details win.
+  details.replaceChildren();
   const fields=[["Horários",store.openingHours],["Localização",store.address],["Região de atendimento",store.region]];
   for(const [label,value] of fields){
    if(typeof value!=="string"||!value.trim())continue;
