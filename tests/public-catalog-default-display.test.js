@@ -10,7 +10,7 @@ const visual=read("assets/css/institutional.css");
 
 test("home shows public photos immediately and refreshes from live API",()=>{
  assert.match(source,/grid\.innerHTML=preview\.items\.slice\(0,8\)\.map\(liveProductCard\)/);
- assert.match(source,/loadCatalogPage\(\(index\)=>fetchProducts\(index\),0\)/);
+ assert.match(source,/loadCatalogPage\(\(_index,_filters,signal\)=>fetchFeatured\(signal\),0\)/);
  assert.match(source,/currentProducts\.slice\(0,8\)\.map\(liveProductCard\)/);
  assert.match(home,/id="featured-grid"/);
  assert.match(home,/VITRINE DA LOJA/);

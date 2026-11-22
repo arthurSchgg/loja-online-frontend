@@ -8,7 +8,7 @@
 <p id="experiences-status" role="status" aria-live="polite">Verificando acesso...</p><p><a href="admin.html">Entrar no painel administrativo</a></p>
 <div id="experiences-workspace" hidden>
 <section class="admin-panel" aria-labelledby="create-heading"><h2 id="create-heading">Criar experiência</h2>
-<p class="muted">A edição exige o contrato administrativo completo do backend (PR #156), com chaves e perfis. Recomendações de perfis mantidos são preservadas; confirme alterações de chaves e publicação antes de salvar.</p>
+<p class="muted">Crie os perfis pelo nome e escolha qual perfil corresponde a cada resposta. Recomendações dos perfis que permanecerem no quiz são preservadas.</p>
 <form id="quiz-editor" class="admin-form">
 <label class="field">Título<input name="title" maxlength="180" required></label>
 <label class="field">Descrição<textarea name="description" rows="3" maxlength="2000"></textarea></label>
@@ -20,11 +20,13 @@
 <div class="admin-columns">
 <section class="admin-panel" aria-labelledby="existing-heading"><div class="admin-section-heading"><h2 id="existing-heading">Experiências cadastradas</h2><button id="reload-experiences" type="button" class="btn btn--ghost">Atualizar</button></div><div id="available-experiences" class="experience-list" aria-live="polite"></div></section>
 <section class="admin-panel" aria-labelledby="rec-heading"><h2 id="rec-heading">Recomendações por perfil</h2>
-<p class="muted">Utilize a chave do perfil cadastrada. O backend publica somente produtos elegíveis.</p>
+<p class="muted">Escolha o quiz, o perfil e até três produtos pelo nome. A vitrine mostra somente recomendações elegíveis.</p>
 <form id="recommendations-form" class="admin-form">
-<label class="field">ID da experiência<input name="experienceId" id="recs-experience-id" type="number" min="1" step="1" required></label>
-<label class="field">Chave do perfil<input name="resultKey" id="recs-result-key" maxlength="80" required placeholder="floral"></label>
-<label class="field">Até três IDs de produtos (separados por vírgula)<input name="ids" placeholder="12, 18, 21"></label>
+<label class="field">Experiência<select name="experienceId" id="recs-experience-id" required><option value="">Escolha a experiência</option></select></label>
+<label class="field">Perfil<select name="resultKey" id="recs-result-key" required><option value="">Escolha o perfil</option></select></label>
+<textarea name="ids" hidden></textarea><div class="wide" id="recs-selected"></div>
+<div class="wide owner-search"><input id="recs-search" type="search" maxlength="180" placeholder="Buscar produto publicado" aria-label="Nome do produto para recomendar"><button id="recs-find" type="button" class="btn btn--secondary">Buscar</button></div>
+<div class="wide owner-selection" id="recs-products"></div><div class="wide photo-tools" id="recs-pagination"></div>
 <button type="submit" id="save-recommendations" class="btn btn--primary">Atualizar recomendações</button>
 </form></section></div></div></main><script type="module" src="admin/experiences.js"></script>
 </body></html>

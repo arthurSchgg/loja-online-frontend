@@ -22,7 +22,7 @@ export function validateProductFields({name,description,price,priceStatus="CONFI
    throw new Error("Informe um preço positivo ou marque valor sob consulta.");
  }
  if(!Number.isSafeInteger(Number(brandId))||Number(brandId)<1)
-  throw new Error("Informe um ID de marca positivo.");
+  throw new Error("Escolha uma marca antes de salvar.");
  if(!Array.isArray(categoryIds)||categoryIds.some(x=>!Number.isSafeInteger(x)||x<1))
   throw new Error("Categorias inválidas.");
  return true;

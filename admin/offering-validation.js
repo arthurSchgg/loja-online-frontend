@@ -1,4 +1,5 @@
 /** Match administrative OfferingRequest limits; server is authoritative. */
+import {photoReference} from "./photo-editor.js";
 export function validateOfferingFields(data){
  if(!data||typeof data.title!=="string"||!data.title.trim()||data.title.length>180)
   throw new Error("Título do serviço é obrigatório e deve ter até 180 caracteres.");
@@ -11,10 +12,6 @@ export function validateOfferingFields(data){
   if(!Number.isFinite(amount)||amount<0||!/^[0-9]{1,10}(?:\.[0-9]{1,2})?$/.test(String(data.price)))
    throw new Error("Valor do serviço deve ter até duas casas decimais.");
  }
- if(data.imageUrl){
-  let url;try{url=new URL(data.imageUrl);}catch{throw new Error("URL de imagem inválida.");}
-  if(url.protocol!=="https:"||!url.hostname||url.username||url.password||url.port||data.imageUrl.length>2048)
-   throw new Error("Imagem do serviço deve usar HTTPS público, sem credenciais.");
- }
+ if(data.imageUrl&&!photoReference(data.imageUrl))throw new Error("Escolha uma foto da biblioteca ou URL HTTPS válida.");
  return data;
 }

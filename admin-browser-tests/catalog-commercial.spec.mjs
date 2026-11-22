@@ -11,7 +11,8 @@ test("admin | manual availability is not overwritten by zero stock and consultat
   let body={},status=200;
   if(path==="/api/v1/auth/csrf")body={headerName:"X-CSRF-TOKEN",token:"mock-token"};
   else if(path==="/api/v1/auth/me")body={authenticated:true,username:"gestora"};
-  else if(path==="/api/v1/admin/brands")body=[];
+  else if(path==="/api/v1/admin/brands")body=[{id:1,name:"Marca",active:true}];
+  else if(path==="/api/v1/admin/categories")body=[];
   else if(path==="/api/v1/admin/products")body={content:[product],last:true};
   else if(path==="/api/v1/admin/products/12"&&req.method()==="PUT"){
    submitted=req.postDataJSON();body={...product,...submitted};
