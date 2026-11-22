@@ -48,6 +48,7 @@ test("admin page uses request guards at the session, module and dialog boundarie
  assert.match(source,/if\(requestedModule==="store"&&!dirty\)buildForm\(result\)/);
  assert.match(source,/moreButton\.disabled=true/);
  assert.match(source,/saveGate\.invalidate\(\)/);
- assert.match(source,/input\.addEventListener\("input",\(\)=>\{dirty=true;saveGate\.invalidate\(\);\}\)/);
+ assert.match(source,/function markDirty\(\)\{dirty=true;saveGate\.invalidate\(\);\}/);
+ assert.match(source,/input\.addEventListener\("input",markDirty\)/);
  assert.match(source,/if\(!isCurrent\(\)\)return/);
 });

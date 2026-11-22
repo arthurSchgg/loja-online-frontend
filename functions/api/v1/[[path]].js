@@ -8,8 +8,10 @@ const GET_ROUTES=[
  /^\/brands$/, /^\/categories$/, /^\/store$/,
  /^\/experiences(?:\/[0-9]+)?$/,
  /^\/offerings(?:\/[0-9]+(?:\/whatsapp)?)?$/,
- /^\/content-sections$/, /^\/campaigns$/
+ /^\/content-sections$/, /^\/campaigns$/, /^\/storefront\/featured$/
 ];
+const MEDIA_ROUTE=/^\/media\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+const PHOTO_LIMIT=768*1024;
 const POST_ROUTES=[/^\/whatsapp\/confirm$/, /^\/experiences\/[0-9]+\/evaluate$/];
 const SHORT_CACHE=new Set(["/brands","/categories","/store","/content-sections"]);
 const problem=(status,title)=>new Response(JSON.stringify({title}),{
@@ -25,7 +27,9 @@ export async function onRequest(context){
  const prefix="/api/v1";
  if(!incoming.pathname.startsWith(prefix+"/"))return problem(404,"Rota não encontrada.");
  const path=incoming.pathname.slice(prefix.length);
- if(!(method==="GET"&&GET_ROUTES.some(re=>re.test(path)))&&
+ const media=method==="GET"&&MEDIA_ROUTE.test(path);
+ if(media&&incoming.search)return problem(400,"Consulta de foto inválida.");
+ if(!(method==="GET"&&(media||GET_ROUTES.some(re=>re.test(path))))&&
     !(method==="POST"&&POST_ROUTES.some(re=>re.test(path))))
   return problem(404,"Rota pública não encontrada.");
  if(method==="POST"&&!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type")||""))
@@ -39,7 +43,9 @@ export async function onRequest(context){
  }catch{return problem(503,"A API da loja ainda não foi configurada.");}
 
  const upstream=new URL(prefix+path+incoming.search,origin);
- const headers=new Headers({Accept:"application/json"});
+ const headers=new Headers({Accept:media?"image/jpeg, image/png":"application/json"});
+ const requestedTag=request.headers.get("if-none-match")||"";
+ if(media&&/^"[a-f0-9]{64}"$/.test(requestedTag))headers.set("If-None-Match",requestedTag);
  let body;
  if(method==="POST"){
   if(Number(request.headers.get("content-length")||0)>12000)return problem(413,"Requisição muito grande.");
@@ -55,6 +61,21 @@ export async function onRequest(context){
  try{
   const fetchImpl=context.fetchImpl||globalThis.fetch;
   const response=await fetchImpl(upstream.toString(),{method,headers,body,redirect:"manual",signal:upstreamSignal});
+  if(media){
+   const tag=response.headers.get("etag")||"";
+   const photoHeaders={"Cache-Control":"public, max-age=3600, must-revalidate","X-Content-Type-Options":"nosniff"};
+   if(/^"[a-f0-9]{64}"$/.test(tag))photoHeaders.ETag=tag;
+   if(response.status===304&&requestedTag&&tag===requestedTag)return new Response(null,{status:304,headers:photoHeaders});
+   if(response.status===404)return problem(404,"Foto não encontrada.");
+   if(response.status!==200)return problem(response.status===503?503:502,"Foto temporariamente indisponível.");
+   const type=(response.headers.get("content-type")||"").toLowerCase();
+   const length=Number(response.headers.get("content-length")||0);
+   if(!["image/jpeg","image/png"].includes(type)||!Number.isSafeInteger(length)||length<1||length>PHOTO_LIMIT)
+    return problem(502,"Resposta de foto inválida.");
+   const bytes=await response.arrayBuffer();
+   if(bytes.byteLength!==length)return problem(502,"Resposta de foto inválida.");
+   return new Response(bytes,{headers:{...photoHeaders,"Content-Type":type,"Content-Length":String(length)}});
+  }
   if(response.status>=300&&response.status<400)return problem(502,"Resposta inesperada da API.");
   const contentType=response.headers.get("content-type")||"";
   if(!/^application\/(?:json|problem\+json)(?:\s*;|$)/i.test(contentType))

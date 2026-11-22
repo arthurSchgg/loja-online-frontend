@@ -6,7 +6,7 @@ const code=readFileSync(new URL("../assets/js/live.js",import.meta.url),"utf8");
 test("home retains a manual retry without fabricated or buyable products",()=>{
  const home=code.slice(code.indexOf("async function initHome()"),code.indexOf("async function initCatalog()"));
  assert.match(home,/const loadFeatured=async\(\)=>/);
- assert.match(home,/loadCatalogPage\(\(index\)=>fetchProducts\(index\),0\)/);
+ assert.match(home,/loadCatalogPage\(\(_index,_filters,signal\)=>fetchFeatured\(signal\),0\)/);
  assert.match(home,/retry\.textContent="Tentar novamente"/);
  assert.match(home,/retry\.addEventListener\("click",\(\)=>void loadFeatured\(\),\{once:true\}\)/);
  assert.match(home,/grid\.removeAttribute\("aria-busy"\)/);

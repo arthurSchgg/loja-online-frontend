@@ -2,7 +2,8 @@
  * All prices/availability in live mode originate from the backend.
  */
 import {isLive} from "./config.js";
-import {fetchProducts,fetchProduct,fetchRelatedProducts,fetchOfferings,fetchOffering,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
+import {fetchProducts,fetchFeatured,fetchProduct,fetchRelatedProducts,fetchOfferings,fetchOffering,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
+import {initCampaignBanners} from "./campaign-banners.js";
 import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
 import {setupCatalogToolbar} from "./catalog-toolbar.js";
@@ -322,6 +323,7 @@ async function initHome(){
  void initContact();
  // Service discovery is independent of slow product and quiz endpoints.
  void initHomeOfferings();
+ void initCampaignBanners();
  const grid=document.getElementById("featured-grid");
  if(grid){
   let loadingFeatured=false;
@@ -342,7 +344,7 @@ async function initHome(){
    showSnapshotNotice(grid,"Conferindo preços e disponibilidade atualizados...");
    grid.setAttribute("aria-busy","true");
    try{
-    const page=await loadCatalogPage((index)=>fetchProducts(index),0);
+    const page=await loadCatalogPage((_index,_filters,signal)=>fetchFeatured(signal),0);
     paintFeatured(page);
    }catch(err){
     if(!canShowPublicSnapshot(err)){
@@ -364,7 +366,7 @@ async function initHome(){
    if(loadingFeatured)return;
    loadingFeatured=true;
    try{
-    const page=await fetchProducts(0);
+    const page=await fetchFeatured();
     grid.parentNode?.querySelector("[data-home-retry]")?.remove();
     paintFeatured(page);
    }catch{/* Keep the existing view; confirmation still checks actual prices. */}
@@ -451,6 +453,8 @@ async function initCatalog(){
    option.textContent=c.name;family.append(option);
   }
   if(selectedId&&categories.some(c=>String(c.id)===selectedId))family.value=selectedId;
+  else if(categories.some(c=>String(c.id)===new URLSearchParams(location.search).get("categoryId")))
+   family.value=new URLSearchParams(location.search).get("categoryId");
   else if(familyName&&new URLSearchParams(location.search).has("familia")){
    const requestedName=new URLSearchParams(location.search).get("familia");
    const match=categories.find(c=>c.name.toLocaleLowerCase("pt-BR")===requestedName.toLocaleLowerCase("pt-BR"));
@@ -544,6 +548,7 @@ async function initCatalog(){
  });
  family.addEventListener("change",()=>{
   const url=new URL(location.href);
+  url.searchParams.delete("categoryId");
   if(family.value)url.searchParams.set("familia",family.selectedOptions[0].textContent);
   else url.searchParams.delete("familia");
   history.replaceState(history.state,"",url.pathname+url.search+url.hash);
