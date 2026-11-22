@@ -77,7 +77,7 @@ jobs:
     # Playwright 1.56.1 supports Ubuntu 24.04; latest GitHub runner may be 26.04.
     # No production accounts, cookies, external API data or cloud credentials.
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -85,8 +85,8 @@ jobs:
           node-version: "22"
       - name: Install pinned browser runner without executing package lifecycle scripts
         run: npm install --no-package-lock --ignore-scripts
-      - name: Install isolated Chromium for visual interaction smoke
-        run: npx playwright install --with-deps chromium
+      - name: Install isolated Chromium and WebKit for browser and iPhone smoke
+        run: npx playwright install --with-deps chromium webkit
       - name: Test demo UI, responsive breakpoints and reduced motion
         run: |
           npm run build
@@ -95,6 +95,8 @@ jobs:
         run: |
           API_BASE_URL=/api/v1 npm run build:release
           npm run test:browser -- --grep "live"
+      - name: Test iPhone 15 viewport and touch controls on WebKit using local fixtures
+        run: npm run test:iphone
       - name: Test isolated administrative quiz flows against a mock same-origin API
         run: |
           npm run build:admin
