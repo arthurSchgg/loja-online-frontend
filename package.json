@@ -18,6 +18,7 @@
     "build:release": "node tools/build-release.mjs",
     "check:security": "node tools/check-security-output.mjs",
     "test:browser": "playwright test --config playwright.config.mjs",
+    "test:iphone": "playwright test --config playwright.iphone.config.mjs",
     "test:admin-browser": "playwright test --config playwright.admin.config.mjs",
     "test:hml": "playwright test --config playwright.homologation.config.mjs",
     "check:skelt": "node tools/check-skelt-assets.mjs"
