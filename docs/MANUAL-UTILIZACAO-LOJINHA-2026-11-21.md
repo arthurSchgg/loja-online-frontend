@@ -2,7 +2,7 @@
 
 **Edição:** 21/11/2026 · **Público:** proprietária e responsável pela operação  
 **Vitrine pública:** https://main.loja-online-frontend.pages.dev/  
-**Estado deste manual:** a vitrine está publicada. Na revisão de 21/11, foram constatadas respostas HTTP 200 da API e do arquivo de login administrativo após aquecimento do serviço. O login real, os dados comerciais e a recuperação por e-mail ainda exigem homologação. As melhorias de preço/estoque/admin desta revisão dependem da release backend que inclui as migrações V18/V19.
+**Estado deste manual:** a vitrine, a API e o painel revisados foram publicados. As migrações V18/V19 foram aplicadas após backup restaurado e homologação. A proprietária ainda precisa confirmar seu próprio acesso, os dados comerciais e a entrega de e-mail real.
 
 ## 1. O que a loja faz
 
@@ -54,7 +54,7 @@ A página **Contato** reúne canais oficiais cadastrados pela proprietária, com
 
 O arquivo de login administrativo existe no endereço HTTPS do backend: https://lojinha-da-katia-api-rjvx.onrender.com/admin.html. O build público do Cloudflare **não inclui o painel**. Não tente fazer login pela vitrine pública nem coloque senhas em sites de demonstração.
 
-O painel é servido sob a mesma origem HTTPS da API Spring Boot, com sessão segura e proteção CSRF. Na revisão direta, a página respondeu HTTP 200 e a consulta administrativa sem login retornou 401, mas não foi realizada autenticação com credenciais reais. Valide a conta e a versão implantada antes de qualquer alteração comercial. Recursos novos desta revisão só aparecem depois da sincronização e release do backend.
+O painel é servido sob a mesma origem HTTPS da API Spring Boot, com sessão segura e proteção CSRF. A página respondeu HTTP 200 e a consulta administrativa sem login retornou 401. Login, CSRF, cookies e logout foram homologados em ambiente fictício HTTPS; a proprietária deve testar a própria conta antes de alterar dados comerciais. As funções revisadas já integram a versão publicada.
 
 ### 7.1 Entrar e sair
 
@@ -74,8 +74,8 @@ Cadastre primeiro as marcas e categorias necessárias. Cada uma recebe um ID usa
 ### 7.4 Produtos
 
 1. Em **Produtos**, escolha o cadastro existente ou **Novo cadastro**.
-2. Informe **Nome**, **Descrição**, **Preço base (R$)**, **ID da marca** e os **IDs das categorias** separados por vírgulas. Após a nova release, escolha **Situação do preço**: preço confirmado (valor positivo informado) ou **Valor sob consulta** (sem preço numérico). Não atribua valores fictícios; produtos sem preço confirmado não liberam solicitação.
-3. Em **Imagens HTTPS**, forneça uma por linha no formato `URL|descrição`. Na publicação, o produto precisa de pelo menos uma imagem válida.
+2. Informe **Nome**, **Descrição**, **Preço base (R$)**, **ID da marca** e os **IDs das categorias** separados por vírgulas. Escolha **Situação do preço**: preço confirmado (valor positivo informado) ou **Valor sob consulta** (sem preço numérico). Não atribua valores fictícios; produtos sem preço confirmado não liberam solicitação.
+3. Em **Imagens HTTPS**, forneça uma por linha no formato `URL|descrição`. Preserve caminhos internos das fotos do catálogo já cadastrados; imagens novas exigem URL HTTPS autorizada. Na publicação, o produto precisa de pelo menos uma imagem válida.
 4. Marque **Publicado** para exibir na vitrine; use **Disponível manualmente** somente quando o item puder de fato ser consultado.
 5. Salve e confira o cadastro no site público. Atualize a página caso exista cache no navegador.
 
@@ -97,7 +97,7 @@ Em **Banners e campanhas**, revise título, imagem, destino interno, ordem, data
 
 ### 7.8 Segurança da conta
 
-Em **Segurança da conta**, a interface prevê troca de senha com senha atual e solicitação de alteração de e-mail. A recuperação por link exige URL de mesmo domínio e envio de e-mail validado. Não compartilhe tokens nem execute recuperação em ambiente não homologado. Mudança de senha pode invalidar sessões abertas.
+Em **Segurança da conta**, a interface prevê troca de senha com senha atual e solicitação de alteração de e-mail. A recuperação por link exige URL de mesmo domínio e envio de e-mail validado. Os fluxos foram homologados com destinatários fictícios; o transporte HTTPS em produção depende de remetente oficial e credencial de envio autorizada. Veja o [guia de configuração](https://github.com/arthurSchgg/loja-online-backend/blob/main/docs/ADMIN-EMAIL-HTTPS.md). Não compartilhe tokens ou senhas. Mudança de senha invalida sessões abertas.
 
 ## 8. O que fazer quando algo não funcionar
 
@@ -121,10 +121,10 @@ Em **Segurança da conta**, a interface prevê troca de senha com senha atual e 
 
 ## 10. Situação real e próximos passos
 
-O levantamento comercial anterior registrou **65 produtos publicados**, todos com imagens; **11 com preço maior que zero/disponíveis** e **54 com preço técnico zero/sem disponibilidade**; sem cadastro de informações oficiais da loja, conteúdo institucional, serviços ou experiências. O catálogo e o número de produtos foram confirmados na API em 21/11/2026; preços e estoque devem ser revisados pela proprietária antes das vendas. Não foram alterados os dados reais nesta revisão.
+O catálogo registra **65 produtos publicados** com imagens, **11 com preço confirmado/disponível** e **54 com valor sob consulta**, agora sem preço técnico zero. Foram preservados os preços confirmados, estoques registrados, imagens e demais dados comerciais; a comparação de 17 tabelas com a cópia homologada não encontrou divergências. Não há dados oficiais de contato, conteúdo institucional, serviços ou experiências cadastrados. A proprietária deve conferir valores e estoque físico antes das vendas.
 
-O Render foi identificado e a API respondeu após aquecimento, bem como a página de login HTTPS do painel. A consulta administrativa anônima retornou 401, como esperado. Os logs mostraram uma inicialização de cerca de 136 segundos; por isso, uma visita após inatividade pode demorar, mesmo que o site e as fotos carreguem normalmente. Na prévia da atualização foram conferidas a página inicial, a busca por Malbec e os detalhes de um produto no navegador, inclusive o modo seguro de recuperação quando a API não respondeu. A CI remota e a homologação completa em navegador continuam pendentes.
+O backend passou por publicação em duas etapas, com snapshot Neon restaurado, migração V18/V19 e reversão de aplicação testada. A vitrine foi conferida no navegador, incluindo ordenação com valores confirmados primeiro. O plano Free do Render continua com demora de inicialização após inatividade; as fotos e descrições salvas permanecem disponíveis durante a recuperação e não são confundidas com valores atuais. O GitHub Actions permanece sem runner, embora o build do Render e os testes locais tenham passado. Detalhes: [homologação da release](https://github.com/arthurSchgg/loja-online-backend/blob/main/docs/RELEASE-2026-11-21.md).
 
-Para concluir a operação: (1) restaurar CI e executar a homologação em navegador; (2) validar o backup/restauração do banco e promover a atualização do backend e do painel na mesma origem; (3) testar login, sessão, logout, CSRF e recuperação por e-mail na versão implantada; (4) cadastrar canais e história oficiais; (5) revisar os preços pendentes e as quantidades físicas; (6) conferir os direitos de uso das imagens; (7) validar o percurso no iPhone e registrar aprovação final.
+Para concluir a operação comercial: (1) testar o login da proprietária; (2) cadastrar canais, horários e história oficiais; (3) revisar os preços pendentes, estoque físico e direitos de uso das fotos; (4) configurar o envio HTTPS de e-mail e validar a recuperação real; (5) programar os backups externos cifrados e restaurar periodicamente; (6) restabelecer os runners GitHub Actions e homologar o percurso no iPhone.
 
 **Este manual não substitui a homologação.** Não inserir senhas, dados de cartão ou credenciais em arquivos compartilhados.
