@@ -17,6 +17,6 @@ function walk(directory){
  }
 }
 for(const name of ["assets/js","admin","functions","tools","scripts","tests",
- "browser-tests","admin-browser-tests","homologation-tests"])walk(join(root,name));
+ "browser-tests","admin-browser-tests","homologation-tests","iphone-browser-tests"])walk(join(root,name));
 for(const entry of readdirSync(root))if(/^playwright.*\.mjs$/.test(entry))check(join(root,entry));
 console.log("JavaScript syntax PASS: "+count+" files.");
