@@ -44,11 +44,17 @@ Diagnóstico complementar: durante a conferência da prévia, tanto o domínio a
 
 Referências do backend: [contrato REST](https://github.com/arthurSchgg/loja-online-backend/blob/develop/docs/API.md), [issue #190](https://github.com/arthurSchgg/loja-online-backend/issues/190) e [release #189](https://github.com/arthurSchgg/loja-online-backend/issues/189).
 
+## Continuação: publicação do backend
+
+A revisão complementar foi integrada em `develop` e `main` do backend (PRs #192/#193) e publicada na branch real do Render em duas etapas (PRs #194/#195). Um snapshot Neon foi restaurado isoladamente e comparado em 23 tabelas. O ensaio V18/V19 manteve os 65 produtos; a produção chegou à V19, com 54 preços nulos/sob consulta e 11 positivos. A comparação de 17 tabelas comerciais com a cópia homologada não encontrou divergências. A versão de transição e o rollback após V19 passaram em HTTPS local, bem como login, CSRF, logout, recuperação e alteração de e-mail com Mailpit fictício.
+
+Resultado adicional: **134 testes Java aprovados, 90,48% de cobertura de linhas**; o build Docker no Render executa `mvn verify` e valida hashes do painel. O transporte HTTPS opcional de e-mail foi implementado. Ver o [runbook e evidências](https://github.com/arthurSchgg/loja-online-backend/blob/main/docs/RELEASE-2026-11-21.md) e a [configuração de e-mail](https://github.com/arthurSchgg/loja-online-backend/blob/main/docs/ADMIN-EMAIL-HTTPS.md).
+
 ## Pendências para liberação comercial segura
 
-1. Homologar e promover a versão backend revisada com backup/restore verificado do Neon. A nova migração muda a representação do zero técnico; não aplicá-la automaticamente ao banco publicado.
-2. Revisar os preços pendentes, quantidades físicas e canais oficiais. A informação anteriormente registrada era 54 produtos com valor a confirmar; não presumir mudanças comerciais.
-3. Validar a proprietária no painel, sessão, edição de cadastro fictício, logout e recuperação de credenciais. Render Free bloqueia portas SMTP usuais; escolher transporte de e-mail compatível e autorizado.
+1. Revisar os 54 preços pendentes, quantidades físicas e canais oficiais. Não inventar preços nem contatos.
+2. Validar a proprietária no painel e configurar o transporte HTTPS com remetente e credencial oficiais para testar recuperação real. Os fluxos de conta foram homologados com dados fictícios.
+3. Programar o backup externo cifrado periódico em destino independente, com chave pública do responsável. O snapshot de release foi validado; a rotina externa é complementar.
 4. Conferir direitos de uso das fotografias, conteúdo institucional, serviços/experiências e política de privacidade antes de aprovação comercial.
 5. Restabelecer ou comprovar os runners GitHub Actions e executar Playwright/medições de Core Web Vitals em ambiente real. Não confundir os testes locais com homologação em iPhone, Safari e produção.
 
