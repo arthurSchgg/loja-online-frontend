@@ -32,7 +32,7 @@ test("real API products stay on the homepage and unfiltered catalog",()=>{
  assert.match(home,/href="catalogo\.html\?familia=Perfumaria"/);
  assert.match(home,/href="catalogo\.html\?familia=Kits%20para%20presente"/);
  assert.match(live,/collectionSection\.hidden=false/);
- assert.match(live,/loadCatalogPage\(\(index\)=>fetchProducts\(index\),0\)/);
+ assert.match(live,/loadCatalogPage\(\(_index,_filters,signal\)=>fetchFeatured\(signal\),0\)/);
  assert.match(live,/currentProducts\.slice\(0,8\)\.map\(liveProductCard\)/);
  assert.match(live,/available=!!p\.available/);
  assert.doesNotMatch(live,/stock_quantity\s*=/);

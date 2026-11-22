@@ -75,5 +75,5 @@ test("frontend blocks offline WhatsApp actions and continues to update from real
  assert.match(source,/snapshotCatalogPage\(page,filters\)/);
  assert.match(source,/p\.offlineSnapshot\?'<span class="badge">Aguardando conexão/);
  assert.match(source,/snapshotProduct\(id\)/);
- assert.match(source,/const page=await loadCatalogPage\(\(index\)=>fetchProducts\(index\),0\)/);
+ assert.match(source,/const page=await loadCatalogPage\(\(_index,_filters,signal\)=>fetchFeatured\(signal\),0\)/);
 });

@@ -134,6 +134,20 @@ function createCard(item){
   img.src=src;img.alt=String(item.title||"Serviço publicado").slice(0,180);
   img.loading="lazy";img.width=360;img.height=355;img.dataset.parallax="";
   art.append(img);
+  const gallery=(Array.isArray(item.images)?item.images:[]).map(photo=>({
+   url:safeInstitutionalImage(photo.url,location.href),alt:photo.altText||item.title
+  })).filter(photo=>photo.url).slice(0,12);
+  if(gallery.length>1){
+   let index=0;
+   const controls=document.createElement("div");controls.className="offering-gallery-controls";
+   const count=document.createElement("span");count.setAttribute("aria-live","polite");
+   const select=step=>{index=(index+step+gallery.length)%gallery.length;img.src=gallery[index].url;img.alt=String(gallery[index].alt||"Foto da oferta");count.textContent=(index+1)+" / "+gallery.length;};
+   for(const [step,label] of [[-1,"Foto anterior"],[1,"Próxima foto"]]){
+    const button=document.createElement("button");button.type="button";button.className="btn btn--secondary";button.textContent=step<0?"‹":"›";
+    button.setAttribute("aria-label",label+" de "+item.title);button.addEventListener("click",()=>select(step));controls.append(button);
+   }
+   controls.insertBefore(count,controls.lastChild);select(0);art.append(controls);
+  }
  }else{
   const icon=document.createElement("span");
   icon.textContent=item.type==="CANDLE"?"✽":item.type==="WORKSHOP"?"✦":"◇";

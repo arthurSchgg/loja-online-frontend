@@ -13,9 +13,10 @@ export function adminOriginAllowed(locationInfo=globalThis.location){
  * This is defense in depth; Spring Security remains the authority.
  */
 export function validateAdminPath(path){
+ const pathname=typeof path==="string"?path.split("?")[0]:"";
  if(typeof path!=="string"||
-    !/^\/(?:auth|admin|store)(?:\/[A-Za-z0-9._~%+-]+)*(?:\?[A-Za-z0-9_.~%=&,+-]*)?$/.test(path)||
-    path.includes("..")||path.includes("//")||/%(?:2e|2f|5c|00)/i.test(path))
+    !/^\/(?:auth|admin|store)(?:\/[A-Za-z0-9._~%+-]+)*(?:\?[A-Za-z0-9_.~%=&,+*-]*)?$/.test(path)||
+    pathname.includes("..")||pathname.includes("//")||/%(?:2e|2f|5c|00)/i.test(pathname))
   throw new AdminApiError("Caminho de API inválido.");
  return path;
 }
@@ -30,6 +31,7 @@ export class AdminApi{
   if(csrf){if(!this.#csrf)await this.refreshCsrf();headers[this.#csrf.headerName]=this.#csrf.token;}
   let requestBody;
   if(body instanceof URLSearchParams){requestBody=body;headers["Content-Type"]="application/x-www-form-urlencoded";}
+  else if(typeof FormData!=="undefined"&&body instanceof FormData){requestBody=body;}
   else if(body!==undefined){requestBody=JSON.stringify(body);headers["Content-Type"]="application/json";}
   let response;
   const deadline=new AbortController();
@@ -43,7 +45,8 @@ export class AdminApi{
   finally{clearTimeout(timer);}
   if(!response.ok){
    if(response.status===401)this.#csrf=null;
-   const map={400:"Confira os dados.",401:"Sessão expirada ou credenciais inválidas.",403:"Ação não autorizada ou CSRF inválido.",404:"Recurso não encontrado.",409:"Conflito de dados; recarregue antes de salvar.",429:"Muitas tentativas; tente mais tarde."};
+   const map={400:"Confira os dados.",401:"Sessão expirada ou credenciais inválidas.",403:"Ação não autorizada ou CSRF inválido.",404:"Recurso não encontrado.",409:"Não foi possível salvar. Confira os vínculos e os dados informados.",413:"Foto grande demais; selecione uma imagem menor.",429:"Muitas tentativas; tente mais tarde."};
+   if(response.status===409&&path.startsWith("/admin/media"))map[409]=method==="DELETE"?"A foto continua vinculada a um cadastro. Retire o vínculo antes de excluí-la.":"Não foi possível guardar a foto. Confira o formato e o espaço na biblioteca.";
    throw new AdminApiError(map[response.status]||"Não foi possível concluir a operação.",response.status);
   }
   if(response.status===204)return null;
@@ -75,6 +78,11 @@ export class AdminApi{
   return this.#fetch(path,{method:"POST",body:payload,csrf:true});
  }
  async get(path){return this.#fetch(path);}
+ async uploadPhoto(blob){
+  const body=new FormData();
+  body.append("file",blob,blob.type==="image/png"?"foto.png":"foto.jpg");
+  return this.write("POST","/admin/media",body);
+ }
  async write(method,path,payload){
   if(!["POST","PUT","PATCH","DELETE"].includes(method)||!path.startsWith("/admin/"))throw new AdminApiError("Rota de escrita não autorizada.");
   await this.refreshCsrf();
