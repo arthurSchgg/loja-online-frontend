@@ -74,9 +74,9 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
     if (!el.isConnected || el.closest("[hidden]")) continue;
     const index = [...(el.parentElement?.children ?? [])].indexOf(el);
     el.animate([
-     {opacity: 0, transform: "translate3d(0, 44px, 0) scale(.975)"},
+     {opacity: 0, transform: "translate3d(0, 26px, 0) scale(.985)"},
      {opacity: 1, transform: "translate3d(0, 0, 0) scale(1)"}
-    ], {duration: 980, delay: revealDelay(index), easing: "cubic-bezier(.22,1,.36,1)"});
+    ], {duration: 820, delay: revealDelay(index), easing: "cubic-bezier(.22,1,.36,1)"});
    }
   }, {threshold: 0.12, rootMargin: "0px 0px -4% 0px"});
   const observe = node => {
@@ -103,13 +103,13 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
 
  if (canAnimate && animationAvailable) {
   doc.querySelectorAll("[data-hero-copy]").forEach((el, index) => el.animate([
-   {opacity: 0, transform: "translate3d(0, 30px, 0)"},
+   {opacity: 0, transform: "translate3d(0, 22px, 0)"},
    {opacity: 1, transform: "translate3d(0, 0, 0)"}
-  ], {duration: 920, delay: 90 + index * 130, easing: "cubic-bezier(.22,1,.36,1)"}));
+  ], {duration: 820, delay: 70 + index * 105, easing: "cubic-bezier(.22,1,.36,1)"}));
   doc.querySelector("[data-hero-bottle]")?.animate([
-   {opacity: 0, transform: "translate3d(0, 36px, 0) scale(.96)"},
+   {opacity: 0, transform: "translate3d(0, 20px, 0) scale(.985)"},
    {opacity: 1, transform: "translate3d(0, 0, 0) scale(1)"}
-  ], {duration: 1150, delay: 180, easing: "cubic-bezier(.22,1,.36,1)"});
+  ], {duration: 1000, delay: 120, easing: "cubic-bezier(.22,1,.36,1)"});
  }
 
  const stages = [...doc.querySelectorAll("[data-theme-stage]")];

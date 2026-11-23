@@ -20,6 +20,12 @@ configSource=configSource.replace('mode:"demo"','mode:'+JSON.stringify(mode))
  .replace('apiBaseUrl:"/api/v1"','apiBaseUrl:'+JSON.stringify(apiBase))
  .replace('allowExternalPublicApi:false','allowExternalPublicApi:'+String(process.env.ALLOW_EXTERNAL_PUBLIC_API==="true"));
 writeFileSync(configPath,configSource);
+if(mode==="live"){
+ // Pages Functions run ONLY for API paths; static HTML/images remain free CDN assets.
+ writeFileSync(join(dist,"_routes.json"),JSON.stringify({
+  version:1,include:["/api/v1/*"],exclude:[]
+ },null,2)+"\n");
+}
 for(const page of pages){
  let html=readFileSync(join(dist,page),"utf8");
  if(!html.includes('http-equiv="Content-Security-Policy"')||!html.includes("script-src 'self'"))

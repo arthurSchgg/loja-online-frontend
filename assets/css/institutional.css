@@ -150,3 +150,177 @@
  .chapter-logo,.offering-card__art img{transform:none!important;transition:none!important}
 }
 html[data-motion="off"] .candle-art__flame,html[data-motion="off"] .candle-aura{animation:none!important}
+
+
+/* Clear editorial cutouts: the logo remains ONLY in the navigation.
+   SVG files have transparent backgrounds, use self-hosted paths and never
+   imply that the illustrated bottles or candle are commercial SKUs. */
+.chapter-hero__inner{grid-template-columns:minmax(0,1.03fr) minmax(0,.97fr)}
+.chapter-hero__copy,.chapter-hero__art{min-width:0}
+.chapter-hero__copy h1{text-wrap:balance;overflow-wrap:break-word}
+.chapter-hero__art{overflow:visible}
+.chapter-hero__art .editorial-cutout-shell{
+ display:grid;place-items:center;position:relative;z-index:1;
+ width:min(100%,555px);
+ max-height:610px;
+}
+.chapter-hero__art .editorial-cutout{
+ display:block;width:100%;height:auto;max-height:595px;max-width:100%;
+ object-fit:contain;object-position:center;
+ background:transparent;border:0;box-shadow:none;
+ --motion-shift:0px;--cutout-scale:1;
+ transform:translate3d(0,var(--motion-shift),0) scale(var(--cutout-scale));
+ filter:drop-shadow(0 24px 28px rgba(92,57,43,.14));
+ transition:transform .32s cubic-bezier(.22,1,.36,1);
+}
+.chapter-hero__art .chapter-orbit{z-index:0;pointer-events:none}
+.chapter-hero__art .chapter-wordmark{z-index:0}
+.chapter-hero__art--candle .editorial-cutout-shell{width:min(96%,510px)}
+.chapter-story__art{isolation:isolate;align-items:flex-start}
+.chapter-story__visual{
+ position:relative;z-index:1;display:block;align-self:center;
+ width:min(100%,380px);max-height:395px;height:auto;object-fit:contain;
+ background:transparent;filter:drop-shadow(0 20px 24px rgba(70,43,32,.12));
+}
+.chapter-story__art .chapter-story__number{z-index:0}
+.chapter-story__art .chapter-story__stamp{position:relative;z-index:2}
+.offering-card__art{position:relative}
+.offering-card__art img{
+ --image-scale:1;
+ width:100%;height:100%;object-fit:contain;
+ transform:translate3d(0,var(--motion-shift),0) scale(var(--image-scale));
+ transition:transform .35s cubic-bezier(.22,1,.36,1);
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ .chapter-hero__art:hover .editorial-cutout{--cutout-scale:1.025}
+ .offering-card:hover .offering-card__art img{--image-scale:1.035}
+}
+@keyframes cutout-breathe{
+ from{transform:translate3d(0,6px,0)}
+ to{transform:translate3d(0,-9px,0)}
+}
+@media(prefers-reduced-motion:no-preference){
+ .chapter-hero__art .editorial-cutout-shell{animation:cutout-breathe 8.4s ease-in-out infinite alternate}
+ .chapter-hero__art--candle .editorial-cutout-shell{animation-duration:10s}
+}
+@media(max-width:1100px){
+ .chapter-hero__inner{gap:clamp(10px,2vw,28px)}
+ .chapter-hero h1{font-size:clamp(3.4rem,7.9vw,7rem)}
+ .chapter-hero__art .editorial-cutout-shell{width:min(100%,460px)}
+}
+@media(max-width:768px){
+ .chapter-hero__inner{grid-template-columns:minmax(0,1fr);gap:0}
+ .chapter-hero__copy{padding-block:clamp(42px,8vw,70px) 8px}
+ .chapter-hero h1{font-size:clamp(3rem,10.8vw,5.7rem);line-height:.98;max-width:100%}
+ .chapter-hero__art{min-height:300px;padding:0 0 26px}
+ .chapter-hero__art .editorial-cutout-shell{width:min(76vw,405px)}
+ .chapter-hero__art .editorial-cutout{max-height:min(390px,90vw)}
+ .chapter-hero__art--candle{min-height:340px}
+ .chapter-story__art{min-height:320px}
+ .chapter-story__visual{width:min(60vw,280px)}
+}
+@media(max-width:560px){
+ .chapter-hero h1{font-size:clamp(2.75rem,11.5vw,4.7rem);letter-spacing:-.055em;line-height:1}
+ .chapter-hero .lead{font-size:clamp(.99rem,3.4vw,1.13rem);line-height:1.65}
+ .chapter-hero__actions{gap:16px;margin-top:28px}
+ .chapter-hero__actions .btn{min-height:48px}
+ .chapter-hero__art{min-height:270px}
+ .chapter-hero__art .editorial-cutout-shell{width:min(86vw,345px)}
+ .chapter-hero__art .editorial-cutout{max-height:345px}
+ .chapter-hero__art--candle{min-height:300px}
+ .chapter-story__art{min-height:270px}
+ .chapter-story__visual{width:min(70vw,260px);max-height:265px}
+ .chapter-story__number{font-size:clamp(9rem,36vw,14rem)}
+ .chapter-values__grid,.offering-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:350px){
+ .chapter-hero h1{font-size:2.65rem}
+ .chapter-hero__copy{padding-top:34px}
+ .chapter-hero__art .editorial-cutout-shell{width:90%}
+}
+@media(prefers-reduced-motion:reduce){
+ .chapter-hero__art .editorial-cutout-shell{animation:none!important;transform:none!important}
+ .chapter-hero__art .editorial-cutout,.offering-card__art img{transform:none!important;transition:none!important}
+}
+html[data-motion="off"] .chapter-hero__art .editorial-cutout-shell{animation:none!important;transform:none!important}
+html[data-motion="off"] .chapter-hero__art .editorial-cutout{transform:none!important;transition:none!important}
+
+
+/* Replace oversized illustration with real product/still-life photography.
+   A multiply blend neutralizes the pure-white studio background on light
+   editorial panels; no fake cutout drawings or enlarged brand logo. */
+.chapter-hero__art .editorial-product-photo,
+.chapter-story__art .editorial-product-photo{
+ display:block;max-width:100%;height:auto;
+ object-fit:contain;object-position:center;
+ background:transparent;border:0;box-shadow:none;border-radius:0;
+ filter:contrast(1.04) saturate(.93);
+ mix-blend-mode:multiply;
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 10%,#000 90%,transparent 100%);
+ mask-image:linear-gradient(90deg,transparent 0%,#000 10%,#000 90%,transparent 100%);
+}
+.chapter-hero__art .editorial-product-photo{
+ width:min(100%,510px);max-height:565px;
+}
+.chapter-hero__art .editorial-product-photo--scene{
+ aspect-ratio:4/5;width:min(90%,500px);max-height:570px;
+ object-fit:cover;object-position:center 46%;
+ mix-blend-mode:normal;
+ -webkit-mask-image:radial-gradient(ellipse 78% 83% at 50% 49%,#000 64%,transparent 100%);
+ mask-image:radial-gradient(ellipse 78% 83% at 50% 49%,#000 64%,transparent 100%);
+}
+.chapter-story__art .editorial-product-photo{width:min(100%,360px)}
+@media(max-width:768px){
+ .chapter-hero__art .editorial-product-photo{width:min(85vw,410px);max-height:405px}
+ .chapter-hero__art .editorial-product-photo--scene{width:min(83vw,385px);max-height:415px}
+}
+@media(max-width:560px){
+ .chapter-hero__art .editorial-product-photo{width:min(84vw,335px);max-height:350px}
+ .chapter-story__art .editorial-product-photo{width:min(75vw,270px)}
+ .chapter-hero__art .editorial-product-photo--scene{width:min(84vw,345px);max-height:355px}
+}
+
+
+/* Compact studio product photography: blend the white studio backdrop into
+   the existing warm hero instead of showing a white rectangle. Keep the real
+   product proportions and preserve the approved typography/animations. */
+.chapter-hero__art{isolation:auto}
+.chapter-hero__art .editorial-cutout-shell{
+ width:min(69%,350px);
+ max-height:390px;
+ mix-blend-mode:multiply;
+}
+.chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){
+ width:100%;
+ max-height:380px;
+ height:auto;
+ object-fit:contain;
+ mix-blend-mode:normal;
+ filter:contrast(1.04) saturate(.98);
+ -webkit-mask-image:radial-gradient(ellipse 88% 88% at center,#000 73%,transparent 100%);
+ mask-image:radial-gradient(ellipse 88% 88% at center,#000 73%,transparent 100%);
+}
+.chapter-hero__art .editorial-product-photo--scene{
+ mix-blend-mode:normal;
+}
+.chapter-story__art .editorial-product-photo{
+ mix-blend-mode:multiply;
+ width:min(78%,285px);
+ max-height:330px;
+}
+@media(max-width:768px){
+ .chapter-hero__art{min-height:250px}
+ .chapter-hero__art .editorial-cutout-shell{width:min(62vw,275px);max-height:310px}
+ .chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){max-height:300px}
+ .chapter-story__art .editorial-product-photo{width:min(62vw,260px)}
+}
+@media(max-width:560px){
+ .chapter-hero__art{min-height:220px;padding-bottom:24px}
+ .chapter-hero__art .editorial-cutout-shell{width:min(58vw,240px);max-height:260px}
+ .chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){max-height:260px}
+ .chapter-story__art .editorial-product-photo{width:min(63vw,230px);max-height:250px}
+}
+@media(max-width:360px){
+ .chapter-hero__art .editorial-cutout-shell{width:min(59vw,205px)}
+ .chapter-hero__art .editorial-product-photo:not(.editorial-product-photo--scene){max-height:220px}
+}
