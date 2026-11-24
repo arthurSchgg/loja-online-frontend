@@ -27,9 +27,7 @@ if(mode==="live"){
  const routes=pages.filter(p=>p!=="produto.html").map(p=>p==="index.html"?"/":"/"+p.replace(/\.html$/,""));
  writeFileSync(join(dist,"robots.txt"),"User-agent: *\nDisallow: /gestao-da-loja\nDisallow: /api/\nSitemap: "+site+"/sitemap.xml\n");
  writeFileSync(join(dist,"sitemap.xml"),'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+routes.map(p=>"<url><loc>"+site+p+"</loc></url>").join("")+"</urlset>");
- // Unlisted shortcut only; authentication stays on the original API origin.
- // No login, session cookie or administrative JS is hosted in public Pages.
- writeFileSync(join(dist,"_redirects"),"/gestao-da-loja https://lojinha-da-katia-api-rjvx.onrender.com/admin.html 302\n/gestao-da-loja/ https://lojinha-da-katia-api-rjvx.onrender.com/admin.html 302\n");
+ // Never publish links or redirects to the private administrative entry point.
  // Pages Functions run ONLY for API paths; static HTML/images remain free CDN assets.
  writeFileSync(join(dist,"_routes.json"),JSON.stringify({
   version:1,include:["/api/v1/*"],exclude:[]

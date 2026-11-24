@@ -83,12 +83,12 @@ $("#login-form").addEventListener("submit",async event=>{
  event.preventDefault();const btn=event.submitter,username=$("#admin-username").value.trim(),password=$("#admin-password").value;
  btn.disabled=true;info("Autenticando...");
  try{
-  const user=await api.login(username,password);$("#admin-password").value="";
+  const user=await api.login(username,password,$("#admin-otp").value.trim());$("#admin-password").value="";
   if(user?.authenticated!==true||typeof user.username!=="string"||!user.username.trim())
    throw new AdminApiError("Não foi possível confirmar a sessão administrativa.",401);
   showWorkspace(user.username);info("Acesso confirmado.");
  }catch(error){$("#admin-password").value="";info(error.message,true);}
- finally{btn.disabled=false;}
+ finally{$("#admin-otp").value="";btn.disabled=false;}
 });
 $("#logout").addEventListener("click",async()=>{
  try{await api.logout();showLogin({preserveDraft:false});info("Sessão encerrada.");}
