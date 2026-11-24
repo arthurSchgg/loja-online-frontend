@@ -24,7 +24,9 @@ function renderShell(){
  const menuButton=document.querySelector("[data-mobile-toggle]");
  const mobileMenu=document.getElementById("mobile-links");
  if(menuButton&&mobileMenu){
+  const desktop=window.matchMedia?.("(min-width: 1025px)");
   const setMenuOpen=open=>{
+   open=Boolean(open&&!desktop?.matches);
    mobileMenu.hidden=!open;
    menuButton.setAttribute("aria-expanded",String(open));
    menuButton.setAttribute("aria-label",open?"Fechar menu":"Abrir menu");
@@ -43,9 +45,10 @@ function renderShell(){
    if(!mobileMenu.hidden&&!mobileMenu.contains(event.target)&&
       !menuButton.contains(event.target))setMenuOpen(false);
   });
-  window.matchMedia?.("(min-width: 1025px)").addEventListener?.("change",event=>{
+  desktop?.addEventListener?.("change",event=>{
    if(event.matches)setMenuOpen(false);
   });
+  setMenuOpen(false);
  }
  document.querySelector("[data-open-cart]")?.addEventListener("click",openBag);
  document.querySelector("[data-close-cart]")?.addEventListener("click",()=>drawer?.close());
