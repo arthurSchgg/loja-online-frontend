@@ -19,6 +19,12 @@ if(process.env.PUBLIC_STOREFRONT_URL){
     !["","/"].includes(url.pathname)||url.port)throw Error("PUBLIC_STOREFRONT_URL must be a public HTTPS origin.");
  const page=join(dest,"admin.html");
  writeFileSync(page,readFileSync(page,"utf8").replaceAll('href="index.html"','href="'+url.origin+'/"'));
+ for(const name of ["admin.html","admin-experiences.html","reset-password.html","confirm-email.html"]){
+  const target=join(dest,name);
+  writeFileSync(target,readFileSync(target,"utf8")
+   .replaceAll('href="admin.html"','href="/gestao-proprietaria-k73m"')
+   .replaceAll('href="admin-experiences.html"','href="/gestao-experiencias-k73m"'));
+ }
 }
 for(const page of ["admin.html","admin-experiences.html","reset-password.html","confirm-email.html"]){
  const html=readFileSync(join(dest,page),"utf8");

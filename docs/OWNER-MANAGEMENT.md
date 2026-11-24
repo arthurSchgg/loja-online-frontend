@@ -1,10 +1,11 @@
 # Painel da proprietária
 
 O design da vitrine continua inalterado quando não há banners ativos ou destaques manuais.
-O endereço direto e não divulgado do painel é
-`https://main.loja-online-frontend.pages.dev/gestao-da-loja`.
-Ele redireciona para o login HTTPS existente no Render, sem publicar dados privados
-ou depender de download de código. O login continua obrigatório; o endereço não substitui a autenticação.
+Use somente o novo endereço HTTPS administrativo fornecido diretamente à proprietária.
+Não existe mais atalho na vitrine pública; os endereços antigos são bloqueados.
+O login continua obrigatório; o endereço não substitui a autenticação.
+Quando o autenticador for ativado na configuração privada do servidor, informe também
+o código de seis dígitos do aplicativo. Nunca envie a chave do autenticador pelo chat.
 No painel, abra **Produtos** para buscar por nome, marca, categoria, publicação e disponibilidade.
 Em telas pequenas a lista de registros aparece antes do editor; use Novo cadastro ou Editar.
 
