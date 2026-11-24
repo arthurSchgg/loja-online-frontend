@@ -1,4 +1,5 @@
 import {CONFIG} from "./config.js";
+import {rememberPreview,validPreview} from "./catalog-preview.js";
 export class ApiError extends Error{
  constructor(message,status=0){super(message);this.name="ApiError";this.status=status;}
 }
@@ -89,14 +90,24 @@ export function productSearchPath(page=0,filters={}){
  return "/products?"+query.toString();
 }
 export async function fetchProducts(page=0,signal,filters={}){
- return normalizePage(await publicRequest(productSearchPath(page,filters),{signal}));
+ const path=productSearchPath(page,filters),result=normalizePage(await publicRequest(path,{signal}));
+ if(path==="/products?page=0&size=12&sort=recent")rememberPreview("catalog",result.items,result.hasNext);
+ return result;
+}
+export async function fetchCatalogPreview(kind,signal){
+ if(kind!=="catalog"&&kind!=="featured")return null;
+ try{return validPreview(await publicRequest("/catalog-preview?kind="+kind,{signal,timeoutMs:3000}));}
+ catch{return null;}
 }
 /** The previous backend remains usable while the additive owner release is rolling out. */
 export async function fetchFeatured(signal){
  try{
   const selection=await publicRequest("/storefront/featured",{signal});
-  if(selection&&typeof selection.customized==="boolean"&&Array.isArray(selection.products))
-   return {items:selection.products.filter(p=>p?.published===true).slice(0,8),hasNext:false,customized:selection.customized};
+  if(selection&&typeof selection.customized==="boolean"&&Array.isArray(selection.products)){
+   const items=selection.products.filter(p=>p?.published===true).slice(0,8);
+   rememberPreview("featured",items,false);
+   return {items,hasNext:false,customized:selection.customized};
+  }
  }catch(error){
   if(![401,403,404].includes(error?.status))throw error;
  }

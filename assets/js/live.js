@@ -2,14 +2,15 @@
  * All prices/availability in live mode originate from the backend.
  */
 import {isLive} from "./config.js";
-import {fetchProducts,fetchFeatured,fetchProduct,fetchRelatedProducts,fetchOfferings,fetchOffering,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,ApiError} from "./api.js";
+import {fetchProducts,fetchFeatured,fetchProduct,fetchRelatedProducts,fetchOfferings,fetchOffering,fetchStore,fetchExperiences,fetchExperience,evaluateExperience,confirmWhatsApp,currentPrice,fetchCategories,fetchCatalogPreview,ApiError} from "./api.js";
+import {readPreview,foregroundRecovery} from "./catalog-preview.js";
 import {initCampaignBanners} from "./campaign-banners.js";
 import {money} from "./data.js";
 import {createCatalogSearch} from "./catalog-search.js";
 import {setupCatalogToolbar} from "./catalog-toolbar.js";
 import {productGalleryImages} from "./product-gallery.js";
 import {relatedCatalogProducts} from "./related-products.js";
-import {loadCatalogPage} from "./public-catalog-load.js";
+import {loadCatalogPage,isUnfilteredFirstPage} from "./public-catalog-load.js";
 import {escapeHtml} from "./layout.js";
 import {UI_ICONS} from "./ui-icons.js";
 import {officialStoreLinks} from "./official-contact.js";
@@ -327,7 +328,11 @@ async function initHome(){
  const grid=document.getElementById("featured-grid");
  if(grid){
   let loadingFeatured=false;
+  const recovery=foregroundRecovery(()=>loadFeatured());
+  document.addEventListener("visibilitychange",()=>recovery.resume());
+  window.addEventListener("pagehide",()=>recovery.stop());
   const paintFeatured=page=>{
+   recovery.stop();
    currentProducts=page.items;
    grid.innerHTML=currentProducts.length?
     currentProducts.slice(0,8).map(liveProductCard).join(""):
@@ -338,19 +343,24 @@ async function initHome(){
    if(loadingFeatured)return;
    loadingFeatured=true;
    grid.parentNode?.querySelector("[data-home-retry]")?.remove();
-   const preview=snapshotCatalogPage(0);
+   const preview=readPreview("featured")||snapshotCatalogPage(0);
    currentProducts=preview.items;
    grid.innerHTML=preview.items.slice(0,8).map(liveProductCard).join("");
    showSnapshotNotice(grid,"Conferindo preços e disponibilidade atualizados...");
    grid.setAttribute("aria-busy","true");
+   // Cache-only edge preview may be newer than the bundled fallback.
+   void fetchCatalogPreview("featured").then(cached=>{
+    if(!cached||!loadingFeatured||!grid.hasAttribute("aria-busy"))return;
+    currentProducts=cached.items;grid.innerHTML=cached.items.slice(0,8).map(liveProductCard).join("");
+   });
    try{
     const page=await loadCatalogPage((_index,_filters,signal)=>fetchFeatured(signal),0);
     paintFeatured(page);
    }catch(err){
-    if(!canShowPublicSnapshot(err)){
-     grid.replaceChildren();clearSnapshotNotice(grid);
+    if(!canShowPublicSnapshot(err)&&!currentProducts.length){
      status(grid,"Não foi possível carregar os produtos da loja.",true);
     }else showSnapshotNotice(grid);
+    recovery.start();
     const retry=document.createElement("button");
     retry.type="button";retry.className="btn btn--secondary";
     retry.dataset.homeRetry="";
@@ -369,7 +379,11 @@ async function initHome(){
     const page=await fetchFeatured();
     grid.parentNode?.querySelector("[data-home-retry]")?.remove();
     paintFeatured(page);
-   }catch{/* Keep the existing view; confirmation still checks actual prices. */}
+   }catch{
+    const preview=readPreview("featured")||snapshotCatalogPage(0);
+    currentProducts=preview.items;grid.innerHTML=currentProducts.slice(0,8).map(liveProductCard).join("");
+    showSnapshotNotice(grid);recovery.start();
+   }
    finally{loadingFeatured=false;}
   });
  }
@@ -429,7 +443,11 @@ async function initCatalog(){
    return {...result,source:"live"};
   }catch(error){
    // A later live page must be retried, never mixed with old preview rows.
-   if(page>0||!canShowPublicSnapshot(error))throw error;
+   if(signal.aborted||error?.name==="AbortError"||page>0||(!canShowPublicSnapshot(error)&&!snapshotCatalogPage(page,filters).items.length))throw error;
+   if(isUnfilteredFirstPage(page,filters)){
+    const cached=readPreview("catalog")||await fetchCatalogPreview("catalog",signal);
+    if(cached)return {...cached,source:"snapshot"};
+   }
    return {...snapshotCatalogPage(page,filters),source:"snapshot"};
   }
  });
@@ -438,6 +456,9 @@ async function initCatalog(){
  const retryLive=document.createElement("button");retryLive.type="button";retryLive.className="btn btn--secondary";
  retryLive.textContent="Atualizar dados da loja";retryLive.hidden=true;loadMore.after(retryLive);
  let version=0,searchTimer=null,categoryWarning="",hasLiveView=false;
+ const recovery=foregroundRecovery(()=>refresh());
+ document.addEventListener("visibilitychange",()=>recovery.resume());
+ window.addEventListener("pagehide",()=>recovery.stop());
  const params=new URLSearchParams(location.search),familyName=params.get("familia");
  // Display the unfiltered catalog immediately. The categories endpoint is an
  // independent enhancement and must not block the first product listing.
@@ -483,10 +504,11 @@ async function initCatalog(){
   grid.querySelector("[data-api-status]")?.remove();
   if(appendFrom>0&&grid.querySelector(".product-card"))
    grid.insertAdjacentHTML("beforeend",state.items.slice(appendFrom).map(liveProductCard).join(""));
-  else grid.innerHTML=state.items.map(liveProductCard).join("")||'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>';
+  else grid.innerHTML=state.items.map(liveProductCard).join("")||(snapshotActive?'<div class="catalog-empty"><strong>Aguardando o catálogo atualizado.</strong><p>Não há resultados nesta prévia. A loja será consultada novamente.</p></div>':'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>');
   if(snapshotActive)
    showSnapshotNotice(grid,SNAPSHOT_NOTICE+((form.elements.max?.value||String(form.elements.sort?.value||"").startsWith("price-"))?" A filtragem e a ordenação por preço dependem da API.":""));
   else clearSnapshotNotice(grid);
+  if(snapshotActive)recovery.start();else recovery.stop();
   toolbar.render();
   count.textContent=categoryWarning+state.items.length+" produtos carregados"+
     (state.hasNext?" · mais páginas disponíveis":" · fim dos resultados");
@@ -509,13 +531,17 @@ async function initCatalog(){
    currentProducts=state.items;grid.dataset.snapshotPreview="false";render(previousCount);
   }catch(error){
    if(expectedVersion!==version)return;
-   if(!search.state.items.length){grid.replaceChildren();hasLiveView=false;clearSnapshotNotice(grid);}
+   if(!search.state.items.length){
+    hasLiveView=false;
+    if(grid.dataset.snapshotPreview!=="true"&&grid.dataset.preserveView!=="true")grid.replaceChildren();
+   }
    status(grid,"Não foi possível carregar esta página: "+(error?.message||"Tente novamente."),true);
    loadMore.textContent="Tentar novamente";loadMore.hidden=false;
   }finally{if(expectedVersion===version){loadMore.disabled=false;grid.removeAttribute("aria-busy");grid.inert=false;grid.dataset.preserveView="false";}}
  }
  function applyServerFilters(){
   window.clearTimeout(searchTimer);
+  recovery.stop();
   const wasLive=hasLiveView;
   search.setFilters({q:queryField.value,categoryId:family.closest(".field").hidden?null:family.value,
    sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value||null});
@@ -526,13 +552,21 @@ async function initCatalog(){
    grid.inert=true;grid.dataset.preserveView="true";
    grid.dataset.snapshotPreview="false";clearSnapshotNotice(grid);
   }else{
-   const preview=snapshotCatalogPage(0,{q:queryField.value,categoryId:family.value,
-    sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value});
+   const activeFilters={q:queryField.value,categoryId:family.value,
+    sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value};
+   const preview=(isUnfilteredFirstPage(0,activeFilters)&&readPreview("catalog"))||snapshotCatalogPage(0,activeFilters);
    currentProducts=preview.items;
    grid.innerHTML=preview.items.map(liveProductCard).join("")||
-    '<div class="catalog-empty"><strong>Nenhum produto correspondente.</strong><p>Tente outro nome ou categoria.</p></div>';
+    '<div class="catalog-empty"><strong>Buscando produtos...</strong><p>Aguarde a consulta ao catálogo atualizado.</p></div>';
    grid.dataset.snapshotPreview="true";
    showSnapshotNotice(grid,"Conferindo dados atualizados...");
+   if(isUnfilteredFirstPage(0,activeFilters)){
+    const ticket=version;
+    void fetchCatalogPreview("catalog").then(cached=>{
+     if(!cached||ticket!==version||grid.dataset.snapshotPreview!=="true"||!grid.hasAttribute("aria-busy"))return;
+     currentProducts=cached.items;grid.innerHTML=cached.items.map(liveProductCard).join("");
+    });
+   }
   }
   toolbar.render();
   count.textContent="Verificando os dados publicados...";
@@ -566,8 +600,10 @@ async function initCatalog(){
    if(expectedVersion!==version||state.stale)return;
    currentProducts=state.items;render();
   }catch{
-   if(expectedVersion===version)
+   if(expectedVersion===version){
     count.textContent="Não foi possível atualizar agora. Os dados serão novamente confirmados antes da consulta.";
+    recovery.start();
+   }
   }finally{
    if(expectedVersion===version){grid.removeAttribute("aria-busy");loadMore.disabled=false;retryLive.disabled=false;}
   }

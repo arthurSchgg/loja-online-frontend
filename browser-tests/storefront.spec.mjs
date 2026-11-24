@@ -65,6 +65,10 @@ for(const width of [320,375,430,768,1024,1440]){
    await page.keyboard.press("Escape");
    await expect(menu).toBeHidden();
    await expect(toggle).toBeFocused();
+  }else{
+   await expect(page.locator("[data-mobile-toggle]")).toBeHidden();
+   await expect(page.locator(".nav-links")).toBeVisible();
+   await expect(page.locator("#mobile-links")).toBeHidden();
   }
   expect(errors).toEqual([]);
  });
