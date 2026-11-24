@@ -1,7 +1,8 @@
 /** Bounded cache of previously public catalog metadata. Never cache commercial
  * values, credentials, stock or availability. A preview cannot authorize a sale.
  */
-export const PREVIEW_TTL=10*60*1000;
+// Longer than the free service's idle interval; only non-commercial metadata.
+export const PREVIEW_TTL=60*60*1000;
 const storagePrefix="katia-public-preview-v2:";
 const numericId=value=>Number.isSafeInteger(Number(value))&&Number(value)>0?Number(value):null;
 const bounded=(value,max)=>typeof value==="string"?value.slice(0,max):"";

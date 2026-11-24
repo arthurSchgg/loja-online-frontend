@@ -2,7 +2,12 @@ import {action,previewImage,uploadPhoto} from "./photo-editor.js";
 const el=(tag,text="",className="")=>{const n=document.createElement(tag);n.textContent=text;if(className)n.className=className;return n;};
 const money=bytes=>((Number(bytes)||0)/1048576).toLocaleString("pt-BR",{maximumFractionDigits:1})+" MB";
 const safeProductId=id=>Number.isSafeInteger(Number(id))&&Number(id)>0;
-export const ownerModules=new Set(["media","featured","templates"]);
+export const ownerModules=new Set(["dashboard","media","featured","templates"]);
+export function summarizeProducts(items){
+ return {total:items.length,low:items.filter(p=>Number(p.stockQuantity)<=3).length,
+  pending:items.filter(p=>p.priceStatus==="ON_REQUEST"||p.price==null).length,
+  promotions:items.filter(p=>Number(p.effectivePrice)>0&&Number(p.effectivePrice)<Number(p.price)).length};
+}
 export const templateLabels={PRODUCT:"Produtos",CANDLE:"Velas",WORKSHOP:"Oficinas",RENTAL:"Locações"};
 export function validateTemplate(text,required){
  if(typeof text!=="string"||!text.trim()||text.length>1200)throw new Error("Escreva a mensagem, com até 1.200 caracteres.");
@@ -20,6 +25,33 @@ export async function renderOwnerTool({module,container,api,active,info,changed,
  container.replaceChildren(el("p","Carregando...","muted"));
  const fail=error=>{if(active()){if(error.status===401)sessionExpired();else info(error.message,true);}};
  const safe=async work=>{try{await work();}catch(error){fail(error);}};
+ if(module==="dashboard"){
+  const heading=el("h2","Resumo da loja"),note=el("p","Visão geral dos produtos e atalhos para o dia a dia.","admin-note");
+  const tiles=el("div","","dashboard-grid");
+  const shortcuts=el("div","","photo-tools");
+  for(const [value,label] of [["products","Gerenciar produtos"],["media","Enviar fotos"],["store","Editar contatos"],["content","História da loja"],["campaigns","Banners"],["featured","Destaques"]]){
+   shortcuts.append(action(label,()=>{const select=document.getElementById("admin-module");select.value=value;select.dispatchEvent(new Event("change"));}));
+  }
+  const status=el("p","Carregando resumo...","admin-note");status.setAttribute("role","status");
+  container.replaceChildren(heading,note,shortcuts,tiles,status);
+  await safe(async()=>{
+   const items=[];let page=0;
+   while(active()){
+    const result=await api.get("/admin/products?page="+page+"&size=50");
+    if(!active())return;
+    if(!Array.isArray(result.content))throw new Error("Resumo indisponível.");
+    items.push(...result.content);
+    if(result.last===true)break;
+    if(++page>=100)throw new Error("Limite de leitura do resumo. Consulte os registros.");
+   }
+   if(!active())return;
+   const summary=summarizeProducts(items);
+   for(const [key,label] of [["total","Produtos cadastrados"],["low","Estoque baixo (até 3)"],["pending","Preços pendentes"],["promotions","Promoções vigentes"]]){
+    const card=el("article","","dashboard-card");card.append(el("strong",String(summary[key])),el("span",label));tiles.append(card);
+   }
+   status.textContent="Resumo atualizado. Confira as quantidades físicas antes de alterar o estoque.";
+  });return;
+ }
  if(module==="media"){
   const heading=el("h2","Biblioteca de fotos"),note=el("p","Envie imagens do celular ou computador. Fotos usadas em algum cadastro não podem ser excluídas daqui.","admin-note");
   const status=el("p","","admin-note"),grid=el("div","","owner-media-grid"),pager=el("div","","photo-tools"),progress=el("p","","photo-feedback");

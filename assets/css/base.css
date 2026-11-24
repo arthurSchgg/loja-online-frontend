@@ -113,3 +113,5 @@ section[id]{scroll-margin-top:98px}
 @media(prefers-reduced-motion:reduce){
  .icon-button .menu-line,.nav-links a::after{transition:none}
 }
+.site-header a:focus-visible,.mobile-links a:focus-visible,.site-footer a:focus-visible,main button:focus-visible,main a:focus-visible{outline:2px solid #855346;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){.mobile-toggle .menu-line{transition:none}}
