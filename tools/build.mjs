@@ -23,6 +23,9 @@ configSource=configSource.replace('mode:"demo"','mode:'+JSON.stringify(mode))
  .replace('allowExternalPublicApi:false','allowExternalPublicApi:'+String(process.env.ALLOW_EXTERNAL_PUBLIC_API==="true"));
 writeFileSync(configPath,configSource);
 if(mode==="live"){
+ // Unlisted shortcut only; authentication stays on the original API origin.
+ // No login, session cookie or administrative JS is hosted in public Pages.
+ writeFileSync(join(dist,"_redirects"),"/gestao-da-loja https://lojinha-da-katia-api-rjvx.onrender.com/admin.html 302\n/gestao-da-loja/ https://lojinha-da-katia-api-rjvx.onrender.com/admin.html 302\n");
  // Pages Functions run ONLY for API paths; static HTML/images remain free CDN assets.
  writeFileSync(join(dist,"_routes.json"),JSON.stringify({
   version:1,include:["/api/v1/*"],exclude:[]

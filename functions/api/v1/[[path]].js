@@ -3,6 +3,7 @@
  * Administrative routes/auth/session/CSRF are NEVER proxied.
  * The browser keeps same-origin /api/v1 and never receives DB or admin credentials.
  */
+import {makePreview,validPreview,PREVIEW_TTL} from "../../../assets/js/catalog-preview.js";
 const GET_ROUTES=[
  /^\/products(?:\/[0-9]+(?:\/(?:whatsapp|related))?)?$/,
  /^\/brands$/, /^\/categories$/, /^\/store$/,
@@ -14,6 +15,12 @@ const MEDIA_ROUTE=/^\/media\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-
 const PHOTO_LIMIT=768*1024;
 const POST_ROUTES=[/^\/whatsapp\/confirm$/, /^\/experiences\/[0-9]+\/evaluate$/];
 const SHORT_CACHE=new Set(["/brands","/categories","/store","/content-sections"]);
+const previewKind=(path,query)=>{
+ if(path==="/storefront/featured"&&!query)return "featured";
+ if(path==="/products"&&query==="?page=0&size=12&sort=recent")return "catalog";
+ return null;
+};
+const previewKey=(incoming,kind)=>new Request(incoming.origin+"/api/v1/catalog-preview?kind="+kind);
 const problem=(status,title)=>new Response(JSON.stringify({title}),{
  status,
  headers:{"Content-Type":"application/problem+json; charset=utf-8",
@@ -27,6 +34,19 @@ export async function onRequest(context){
  const prefix="/api/v1";
  if(!incoming.pathname.startsWith(prefix+"/"))return problem(404,"Rota não encontrada.");
  const path=incoming.pathname.slice(prefix.length);
+ // Read-only cached metadata: never call the sleeping upstream for this route.
+ // The commercial API continues to be fetched independently with no-store.
+ const edge=context.previewCache??globalThis.caches?.default;
+ if(method==="GET"&&path==="/catalog-preview"){
+  const kind=incoming.searchParams.get("kind");
+  if(!["featured","catalog"].includes(kind)||incoming.search!=="?kind="+kind)return problem(400,"Prévia inválida.");
+  try{
+   const cached=await edge?.match(previewKey(incoming,kind));
+   const value=cached&&validPreview(await cached.json());
+   if(value)return new Response(JSON.stringify(value),{headers:{"Content-Type":"application/json","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
+  }catch{/* Preview cache is optional. */}
+  return problem(404,"Prévia ainda indisponível.");
+ }
  const media=method==="GET"&&MEDIA_ROUTE.test(path);
  if(media&&incoming.search)return problem(400,"Consulta de foto inválida.");
  if(!(method==="GET"&&(media||GET_ROUTES.some(re=>re.test(path))))&&
@@ -80,6 +100,20 @@ export async function onRequest(context){
   const contentType=response.headers.get("content-type")||"";
   if(!/^application\/(?:json|problem\+json)(?:\s*;|$)/i.test(contentType))
    return problem(502,"Resposta inválida da API.");
+  const kind=method==="GET"&&response.status===200?previewKind(path,incoming.search):null;
+  if(kind&&edge){
+   const save=(async()=>{
+    try{
+     const json=await response.clone().json();
+     const items=kind==="featured"?json.products:json.content;
+     if(!Array.isArray(items))return;
+     const preview=makePreview(items,kind==="catalog"&&json.last===false);
+     await edge.put(previewKey(incoming,kind),new Response(JSON.stringify(preview),{headers:{"Content-Type":"application/json","Cache-Control":"public,max-age="+Math.floor(PREVIEW_TTL/1000)}}));
+    }catch{/* Never block a successful live response because of cache. */}
+   })();
+   if(typeof context.waitUntil==="function")context.waitUntil(save);
+   else await save;
+  }
   return new Response(response.body,{
    status:response.status,
    headers:{"Content-Type":contentType,
