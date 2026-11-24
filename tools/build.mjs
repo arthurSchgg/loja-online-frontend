@@ -23,6 +23,10 @@ configSource=configSource.replace('mode:"demo"','mode:'+JSON.stringify(mode))
  .replace('allowExternalPublicApi:false','allowExternalPublicApi:'+String(process.env.ALLOW_EXTERNAL_PUBLIC_API==="true"));
 writeFileSync(configPath,configSource);
 if(mode==="live"){
+ const site="https://main.loja-online-frontend.pages.dev";
+ const routes=pages.filter(p=>p!=="produto.html").map(p=>p==="index.html"?"/":"/"+p.replace(/\.html$/,""));
+ writeFileSync(join(dist,"robots.txt"),"User-agent: *\nDisallow: /gestao-da-loja\nDisallow: /api/\nSitemap: "+site+"/sitemap.xml\n");
+ writeFileSync(join(dist,"sitemap.xml"),'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+routes.map(p=>"<url><loc>"+site+p+"</loc></url>").join("")+"</urlset>");
  // Unlisted shortcut only; authentication stays on the original API origin.
  // No login, session cookie or administrative JS is hosted in public Pages.
  writeFileSync(join(dist,"_redirects"),"/gestao-da-loja https://lojinha-da-katia-api-rjvx.onrender.com/admin.html 302\n/gestao-da-loja/ https://lojinha-da-katia-api-rjvx.onrender.com/admin.html 302\n");
@@ -61,6 +65,10 @@ for(const page of pages){
  }
  if(page==="index.html"&&!html.includes('rel="preload" as="image"')){
   html=html.replace("</head>",'<link rel="preload" as="image" href="assets/images/brand/hero-live-poster.webp" fetchpriority="high"></head>');
+ }
+ if(mode==="live"&&page!=="produto.html"){
+  const canonical="https://main.loja-online-frontend.pages.dev"+(page==="index.html"?"/":"/"+page.replace(/\.html$/,""));
+  html=html.replace("</head>",'<link rel="canonical" href="'+canonical+'"><meta property="og:type" content="website"><meta property="og:site_name" content="Lojinha da Kátia"><meta property="og:url" content="'+canonical+'"><meta property="og:image" content="https://main.loja-online-frontend.pages.dev/assets/images/brand/hero-live-poster.webp"></head>');
  }
  writeFileSync(join(dist,page),html);
  const paths=[...html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g)].map(m=>m[1]);
