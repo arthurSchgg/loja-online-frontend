@@ -31,7 +31,7 @@ as configurações comerciais são buscadas da API sem cache. O build release co
 checks e testes Node, e o build admin deve ser sincronizado para a mesma origem protegida da API.
 
 O catálogo também usa uma prévia de fotos e descrições públicas, atualizada a cada
-consulta bem-sucedida da primeira página e dos destaques, conservada por até dez minutos.
+consulta bem-sucedida da primeira página e dos destaques, conservada por até uma hora.
 Se a API gratuita estiver despertando, a prévia aparece sem preços, estoque ou botões
 de consulta. Enquanto a página estiver visível, a recuperação repete a consulta
 com intervalo crescente e limite de tentativas; nunca mantém o serviço acordado em segundo plano.

@@ -30,6 +30,7 @@ test("admin on a phone: choose brand/category, upload photos, change cover, and 
  });
  await page.goto("/admin.html");
  await expect(page.locator("#admin-workspace")).toBeVisible();
+ await page.locator("#admin-module").selectOption("products");
  const form=page.locator("#edit-form");
  await form.locator('[name="name"]').fill("Produto fictício");
  await form.locator('[name="price"]').fill("50");
