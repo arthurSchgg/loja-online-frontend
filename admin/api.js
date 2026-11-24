@@ -59,10 +59,10 @@ export class AdminApi{
   this.#csrf={headerName:data.headerName,token:data.token};return data;
  }
  async me(){return this.#fetch("/auth/me");}
- async login(username,password){
+ async login(username,password,otp=""){
   if(!username||!password)throw new AdminApiError("Informe usuário e senha.");
   await this.refreshCsrf();
-  await this.#fetch("/auth/login",{method:"POST",body:new URLSearchParams({username,password}),csrf:true});
+  await this.#fetch("/auth/login",{method:"POST",body:new URLSearchParams({username,password,otp}),csrf:true});
   // Spring session fixation rotates the session ID; always refresh CSRF afterwards.
   this.#csrf=null;await this.refreshCsrf();
   return this.me();

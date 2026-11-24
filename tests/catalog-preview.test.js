@@ -42,9 +42,9 @@ test("foreground retry stops after bounded attempts and does not run in hidden t
  visible=true;r.resume();await tasks.shift()();await tasks.shift()();assert.equal(calls,2);
  assert.equal(tasks.length,0);r.stop();
 });
-test("desktop hides the menu with a selector that outranks header icon styles; unlisted admin shortcut redirects to the real protected login",()=>{
+test("desktop hides the menu and the public build does not advertise the private administrative entry",()=>{
  const css=readFileSync(new URL("../assets/css/base.css",import.meta.url),"utf8");
  const build=readFileSync(new URL("../tools/build.mjs",import.meta.url),"utf8");
  assert.match(css,/@media\(min-width:1025px\)\{\s*\.mobile-links,\.header-actions \.mobile-toggle\{display:none!important\}/);
- assert.match(build,/\/gestao-da-loja https:\/\/lojinha-da-katia-api-rjvx\.onrender\.com\/admin\.html 302/);
+ assert.doesNotMatch(build,/\/gestao-da-loja https:\/\//);
 });
