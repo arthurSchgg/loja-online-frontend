@@ -10,6 +10,7 @@ import {validateStoreFields} from "./store-validation.js";
 import {createPhotoEditor,parsePhotoLines,serializePhotos,previewImage} from "./photo-editor.js";
 import {ownerModules,renderOwnerTool} from "./owner-tools.js";
 import {createLookupField,createDestinationField} from "./owner-fields.js";
+import {renderDashboard,clearDashboard} from "./modern/dashboard.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
@@ -51,7 +52,7 @@ function showLogin({preserveDraft=true}={}){
  $("#edit-form").replaceChildren();
  $("#admin-records").replaceChildren();
  $("#record-tool-body").replaceChildren();
- $("#owner-tools").replaceChildren();
+ clearDashboard($("#owner-tools"));$("#owner-tools").replaceChildren();
  filters().reset();filters().hidden=true;
  $("#security-password-form")?.reset();
  $("#security-email-form")?.reset();
@@ -235,14 +236,14 @@ function changeModule(reset=false){
  moduleName=$("#admin-module").value;
  if(reset)recordsPage=0;
  editing=null;dirty=false;
- $("#edit-form").replaceChildren();$("#owner-tools").replaceChildren();
+ $("#edit-form").replaceChildren();clearDashboard($("#owner-tools"));$("#owner-tools").replaceChildren();
  filters().reset();filters().hidden=moduleName!=="products";
  $("#standard-editor").hidden=ownerModules.has(moduleName);
  $("#owner-tools").hidden=!ownerModules.has(moduleName);
  if(ownerModules.has(moduleName)){
   const ticket=recordsGate.begin(),session=sessionUser;
   const active=()=>recordsGate.isCurrent(ticket)&&sessionUser===session&&!!session;
-  void renderOwnerTool({module:moduleName,container:$("#owner-tools"),api,active,info,
+  void renderOwnerTool({module:moduleName,container:$("#owner-tools"),api,active,info,renderDashboard,
     changed:value=>{if(active())dirty=value;},sessionExpired:()=>showLogin()}).catch(editorError);
   return;
  }

@@ -177,6 +177,7 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 }
 .product-gallery__thumb[aria-pressed="true"]{border-color:#82584b;box-shadow:0 0 0 1px #82584b}
 .product-gallery__thumb img{width:100%;height:100%;object-fit:contain}
+.product-gallery__zoom-tip{display:flex;align-items:center;gap:6px}
 .product-view{gap:clamp(30px,6vw,98px);align-items:start}
 .product-main-art{background:#f6f0eb;border-radius:var(--editorial-radius);border:1px solid rgba(91,58,47,.06)}
 .product-detail{padding-top:clamp(0px,3vw,30px)}
@@ -300,4 +301,10 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 .offering-gallery-controls .btn{min-width:44px;min-height:44px;background:#faf7f3;padding:4px 9px;font-size:1.5rem;pointer-events:auto}
 .offering-gallery-controls span{background:#faf7f3;padding:5px 10px;border-radius:100px;font-size:.8rem}
 .privacy-actual-body{white-space:pre-wrap;overflow-wrap:anywhere}
+/* Commerce-first: products and filters should be visible sooner than a
+   full-height editorial heading. */
+.catalog-hero{padding-block:clamp(42px,6vw,82px) clamp(28px,4vw,52px)}
+.catalog-hero h1{font-size:clamp(3rem,6vw,5.6rem);max-width:18ch}
+#catalogo.section{padding-block:clamp(24px,4vw,58px) clamp(60px,7vw,110px)}
+@media(min-width:1025px){.header-actions .mobile-toggle{display:none!important}}
 @media(max-width:740px){.managed-banner__frame{grid-template-columns:1fr}.managed-banner__frame>img{max-height:360px}.managed-banner__controls .btn{font-size:.7rem}}

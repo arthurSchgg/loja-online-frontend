@@ -24,7 +24,9 @@ test("products without an official value never appear as free or as confirmed Wh
  const live=readFileSync(join(project,"assets/js/live.js"),"utf8");
  assert.match(live,/pricePending=price===null\|\|price===0/);
  assert.match(live,/pricePending\?"Valor sob consulta":money\(price\)/);
- assert.match(live,/pricePending\?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar<\/span>'/);
+ const cards=readFileSync(join(project,"src/components/ProductGrid.tsx"),"utf8");
+ assert.match(live,/pricePending\?"pending":available\?"available":"unavailable"/);
+ assert.match(cards,/pending: \["Preço a confirmar", "Preço ainda não confirmado"\]/);
  assert.match(live,/available=!!p\.available/);
  assert.doesNotMatch(live,/stock_quantity\s*=/);
 });

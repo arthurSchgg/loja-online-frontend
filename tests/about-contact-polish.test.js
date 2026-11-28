@@ -8,6 +8,7 @@ const about=read("conheca-a-loja.html");
 const contact=read("contato.html");
 const institutional=read("assets/js/institutional.js");
 const contactScript=read("assets/js/public-extra.js");
+const contactComponent=read("src/components/Contact.tsx");
 const institutionalCss=read("assets/css/institutional.css");
 const contactCss=read("assets/css/public-extra.css");
 
@@ -35,19 +36,18 @@ test("no official contact is fabricated when API or store settings are empty",()
  assert.match(institutional,/const links=officialStoreLinks\(store\)/);
  assert.match(institutional,/contactNote\(contacts,"Os canais oficiais estão temporariamente indisponíveis\.",true\)/);
  assert.match(contactScript,/const channels=officialStoreLinks\(store\)/);
- assert.match(contactScript,/function contactEmpty\(links,details,\{unavailable=false\}=\{\}\)/);
- assert.match(contactScript,/contactEmpty\(links,details,\{unavailable:true\}\)/);
- assert.match(contactScript,/details\.replaceChildren\(\);\s*const fields=\[/);
+ assert.match(contactComponent,/query.isError \? "Canais temporariamente indisponíveis" : "Canais em atualização"/);
+ assert.match(contactComponent,/Nenhum contato não confirmado será exibido/);
+ assert.match(contactScript,/const fields=\[/);
  assert.match(contactCss,/\.contact-empty\{/);
  assert.match(contact,/id="contact-links"/);
 });
 
 test("the contact page uses a professional vector arrow and safe retry action",()=>{
- assert.match(contactScript,/function contactIcon\(\)/);
- assert.match(contactScript,/document\.createElementNS\(ns,"svg"\)/);
- assert.match(contactScript,/a\.append\(contactIcon\(\)\)/);
- assert.doesNotMatch(contactScript,/channel\.label\+" ↗"/);
- assert.match(contactScript,/button\("Tentar novamente",\(\)=>void initContact\(\)\)/);
+ assert.match(contactComponent,/import \{ ArrowUpRight \} from "lucide-react"/);
+ assert.match(contactComponent,/<ArrowUpRight aria-hidden="true"/);
+ assert.doesNotMatch(contactComponent,/channel\.label\+" ↗"/);
+ assert.match(contactComponent,/onClick=\{\(\) => void query.refetch\(\)\}/);
  assert.match(contactCss,/\.contact-channel svg\{/);
- assert.match(contactScript,/a\.rel="noopener noreferrer"/);
+ assert.match(contactComponent,/rel=\{channel.external \? "noopener noreferrer" : undefined\}/);
 });

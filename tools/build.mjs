@@ -2,12 +2,17 @@ import {cpSync,existsSync,rmSync,mkdirSync,readFileSync,writeFileSync} from "nod
 import {fileURLToPath} from "node:url";
 import {join,resolve,dirname} from "node:path";
 import {bundleBaseCss} from "./bundle-base-css.mjs";
+import {buildModern} from "./build-modern.mjs";
 const root=resolve(fileURLToPath(new URL("..",import.meta.url)));
 const dist=join(root,"dist");rmSync(dist,{recursive:true,force:true});mkdirSync(dist,{recursive:true});
 const pages=["index.html","catalogo.html","produto.html","conheca-a-loja.html","espaco-das-velas.html","viva-sua-experiencia.html","contato.html","privacidade.html"];
 for(const file of pages)cpSync(join(root,file),join(dist,file));
 cpSync(join(root,"assets"),join(dist,"assets"),{recursive:true});
 bundleBaseCss(dist);
+await buildModern(root,dist);
+for(const entry of ["storefront.js","public-extra.js"]){
+ if(!existsSync(join(dist,"assets/modern",entry)))throw Error("Vite entry missing: "+entry);
+}
 // Build-time PUBLIC configuration, never secrets. Same-origin API is preferred.
 const mode=process.env.SITE_MODE||"demo";
 const apiBase=process.env.API_BASE_URL||"/api/v1";
@@ -45,6 +50,8 @@ if(mode==="live"){
   "  Cache-Control: public, max-age=300, must-revalidate",
   "/assets/js/*",
   "  Cache-Control: public, max-age=300, must-revalidate",
+  "/assets/modern/*",
+  "  Cache-Control: public, max-age=300, must-revalidate",
   "/",
   "  Cache-Control: no-cache",
   "/*.html",
@@ -54,6 +61,7 @@ if(mode==="live"){
 }
 for(const page of pages){
  let html=readFileSync(join(dist,page),"utf8");
+ html=html.replace('<html lang="pt-BR">','<html lang="pt-BR" data-motion-engine="gsap">');
  if(!html.includes('http-equiv="Content-Security-Policy"')||!html.includes("script-src 'self'"))
   throw Error("Public CSP missing or unsafe in "+page);
  // Only the explicitly configured external API origin may be used by a release build.

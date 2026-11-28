@@ -8,8 +8,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "python3 -m http.server 5500",
-    "check": "node tools/check-js.mjs && node tools/check-skelt-assets.mjs",
+    "dev": "npm run build && python3 -m http.server 5500 --directory dist",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && node tools/check-js.mjs && node tools/check-skelt-assets.mjs",
     "test": "node --test tests/*.test.js",
     "build": "node tools/build.mjs",
     "build:admin": "node tools/build-admin.mjs",
@@ -24,6 +25,21 @@
     "check:skelt": "node tools/check-skelt-assets.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "1.56.1"
+    "@playwright/test": "1.56.1",
+    "@types/react": "19.3.3",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.183.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.8"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.8.2",
+    "@tanstack/react-query": "5.108.4",
+    "gsap": "3.15.1",
+    "lucide-react": "1.82.0",
+    "motion": "12.43.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "three": "0.183.2"
   }
 }

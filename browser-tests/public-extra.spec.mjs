@@ -26,10 +26,15 @@ test("live | experience submits questions and displays recommendations",async({p
  });
  await page.goto("/viva-sua-experiencia.html");
  await page.getByRole("button",{name:"Começar",exact:false}).click();
+ await expect(page.locator("#quiz-progress")).toHaveAttribute("value","0");
  await page.locator('input[name="q-1"][value="2"]').check();
+ await expect(page.locator("#quiz-progress")).toHaveAttribute("value","1");
  await page.getByRole("button",{name:"Ver meu resultado"}).click();
  await expect(page.locator("#experience-result")).toContainText("Sereno");
  await expect(page.locator('#experience-result a[href="produto.html?productId=5"]')).toBeVisible();
+ await page.getByRole("button",{name:"Escolher outra experiência"}).click();
+ await expect(page.locator("#experience-result")).toHaveCount(0);
+ await expect(page.locator("#experience-selection")).toBeVisible();
  expect(errors).toEqual([]);
 });
 test("live | contact only displays official valid links",async({page})=>{

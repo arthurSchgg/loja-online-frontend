@@ -44,6 +44,6 @@ test("every public and admin page restricts scripts and API origin via CSP",()=>
 test("live product cards require numeric IDs rather than raw attributes from API",()=>{
  const live=source("assets/js/live.js");
  assert.match(live,/const id=numberId\(p\?\.id\)/);
- assert.match(live,/if\(id===null\)return ""/);
+ assert.match(live,/if\(id===null\)return null/);
  assert.doesNotMatch(live,/data-confirm-product=["']?\+p\.id/i);
 });

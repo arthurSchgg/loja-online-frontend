@@ -56,3 +56,6 @@
 .dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(165px,100%),1fr));gap:14px}
 .dashboard-card{border:1px solid var(--color-border);background:#faf7f3;padding:20px;display:grid;gap:8px}
 .dashboard-card strong{font-size:2rem;color:#72463b}.dashboard-card span{font-size:.9rem}
+.dashboard-card{border-radius:14px;min-height:120px;box-shadow:0 5px 18px rgba(65,36,26,.045)}
+.dashboard-card>svg{color:var(--color-accent)}
+.dashboard-shortcuts .btn{gap:8px}

@@ -7,6 +7,28 @@ const product = {
  images:[{url:"https://example.invalid/cover.jpg",position:0,altText:"Capa de teste"}],
 };
 
+test("live | React gallery changes photo, resets zoom and keeps validated availability",async({page})=>{
+ const errors=collectPageErrors(page);
+ const detail={...product,images:[
+  {url:"/assets/images/brand/hero-live-poster.webp",position:0,altText:"Primeira foto"},
+  {url:"/assets/images/brand/product-photo-pending.svg",position:1,altText:"Segunda foto"}
+ ]};
+ await page.route("**/api/v1/**",route=>{
+  const path=new URL(route.request().url()).pathname;
+  return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(path==="/api/v1/products/7"?detail:{content:[],last:true})});
+ });
+ await page.goto("/produto.html?productId=7");
+ const main=page.locator(".product-gallery__main-button");
+ await expect(main.locator("img")).toHaveAttribute("alt","Primeira foto");
+ await main.click();
+ await expect(main).toHaveAttribute("aria-pressed","true");
+ await page.getByRole("button",{name:"Ver imagem 2 de 2"}).click();
+ await expect(main).toHaveAttribute("aria-pressed","false");
+ await expect(main.locator("img")).toHaveAttribute("alt","Segunda foto");
+ await expect(page.locator("#product-content [data-confirm-product]")).toHaveCount(1);
+ expect(errors).toEqual([]);
+});
+
 function collectPageErrors(page){
  const errors=[];
  page.on("pageerror",error=>errors.push(error.message));

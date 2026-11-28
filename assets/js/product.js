@@ -1,6 +1,7 @@
 import {byId,PERFUMES,price,money,SIZES} from "./data.js";
 import {isLive} from "./config.js";
 import {productCard,escapeHtml} from "./layout.js";
+import {renderProductGrid} from "../modern/storefront.js";
 if(!isLive){
 const params=new URLSearchParams(location.search),p=byId(params.get("id")),host=document.getElementById("product-content"),related=document.getElementById("related-grid");
 if(host){
@@ -13,7 +14,7 @@ if(host){
   document.getElementById("size-choice")?.addEventListener("click",e=>{const b=e.target.closest("[data-size]");if(!b)return;selected=Number(b.dataset.size);document.querySelectorAll("#size-choice button").forEach(x=>x.setAttribute("aria-pressed",String(Number(x.dataset.size)===selected)));document.getElementById("selected-price").innerHTML=money(price(p,selected))+" <small>(fictício)</small>";document.getElementById("add-selected").dataset.size=String(selected);});
   const img=document.getElementById("product-img");const zoom=()=>img.classList.toggle("zoomed");img.addEventListener("click",zoom);img.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();zoom();}});
   document.getElementById("sample")?.addEventListener("click",()=>alert("Amostras são ilustrativas nesta demonstração. Consulte disponibilidade com a loja."));
-  if(related)related.innerHTML=PERFUMES.filter(x=>x.id!==p.id&&(x.family===p.family)).slice(0,4).map(productCard).join("");
+  if(related)renderProductGrid(related,PERFUMES.filter(x=>x.id!==p.id&&(x.family===p.family)).slice(0,4).map(productCard));
  }
 }
 

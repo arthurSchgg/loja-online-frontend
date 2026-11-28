@@ -111,7 +111,7 @@ export function setupMotion({win = globalThis.window, doc = globalThis.document}
   mutationObserver.observe(doc.body, {childList: true, subtree: true});
  }
 
- if (canAnimate && animationAvailable) {
+ if (canAnimate && animationAvailable && doc.documentElement.dataset.motionEngine!=="gsap") {
   doc.querySelectorAll("[data-hero-copy]").forEach((el, index) => el.animate([
    {opacity: 0, transform: "translate3d(0, 22px, 0)"},
    {opacity: 1, transform: "translate3d(0, 0, 0)"}

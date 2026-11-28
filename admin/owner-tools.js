@@ -21,20 +21,13 @@ export function exampleMessage(text,kind){
   preco:kind==="PRODUCT"?"R$ 99,90":"Valor sob consulta",personalizacao:" Personalização: Aroma: exemplo. Preço final a confirmar no WhatsApp."};
  return String(text).replace(/\{\{([a-z]+)\}\}/g,(_,key)=>value[key]??"");
 }
-export async function renderOwnerTool({module,container,api,active,info,changed,sessionExpired}){
+export async function renderOwnerTool({module,container,api,active,info,changed,sessionExpired,renderDashboard}){
  container.replaceChildren(el("p","Carregando...","muted"));
  const fail=error=>{if(active()){if(error.status===401)sessionExpired();else info(error.message,true);}};
  const safe=async work=>{try{await work();}catch(error){fail(error);}};
  if(module==="dashboard"){
-  const heading=el("h2","Resumo da loja"),note=el("p","Visão geral dos produtos e atalhos para o dia a dia.","admin-note");
-  const tiles=el("div","","dashboard-grid");
-  const shortcuts=el("div","","photo-tools");
-  for(const [value,label] of [["products","Gerenciar produtos"],["media","Enviar fotos"],["store","Editar contatos"],["content","História da loja"],["campaigns","Banners"],["featured","Destaques"]]){
-   shortcuts.append(action(label,()=>{const select=document.getElementById("admin-module");select.value=value;select.dispatchEvent(new Event("change"));}));
-  }
-  const status=el("p","Carregando resumo...","admin-note");status.setAttribute("role","status");
-  container.replaceChildren(heading,note,shortcuts,tiles,status);
-  await safe(async()=>{
+  renderDashboard(container);
+  try{
    const items=[];let page=0;
    while(active()){
     const result=await api.get("/admin/products?page="+page+"&size=50");
@@ -46,11 +39,8 @@ export async function renderOwnerTool({module,container,api,active,info,changed,
    }
    if(!active())return;
    const summary=summarizeProducts(items);
-   for(const [key,label] of [["total","Produtos cadastrados"],["low","Estoque baixo (até 3)"],["pending","Preços pendentes"],["promotions","Promoções vigentes"]]){
-    const card=el("article","","dashboard-card");card.append(el("strong",String(summary[key])),el("span",label));tiles.append(card);
-   }
-   status.textContent="Resumo atualizado. Confira as quantidades físicas antes de alterar o estoque.";
-  });return;
+   renderDashboard(container,summary);
+  }catch(error){if(active()&&error.status!==401)renderDashboard(container,undefined,true);fail(error);}return;
  }
  if(module==="media"){
   const heading=el("h2","Biblioteca de fotos"),note=el("p","Envie imagens do celular ou computador. Fotos usadas em algum cadastro não podem ser excluídas daqui.","admin-note");

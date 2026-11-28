@@ -92,6 +92,11 @@ section[id]{scroll-margin-top:98px}
  .nav-links{display:none}
 }
 @media(min-width:1025px){.mobile-links{display:none!important}}
+.modern-menu a::after{display:none}
+/* Reserve shell height before React mounts to avoid a jump on slow devices. */
+#site-header{min-height:120px}
+@media(max-width:1024px){#site-header{min-height:112px}}
+@media(max-width:560px){#site-header{min-height:103px}}
 @media(max-width:600px){
  .mobile-links{grid-template-columns:1fr;row-gap:0;padding:10px var(--page-gutter) 22px}
  .mobile-links a{min-height:48px}
