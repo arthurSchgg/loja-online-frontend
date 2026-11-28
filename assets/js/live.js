@@ -403,11 +403,26 @@ async function initHome(){
  const quiz=document.getElementById("quiz-form");
  if(quiz){
   quiz.replaceChildren();status(quiz,"Buscando experiências da loja...");
+  const localButton=document.createElement("button");
+  localButton.type="button";localButton.className="btn btn--secondary";localButton.textContent="Começar quiz ilustrativo";
+  quiz.append(localButton);
+  let localChosen=false;
+  const showLocal=async()=>{
+   if(localChosen)return;
+   localChosen=true;
+   try{const {mountLocalHomeQuiz}=await import("../modern/public-extra.js");mountLocalHomeQuiz(quiz);}
+   catch{localChosen=false;status(quiz,"Experiência temporariamente indisponível. Tente novamente.",true);quiz.append(localButton);}
+  };
+  localButton.addEventListener("click",()=>void showLocal());
   try{
    const experiences=await fetchExperiences(),e=experiences?.[0];
-   if(!e){quiz.replaceChildren(previewCard({title:"Descubra seu estilo olfativo",description:"Flores, notas frescas, madeiras e aromas envolventes: explore as combinações que despertam boas sensações.",symbol:"✧"},"Experiência ilustrativa"));}
+   if(localChosen)return;
+   if(!e){await showLocal();}
    else{
-    const full=Array.isArray(e.questions)&&e.questions.length?e:await fetchExperience(e.id);quiz.replaceChildren();
+    const full=Array.isArray(e.questions)&&e.questions.length?e:await fetchExperience(e.id);
+    if(localChosen)return;
+    if(!Array.isArray(full.questions)||!full.questions.length){await showLocal();return;}
+    quiz.replaceChildren();
     for(const question of full.questions||[]){
      const fieldset=document.createElement("fieldset");fieldset.className="fieldset";const legend=document.createElement("legend");legend.textContent=question.title;fieldset.append(legend);
      for(const option of question.options||[]){
@@ -420,10 +435,10 @@ async function initHome(){
     quiz.addEventListener("submit",async event=>{
      event.preventDefault();button.disabled=true;out.textContent="Avaliando respostas...";
      const form=new FormData(quiz);const answers=(full.questions||[]).map(q=>({questionId:Number(q.id),optionId:Number(form.get("q-"+q.id))}));
-     try{const result=await evaluateExperience(full.id,answers);out.textContent="Seu perfil: "+String(result.title||result.key||"").slice(0,120);if(result.recommendations?.length)out.textContent+=" — "+result.recommendations.map(p=>p.name).join(", ");}catch(err){out.textContent=err.message;}finally{button.disabled=false;}
+     try{const result=await evaluateExperience(full.id,answers);out.textContent="Seu perfil: "+String(result.title||result.key||"").slice(0,120);if(result.recommendations?.length)out.textContent+=" — "+result.recommendations.map(p=>p.name).join(", ");}catch(err){out.textContent=err.message;out.append(localButton);}finally{button.disabled=false;}
     });
    }
-  }catch(err){quiz.replaceChildren();status(quiz,"Experiência indisponível: "+err.message,true);}
+  }catch(err){await showLocal();}
  }
 
 

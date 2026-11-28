@@ -3,8 +3,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Contact } from "./components/Contact";
 import type { StoreContact } from "./components/Contact";
 import { Experience } from "./components/Experience";
+import { LocalQuiz } from "./components/LocalQuiz";
 import type { ExperienceApi } from "./components/Experience";
 export { experienceList, experienceDetail, experienceResult, object, string } from "./types/public-api";
+
+export function mountLocalHomeQuiz(form: HTMLElement) {
+  const host = document.createElement("div");
+  host.id = "local-home-quiz";
+  form.replaceWith(host);
+  createRoot(host).render(<LocalQuiz home />);
+}
 
 function queryClient() {
   return new QueryClient({ defaultOptions: {

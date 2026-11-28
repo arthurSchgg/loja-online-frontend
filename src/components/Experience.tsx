@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
+import { LocalQuiz } from "./LocalQuiz";
 
 export interface ExperienceSummary { id: number; title: string; description: string }
 export interface Option { id: number; label: string }
@@ -16,7 +17,7 @@ export interface ExperienceApi {
   evaluate: (id: number, answers: Answer[]) => Promise<Result>;
 }
 
-function Questionnaire({ experience, api, back }: { experience: ExperienceDetail; api: ExperienceApi; back: () => void }) {
+function Questionnaire({ experience, api, back, useLocal }: { experience: ExperienceDetail; api: ExperienceApi; back: () => void; useLocal: () => void }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const reduce = useReducedMotion() || document.documentElement.dataset.motion === "off";
   const mutation = useMutation({ mutationFn: (selection: Answer[]) => api.evaluate(experience.id, selection) });
@@ -47,6 +48,7 @@ function Questionnaire({ experience, api, back }: { experience: ExperienceDetail
       <button className="btn btn--primary" type="submit" disabled={mutation.isPending}>Ver meu resultado</button>
       <button className="btn btn--secondary" id="experience-back" type="button" onClick={back}>Escolher outra experiência</button>
       <p role="status" aria-live="polite">{mutation.isPending ? "Consultando o resultado..." : mutation.isError ? "Não foi possível avaliar suas respostas. Tente novamente." : ""}</p>
+      {mutation.isError && <button type="button" className="btn btn--secondary" onClick={useLocal}>Usar quiz ilustrativo</button>}
     </form>
     <motion.section id="experience-result" className="experience-result" aria-live="polite" aria-label="Resultado da experiência"
       hidden={!mutation.data} initial={false} animate={{ opacity: mutation.data ? 1 : 0, y: reduce || mutation.data ? 0 : 12 }}
@@ -66,8 +68,10 @@ function Questionnaire({ experience, api, back }: { experience: ExperienceDetail
 
 export function Experience({ live, api }: { live: boolean; api: ExperienceApi }) {
   const [selected, setSelected] = useState<number | null>(null);
+  const [local, setLocal] = useState(false);
   const list = useQuery({ queryKey: ["experience-list"], queryFn: ({ signal }) => api.list(signal), enabled: live });
   const detail = useQuery({ queryKey: ["experience", selected], queryFn: ({ signal }) => api.detail(selected!, signal), enabled: live && selected !== null });
+  if(local) return <LocalQuiz back={() => setLocal(false)} />;
   const status = !live ? "Prévia demonstrativa: experiências oficiais aparecerão quando a loja publicar os dados."
     : list.isPending ? "Buscando experiências publicadas..."
     : list.isError ? "Experiências indisponíveis no momento."
@@ -85,12 +89,13 @@ export function Experience({ live, api }: { live: boolean; api: ExperienceApi })
         <span className="content-preview-symbol" aria-hidden="true">✧</span>
         <span className="eyebrow">Experiência ilustrativa</span><h3>Qual é o seu estilo olfativo?</h3>
         <p>Descubra o universo das notas florais, cítricas, amadeiradas e orientais. Uma inspiração para encontrar aromas que combinam com você.</p>
-        <a className="text-link" href="catalogo.html">Explorar fragrâncias</a>
+        <button className="btn btn--primary" type="button" onClick={() => { setSelected(null); setLocal(true); }}>Começar quiz ilustrativo <ArrowUpRight size={16} aria-hidden="true" /></button>
       </article>}
       {list.isError && <button className="btn btn--secondary" type="button" onClick={() => void list.refetch()}>Tentar novamente</button>}
       {detail.isError && <button className="btn btn--secondary" type="button" onClick={() => void detail.refetch()}>Recarregar experiência</button>}
+      {detail.isError && <button className="btn btn--secondary" type="button" onClick={() => { setSelected(null); setLocal(true); }}>Usar quiz ilustrativo</button>}
     </div>
     {selected !== null && detail.isPending && <button className="btn btn--secondary" type="button" onClick={() => setSelected(null)}>Escolher outra experiência</button>}
-    {selected !== null && detail.data && <Questionnaire key={selected} experience={detail.data} api={api} back={() => setSelected(null)} />}
+    {selected !== null && detail.data && <Questionnaire key={selected} experience={detail.data} api={api} back={() => setSelected(null)} useLocal={() => { setSelected(null); setLocal(true); }} />}
   </>;
 }
