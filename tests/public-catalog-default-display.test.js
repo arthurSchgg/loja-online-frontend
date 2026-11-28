@@ -9,7 +9,7 @@ const catalog=read("catalogo.html");
 const visual=read("assets/css/institutional.css");
 
 test("home shows public photos immediately and refreshes from live API",()=>{
- assert.match(source,/grid\.innerHTML=preview\.items\.slice\(0,8\)\.map\(liveProductCard\)/);
+ assert.match(source,/renderProductGrid\(grid,preview\.items\.slice\(0,8\)\.map\(liveProductCard\)/);
  assert.match(source,/loadCatalogPage\(\(_index,_filters,signal\)=>fetchFeatured\(signal\),0\)/);
  assert.match(source,/currentProducts\.slice\(0,8\)\.map\(liveProductCard\)/);
  assert.match(home,/id="featured-grid"/);
@@ -25,7 +25,7 @@ test("first catalog page renders a read-only preview before product API, indepen
  assert.match(init,/paintCategories\(initialCategories\)/);
  assert.match(init,/applyServerFilters\(\);\s*void loadCategories\(\)/);
  assert.doesNotMatch(init,/categoryField\.hidden=true/);
- assert.match(init,/grid\.innerHTML=state\.items\.map\(liveProductCard\)/);
+ assert.match(init,/renderProductGrid\(grid,state\.items\.map\(liveProductCard\)/);
  assert.match(api,/new URLSearchParams\(\{page:String\(number\),size:"12"\}\)/);
  assert.match(api,/if\(q\)query\.set\("q",q\)/);
  assert.match(source,/available=!!p\.available/);

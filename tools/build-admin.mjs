@@ -2,10 +2,13 @@ import {cpSync,rmSync,mkdirSync,existsSync,readFileSync,writeFileSync} from "nod
 import {fileURLToPath} from "node:url";
 import {join,resolve} from "node:path";
 import {bundleBaseCss} from "./bundle-base-css.mjs";
+import {buildModern} from "./build-modern.mjs";
 const root=resolve(fileURLToPath(new URL("..",import.meta.url))),dest=join(root,"dist-admin");
 rmSync(dest,{recursive:true,force:true});mkdirSync(dest,{recursive:true});
 for(const page of ["admin.html","admin-experiences.html","reset-password.html","confirm-email.html"])cpSync(join(root,page),join(dest,page));
 cpSync(join(root,"admin"),join(dest,"admin"),{recursive:true});
+await buildModern(root,dest,true);
+if(!existsSync(join(dest,"admin/modern/dashboard.js")))throw Error("Admin dashboard bundle missing");
 mkdirSync(join(dest,"assets/css"),{recursive:true});
 for(const file of ["tokens.css","base.css","components.css"])cpSync(join(root,"assets/css",file),join(dest,"assets/css",file));
 bundleBaseCss(dest);

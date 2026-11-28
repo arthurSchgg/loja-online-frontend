@@ -7,6 +7,28 @@ const product = {
  images:[{url:"https://example.invalid/cover.jpg",position:0,altText:"Capa de teste"}],
 };
 
+test("live | React gallery changes photo, resets zoom and keeps validated availability",async({page})=>{
+ const errors=collectPageErrors(page);
+ const detail={...product,images:[
+  {url:"/assets/images/brand/hero-live-poster.webp",position:0,altText:"Primeira foto"},
+  {url:"/assets/images/brand/product-photo-pending.svg",position:1,altText:"Segunda foto"}
+ ]};
+ await page.route("**/api/v1/**",route=>{
+  const path=new URL(route.request().url()).pathname;
+  return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(path==="/api/v1/products/7"?detail:{content:[],last:true})});
+ });
+ await page.goto("/produto.html?productId=7");
+ const main=page.locator(".product-gallery__main-button");
+ await expect(main.locator("img")).toHaveAttribute("alt","Primeira foto");
+ await main.click();
+ await expect(main).toHaveAttribute("aria-pressed","true");
+ await page.getByRole("button",{name:"Ver imagem 2 de 2"}).click();
+ await expect(main).toHaveAttribute("aria-pressed","false");
+ await expect(main.locator("img")).toHaveAttribute("alt","Segunda foto");
+ await expect(page.locator("#product-content [data-confirm-product]")).toHaveCount(1);
+ expect(errors).toEqual([]);
+});
+
 function collectPageErrors(page){
  const errors=[];
  page.on("pageerror",error=>errors.push(error.message));
@@ -254,7 +276,7 @@ test("live | Skelt products show official photos with local fallback and no stoc
 test("demo | Live Photo poster stays visible while ambient video is optional",async({page})=>{
  await page.setViewportSize({width:1440,height:900});
  const errors=collectPageErrors(page);
- await page.goto("/index.html");
+ await page.goto("/index.html?hero=photo");
  const frame=page.locator("[data-hero-live]");
  const poster=frame.locator("img[data-hero-bottle]");
  const video=frame.locator("video[data-hero-video]");
@@ -279,7 +301,7 @@ test("motion | reduced motion avoids downloading Live Photo video",async({page})
  await page.emulateMedia({reducedMotion:"reduce"});
  await page.setViewportSize({width:375,height:812});
  const errors=collectPageErrors(page);
- await page.goto("/index.html");
+ await page.goto("/index.html?hero=photo");
  const frame=page.locator("[data-hero-live]");
  await expect(frame.locator("img[data-hero-bottle]")).toBeVisible();
  await expect(frame.locator("video[data-hero-video]")).not.toHaveAttribute("src",/hero-live-motion\.mp4/);

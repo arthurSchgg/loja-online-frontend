@@ -14,4 +14,9 @@
 .contact-empty .btn{min-height:48px}
 .contact-empty .text-link{color:#805347;min-height:44px}
 .contact-channel svg{height:22px;width:22px;flex:none;margin-inline-start:12px}
+.experience-progress{display:grid;gap:8px;margin:20px 0;color:var(--color-text-muted);font-size:.83rem}
+.experience-progress progress{width:100%;height:8px;appearance:none;border:0;border-radius:999px;background:#e9d8cd;overflow:hidden}
+.experience-progress progress::-webkit-progress-bar{background:#e9d8cd}
+.experience-progress progress::-webkit-progress-value{background:var(--color-accent);border-radius:999px;transition:width .3s var(--ease-lux)}
+.experience-progress progress::-moz-progress-bar{background:var(--color-accent);border-radius:999px}
 @media(max-width:600px){.contact-empty{min-height:0;padding:26px 23px}.contact-channel svg{width:20px;height:20px}}

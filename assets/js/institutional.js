@@ -8,6 +8,7 @@ import {money} from "./data.js";
 import {officialStoreLinks} from "./official-contact.js";
 import {safeNumericId} from "./render-safety.js";
 import {registerPublicOfferings} from "./live.js";
+import {STORY_PREVIEW,renderServicePreviews} from "./editorial-defaults.js";
 
 export function isAboutSection(section){
  const slug=String(section?.slug||"").toLocaleLowerCase("pt-BR");
@@ -64,6 +65,13 @@ function storyNote(target,message,retry=false){
   target.append(button);
  }
 }
+function storyPreview(target,append=false){
+ const title=document.createElement("h3");title.textContent=STORY_PREVIEW.title;
+ const body=document.createElement("p");body.textContent=STORY_PREVIEW.body;
+ const label=document.createElement("span");label.className="eyebrow";label.textContent="Apresentação editorial";
+ const article=document.createElement("article");article.className="story-preview";article.append(label,title,body);
+ if(append)target.append(article);else target.replaceChildren(article);
+}
 function renderContacts(target,store){
  target.replaceChildren();
  const links=officialStoreLinks(store);
@@ -100,7 +108,7 @@ async function initAbout(){
  const story=host("official-story"),contacts=host("about-contacts");
  if(!story||!contacts)return;
  const revision=++aboutVersion;
- storyNote(story,"Conheça um pouco mais sobre a nossa essência.");
+ storyPreview(story);
  status(contacts,"Buscando os contatos oficiais...");
  const signature=document.querySelector(".quote-section__signature");
  if(signature)signature.textContent="Lojinha da Kátia";
@@ -112,8 +120,8 @@ async function initAbout(){
   story.replaceChildren();
   if(published.length){
    for(const section of published)story.append(renderStory(section));
-  }else storyNote(story,"Em breve, este espaço vai apresentar mais sobre a história da Lojinha da Kátia.");
- }).catch(()=>{if(revision===aboutVersion)storyNote(story,"Nossa história está temporariamente indisponível. Você pode conhecer os produtos e as experiências da loja enquanto isso.",true);});
+  }else storyPreview(story);
+ }).catch(()=>{if(revision===aboutVersion){storyNote(story,"Nossa história está temporariamente indisponível. Você pode conhecer os produtos e as experiências da loja enquanto isso.",true);storyPreview(story,true);}});
  const contactRequest=fetchStore().then(store=>{
   if(revision!==aboutVersion)return;
   const intro=host("about-summary");
@@ -178,7 +186,8 @@ function createCard(item){
 async function initCandles(){
  const grid=host("candle-offerings"),filters=host("offering-filters"),contacts=host("candle-contacts");
  if(!grid||!filters||!contacts)return;
- status(grid,"Carregando serviços publicados...");
+ renderServicePreviews(grid);
+ grid.setAttribute("aria-busy","true");
  status(contacts,"Buscando os contatos oficiais...");
  fetchStore().then(store=>renderContacts(contacts,store))
   .catch(()=>status(contacts,"Não foi possível carregar os contatos oficiais.",true));
@@ -195,7 +204,7 @@ async function initCandles(){
   function render(){
    grid.replaceChildren();
    const visible=published.filter(item=>selection==="ALL"||item.type===selection);
-   if(!visible.length)status(grid,"Nenhum serviço publicado nesta categoria no momento.");
+   if(!visible.length)renderServicePreviews(grid,selection);
    else for(const item of visible)grid.append(createCard(item));
    for(const button of filters.querySelectorAll("button"))
     button.setAttribute("aria-pressed",String(button.dataset.offeringFilter===selection));
@@ -210,7 +219,8 @@ async function initCandles(){
  }catch{
   registerPublicOfferings([]);filters.hidden=true;
   status(grid,"Não foi possível carregar os serviços publicados. Tente novamente mais tarde.",true);
- }
+  const ideas=document.createElement("div");ideas.className="content-preview-fallback";renderServicePreviews(ideas);grid.append(ideas);
+ }finally{grid.removeAttribute("aria-busy");}
 }
 if(isLive && typeof document!=="undefined"){
  // Hide all illustrative labels immediately, even when the live API fails.

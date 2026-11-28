@@ -10,6 +10,7 @@ import {validateStoreFields} from "./store-validation.js";
 import {createPhotoEditor,parsePhotoLines,serializePhotos,previewImage} from "./photo-editor.js";
 import {ownerModules,renderOwnerTool} from "./owner-tools.js";
 import {createLookupField,createDestinationField} from "./owner-fields.js";
+import {renderDashboard,clearDashboard} from "./modern/dashboard.js";
 /** Administrative browser client. Authorization belongs to Spring Security,
  * never to hidden HTML fields, role flags or localStorage.
  */
@@ -51,7 +52,7 @@ function showLogin({preserveDraft=true}={}){
  $("#edit-form").replaceChildren();
  $("#admin-records").replaceChildren();
  $("#record-tool-body").replaceChildren();
- $("#owner-tools").replaceChildren();
+ clearDashboard($("#owner-tools"));$("#owner-tools").replaceChildren();
  filters().reset();filters().hidden=true;
  $("#security-password-form")?.reset();
  $("#security-email-form")?.reset();
@@ -139,6 +140,17 @@ function buildForm(values={}){
   }
   else{input=document.createElement("input");input.type=type; if(type==="number"){input.step=name==="position"||name==="brandId"?"1":".01";input.min="0";}}
   input.name=name;input.required=required;
+  // Examples are hints, never persisted values. The owner can replace them
+  // with actual information and the existing validation remains unchanged.
+  const editorHints={
+   displayName:"Ex.: Lojinha da Kátia",slogan:"Ex.: Fragrâncias que viram lembranças",
+   title:"Ex.: Um universo de aromas",subtitle:"Ex.: Descubra novas inspirações",
+   description:"Descreva este conteúdo com suas palavras.",body:"Escreva aqui o texto que será publicado.",
+   openingHours:"Informe os dias e horários reais",address:"Informe o endereço da loja",
+   region:"Informe a cidade ou região atendida",whatsapp:"DDI + DDD + número",email:"Informe o e-mail oficial",
+   instagramUrl:"URL do perfil oficial"
+  };
+  if(["text","textarea","email"].includes(type)&&editorHints[name])input.placeholder=editorHints[name];
   if(type==="checkbox"){
    const selected=moduleName==="products"&&name==="available"?values.manualAvailable??values.available:values[name];
    input.checked=selected===undefined?(moduleName==="offerings"&&name==="available"):Boolean(selected);
@@ -235,14 +247,14 @@ function changeModule(reset=false){
  moduleName=$("#admin-module").value;
  if(reset)recordsPage=0;
  editing=null;dirty=false;
- $("#edit-form").replaceChildren();$("#owner-tools").replaceChildren();
+ $("#edit-form").replaceChildren();clearDashboard($("#owner-tools"));$("#owner-tools").replaceChildren();
  filters().reset();filters().hidden=moduleName!=="products";
  $("#standard-editor").hidden=ownerModules.has(moduleName);
  $("#owner-tools").hidden=!ownerModules.has(moduleName);
  if(ownerModules.has(moduleName)){
   const ticket=recordsGate.begin(),session=sessionUser;
   const active=()=>recordsGate.isCurrent(ticket)&&sessionUser===session&&!!session;
-  void renderOwnerTool({module:moduleName,container:$("#owner-tools"),api,active,info,
+  void renderOwnerTool({module:moduleName,container:$("#owner-tools"),api,active,info,renderDashboard,
     changed:value=>{if(active())dirty=value;},sessionExpired:()=>showLogin()}).catch(editorError);
   return;
  }

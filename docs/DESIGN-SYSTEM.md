@@ -7,7 +7,7 @@ Os seis tokens fundamentais são `--color-background`, `--color-surface`, `--col
 Cada perfume define `theme`; cards e seções usam `--card-theme`/`--theme-wash` com contraste textual consistente.
 
 ## Tipografia
-`Cormorant Garamond` (display) e `DM Sans` (interface), com fallbacks locais e escala fluid `clamp()`. Pré-carregamentos externos não são obrigatórios; rever política de privacidade e auto-hospedar fontes antes de produção.
+`DM Sans` (títulos e interface), com fallbacks sem serifa locais e escala fluida `clamp()`. Títulos têm peso 600 e espaçamento compacto. Botões usam raio de 9px; formas circulares ficam reservadas para elementos decorativos, como amostras de cor. Pré-carregamentos externos não são obrigatórios; rever política de privacidade e auto-hospedar fontes antes de produção.
 
 ## Componentes
 - Botão `.btn`: `--primary`, `--secondary`, `--ghost`.

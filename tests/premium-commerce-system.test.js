@@ -92,6 +92,6 @@ test("real product UI retains backend-only prices and WhatsApp gate",()=>{
  assert.match(live,/relatedCatalogProducts\(p,/);
  assert.match(live,/setupCatalogToolbar\(\{form,count,onChange:applyServerFilters\}\)/);
  assert.match(live,/catalogLoadingMarkup\(6\)/);
- assert.match(live,/Imagens ilustram o produto cadastrado/);
+ assert.match(read("src/components/ProductDetail.tsx"),/Imagens ilustram o produto cadastrado/);
  assert.doesNotMatch(live,/stock_quantity\s*=/);
 });

@@ -2,7 +2,7 @@
 
 ## Movimento editorial
 
-O frontend usa **Web Animations API, IntersectionObserver e CSS**, sem dependências executáveis externas de GSAP, ScrollTrigger ou Lenis.
+O frontend usa **GSAP/ScrollTrigger e Motion**, compilados localmente pelo Vite, junto de Web Animations API, IntersectionObserver e CSS. Não há scripts executáveis por CDN nem captura de rolagem com Lenis. O histórico abaixo descreve a implementação nativa anterior; a cobertura atual consta em [REACT-TYPESCRIPT-MIGRATION.md](REACT-TYPESCRIPT-MIGRATION.md).
 
 - Hero: entrada discreta de textos e ilustrações.
 - Seções, produtos e famílias: revelação quando entram na área visível, inclusive cards adicionados posteriormente pela API, sem ocultar conteúdo quando JavaScript estiver desligado.

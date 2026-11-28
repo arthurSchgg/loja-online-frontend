@@ -27,6 +27,8 @@ jobs:
           node-version: "22"
       - name: Check repository policy (secrets, generated assets, governance)
         run: python3 scripts/verify_repo_policy.py
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
       - name: Check JavaScript syntax and run tests when app is present
         shell: bash
         run: |
@@ -83,8 +85,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install pinned browser runner without executing package lifecycle scripts
-        run: npm install --no-package-lock --ignore-scripts
+      - name: Install locked frontend and browser dependencies
+        run: npm ci --ignore-scripts
       - name: Install isolated Chromium and WebKit for browser and iPhone smoke
         run: npx playwright install --with-deps chromium webkit
       - name: Test demo UI, responsive breakpoints and reduced motion

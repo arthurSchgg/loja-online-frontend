@@ -1,6 +1,6 @@
 # Lojinha da Kátia — Perfumaria de Luxo (Frontend)
 
-Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem framework de interface. Identidade rosé/cobre, tipografia editorial, fotografias reais de frascos nas seções institucionais, Live Photo na home e animações nativas com IntersectionObserver/Web Animations API, sem scripts de animação de terceiros.
+Vitrine mobile-first em **React + TypeScript + Vite**, integrada aos módulos de negócio existentes. Navegação, rodapé, cards dos catálogos publicado e demonstrativo, galeria de produtos, experiências, contato, estúdio 3D e dashboard administrativo utilizam componentes React. Identidade rosé/cobre, tipografia editorial, fotografias reais, Live Photo e movimento com GSAP/ScrollTrigger, Motion e CSS. O estúdio Three.js/React Three Fiber é carregado apenas por escolha do visitante. As bibliotecas executáveis são compiladas localmente, sem CDN de scripts.
 
 > **PRODUÇÃO = MODO LIVE:** o Cloudflare Pages publica a vitrine usando a API pública Spring Boot/Render e dados do PostgreSQL/Neon. Na conferência de 21/11/2026 havia **65 produtos publicados, todos com fotografias**: 11 com preço maior que zero/disponibilidade registrada e 54 com preço técnico zero ainda pendente de confirmação. A vitrine não deve liberar solicitações quando preço ou disponibilidade atuais não estiverem validados. A sacola e os perfumes fictícios existem **apenas no modo demo local**, sem checkout, pedido ou pagamento. Consultas por WhatsApp exigem validação atual pelo backend.
 >
@@ -17,13 +17,15 @@ Vitrine mobile-first em HTML, CSS e JavaScript ES6+ sem framework de interface. 
 ## Como executar
 
 ```bash
-npm run dev      # Python 3 HTTP server, porta 5500
+npm ci           # instala dependências fixadas no lockfile
+npm run dev      # build Vite + Python 3 HTTP server, porta 5500
+npm run typecheck # TypeScript
 npm run check    # Verifica sintaxe do JavaScript
 npm test         # Testes Node 22
 npm run build    # Gera dist/ público e garante exclusão de admin
 ```
 
-Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módulos ES6.
+Abra `http://localhost:5500` no navegador. O comando serve o artefato compilado; após alterações, reinicie o build. Não use `file://` nem o servidor direto da pasta fonte: `assets/modern/` é gerado pelo Vite.
 
 ## Estrutura e personalização
 
@@ -36,7 +38,12 @@ Abra `http://localhost:5500` no navegador. Não use `file://`, que impede módul
 - `assets/css/tokens.css`: seis cores centrais, tipografia, escala 4/8px, sombras, raios, movimento.
 - `assets/css/base.css`, `components.css`, `pages.css`, `institutional.css`: base, componentes e layouts responsivos.
 - `assets/js/data.js`: catálogo fictício usado somente na prévia demo; em produção, `assets/js/live.js` consome a API.
-- `assets/js/animations.js`: revelações ao rolar a página, parallax limitado, microinterações e indicador de leitura, respeitando `prefers-reduced-motion` e Save-Data.
+- `src/components/`: componentes React da vitrine (cabeçalho, rodapé, catálogo, galeria, contato, experiências e estúdio 3D).
+- `src/admin/dashboard.tsx`: resumo administrativo em React, compilado exclusivamente no build privado.
+- `src/motion/editorial.ts`: sequências GSAP e ScrollTrigger com movimento reduzido e economia de dados.
+- `src/types/public-api.ts`: contratos normalizados em TypeScript para experiências.
+- `assets/js/animations.js`: revelações progressivas, parallax limitado e indicador de leitura.
+- `tools/build-modern.mjs`: compilação Vite dos módulos modernos junto ao build estático.
 - `assets/images/perfumes/`: assets fictícios do demo; a vitrine publicada usa imagens cadastradas no backend e fotografias editoriais externas identificadas.
 - `docs/DESIGN-SYSTEM.md`: componentes e acessibilidade.
 - `docs/INSTITUTIONAL-PAGES.md`: conteúdo oficial, contratos do backend e limites de publicação das duas páginas.
@@ -70,9 +77,13 @@ integram a vitrine pública. Links enviados pelo backend devem apontar
 para essas URLs na mesma origem HTTPS. Ver
 [documentação de segurança da conta](docs/ADMIN-ACCOUNT-SECURITY.md).
 
+## Migração e compatibilidade
+
+Consulte [a arquitetura e as etapas restantes da migração](docs/REACT-TYPESCRIPT-MIGRATION.md). Os contratos REST e o processo comercial continuam iguais. O painel administrativo segue segregado; seus formulários e fluxo de autenticação permanecem compatíveis com o backend.
+
 ## Animações e proteção do frontend
 
-O frontend usa recursos nativos para animações suaves e mantém a rolagem do navegador. As páginas possuem CSP com scripts restritos à própria origem; o build verifica a separação entre `dist/` e `dist-admin/`. O cliente administrativo utiliza sessão/CSRF com credenciais apenas na memória, e o backend continua responsável pela autorização. Consulte [movimento, CSP e checklist para HTTPS](docs/FRONTEND-MOTION-SECURITY.md). O deploy final exige cabeçalhos de segurança definidos no servidor/CDN, além de testes de acessibilidade e performance com navegador real. O `npm run build:release` agora roda `npm run check` e `npm test` antes de gerar o build para que o Cloudflare bloqueie deployments com erros, mesmo quando os runners do GitHub Actions não são provisionados.
+O frontend combina GSAP/ScrollTrigger, Motion e recursos nativos para animações suaves e mantém a rolagem do navegador. As páginas possuem CSP com scripts restritos à própria origem; o build verifica a separação entre `dist/` e `dist-admin/`. O cliente administrativo utiliza sessão/CSRF com credenciais apenas na memória, e o backend continua responsável pela autorização. Consulte [movimento, CSP e checklist para HTTPS](docs/FRONTEND-MOTION-SECURITY.md). O deploy final exige cabeçalhos de segurança definidos no servidor/CDN, além de testes de acessibilidade e performance com navegador real. O `npm run build:release` agora roda `npm run check` e `npm test` antes de gerar o build para que o Cloudflare bloqueie deployments com erros, mesmo quando os runners do GitHub Actions não são provisionados.
 
 ## Segurança e escopo do backend
 

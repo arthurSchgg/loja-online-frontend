@@ -70,10 +70,11 @@ test("only appropriate public API outages show fallback, never aborted/authentic
 });
 test("frontend blocks offline WhatsApp actions and continues to update from real API",()=>{
  assert.match(source,/const preview=p\?\.offlineSnapshot===true/);
- assert.match(source,/const action=preview\?/);
+ assert.match(source,/const state=preview\?"snapshot"/);
  assert.match(source,/if\(snapshotActive\)/);
  assert.match(source,/snapshotCatalogPage\(page,filters\)/);
- assert.match(source,/p\.offlineSnapshot\?'<span class="badge">Aguardando conexão/);
+ assert.match(source,/state:p\.offlineSnapshot\?"snapshot"/);
+ assert.match(readFileSync(new URL("../src/components/ProductDetail.tsx",import.meta.url),"utf8"),/product.state === "snapshot" \? <span className="badge">Aguardando conexão/);
  assert.match(source,/snapshotProduct\(id\)/);
  assert.match(source,/const page=await loadCatalogPage\(\(_index,_filters,signal\)=>fetchFeatured\(signal\),0\)/);
 });

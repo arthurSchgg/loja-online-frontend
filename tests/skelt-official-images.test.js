@@ -19,7 +19,7 @@ test("eight known Skelt products keep local fallback photos for intermittent off
  for(const name of fallbackNames)assert.ok(live.includes(name),name);
  assert.match(live,/SKELT_IMAGE_FALLBACK=Object\.freeze/);
  assert.match(live,/imageFallback\(p\)/);
- assert.match(live,/data-image-fallback/);
+ assert.match(readFileSync(new URL("../src/components/ProductGrid.tsx",import.meta.url),"utf8"),/data-image-fallback/);
  assert.match(live,/image\.dataset\.imageFallback/);
  assert.match(live,/delete image\.dataset\.imageFallback/);
  assert.match(live,/if\(!\/\^assets/);
@@ -30,7 +30,7 @@ test("public catalog still renders only backend products; never assumes inventor
  assert.match(live,/state\.items\.map\(liveProductCard\)/);
  assert.match(live,/available=!!p\.available/);
  assert.match(live,/data-confirm-product/);
- assert.match(live,/>Indisponível<\/span>/);
+ assert.match(readFileSync(new URL("../src/components/ProductGrid.tsx",import.meta.url),"utf8"),/unavailable: \["Indisponível", "Indisponível"\]/);
  assert.match(live,/function imageFromProduct\(p\)/);
  assert.match(api,/credentials:"omit"/);
  assert.doesNotMatch(live,/stock_quantity\s*=/);
@@ -39,5 +39,5 @@ test("public catalog still renders only backend products; never assumes inventor
 test("live hero and product detail describe actual products without invented perfume variants",()=>{
  assert.match(live,/cta\.firstChild\.textContent="Explorar produtos "/);
  assert.doesNotMatch(live,/Volumes e pirâmide olfativa não constam/);
- assert.match(live,/Imagens ilustram o produto cadastrado/);
+ assert.match(readFileSync(new URL("../src/components/ProductDetail.tsx",import.meta.url),"utf8"),/Imagens ilustram o produto cadastrado/);
 });

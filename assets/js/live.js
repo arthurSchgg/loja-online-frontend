@@ -17,6 +17,8 @@ import {officialStoreLinks} from "./official-contact.js";
 import {safeNumericId as numberId} from "./render-safety.js";
 import {createConfirmationGate} from "./confirmation-gate.js";
 import {setupCommercialRefresh} from "./commercial-refresh.js";
+import {CATEGORY_PREVIEWS,SERVICE_PREVIEWS,previewCard} from "./editorial-defaults.js";
+import {renderProductGrid,clearProductGrid,renderProductDetail,clearProductDetail} from "../modern/storefront.js";
 const safe=value=>escapeHtml(value??"");
 // Institutional and service pages do not need to download the catalog snapshot.
 let snapshotPromise,SNAPSHOT_NOTICE="Fotos e descrições salvas; dados comerciais precisam de confirmação.";
@@ -31,7 +33,6 @@ function loadSnapshot(){
  });
 }
 
-const productTitle=p=>safe(p.name||"Produto sem nome");
 // The eight previously supplied Skelt miniatures are kept only as an offline
 // fallback. Primary product photos come from the official Skelt CDN via API.
 // Never infer stock or sales availability from the presence of an image.
@@ -81,13 +82,16 @@ function status(target,message,error=false){
 }
 function liveProductCard(p){
  const id=numberId(p?.id);
- if(id===null)return ""; // API data must never become unescaped HTML attributes.
- const img=safe(imageFromProduct(p)),fallback=safe(imageFallback(p)),price=currentPrice(p),available=!!p.available;
+ if(id===null)return null;
+ const price=currentPrice(p),available=!!p.available;
  const preview=p?.offlineSnapshot===true;
  const pricePending=preview||price===null||price===0;
  const label=preview?"Preço a confirmar":pricePending?"Valor sob consulta":money(price);
- const action=preview?'<span class="badge" aria-label="Dados comerciais temporariamente indisponíveis">Informações em atualização</span>':pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':available?'<button class="btn btn--secondary" type="button" data-confirm-product="'+id+'">Consultar no WhatsApp</button>':'<span class="badge" aria-label="Indisponível">Indisponível</span>';
- return '<article class="product-card"><a href="produto.html?productId='+id+'"><div class="product-visual" style="--card-theme:#faf9f6"><img src="'+img+'" data-image-fallback="'+fallback+'" loading="lazy" decoding="async" alt="'+safe(p.images?.[0]?.altText||p.name)+'" width="320" height="420"></div></a><div class="product-card__meta"><small>'+safe(p.brand?.name||"Catálogo da loja")+'</small><h3><a href="produto.html?productId='+id+'">'+productTitle(p)+'</a></h3><p>'+safe(p.description||"")+'</p><div class="product-card__bottom"><strong>'+label+'</strong>'+action+'</div><a class="product-card__details" href="produto.html?productId='+id+'" aria-label="Ver detalhes de '+productTitle(p)+'">Ver detalhes</a></div></article>';
+ const state=preview?"snapshot":pricePending?"pending":available?"available":"unavailable";
+ // React escapes text values and keeps the validated product identifier.
+ return {id,name:String(p.name||"Produto sem nome"),brand:String(p.brand?.name||"Catálogo da loja"),
+  description:String(p.description||""),image:imageFromProduct(p),fallback:imageFallback(p),
+  alt:String(p.images?.[0]?.altText||p.name||"Produto"),price:label,state};
 }
 /** Show previously public photos without using stale stock/prices for sale. */
 function showSnapshotNotice(grid,message=SNAPSHOT_NOTICE){
@@ -235,7 +239,7 @@ async function initContact(){
   const store=await fetchStore();
   const channels=officialStoreLinks(store);
   links.replaceChildren();
-  if(!channels.length){status(links,"A loja ainda não publicou canais de contato.");return;}
+  if(!channels.length){status(links,"Conheça nosso universo de fragrâncias e presentes.");const a=document.createElement("a");a.className="btn btn--secondary";a.href="contato.html";a.textContent="Informações de atendimento";links.append(a);return;}
   for(const channel of channels){
    const a=document.createElement("a");a.className="btn btn--secondary";
    a.href=channel.href;a.textContent=channel.label;
@@ -253,11 +257,11 @@ async function initLiveCategoryHighlights(){
  const title=section.querySelector("h2"),lead=section.querySelector("p.lead");
  if(title)title.textContent="Explore as categorias da loja.";
  if(lead)lead.textContent="Encontre produtos nas categorias realmente disponíveis no catálogo.";
- grid.replaceChildren();status(grid,"Carregando categorias publicadas...");
+ clearProductGrid(grid);grid.replaceChildren(...CATEGORY_PREVIEWS.map(item=>previewCard(item)));
  try{
   const categories=await fetchCategories();
-  grid.replaceChildren();
-  if(!categories.length){status(grid,"Nenhuma categoria publicada no momento.");return;}
+  clearProductGrid(grid);
+  if(!categories.length){grid.replaceChildren(...CATEGORY_PREVIEWS.map(item=>previewCard(item)));return;}
   const palette=["#edced6","#e7e7c4","#dfd0c1","#ebcfc6"];
   for(const [index,category] of categories.slice(0,8).entries()){
    const link=document.createElement("a");
@@ -271,7 +275,8 @@ async function initLiveCategoryHighlights(){
    link.append(order,symbol,heading,detail);grid.append(link);
   }
  }catch(error){
-  grid.replaceChildren();status(grid,"Categorias indisponíveis. Use a busca do catálogo.",true);
+  clearProductGrid(grid);status(grid,"Categorias indisponíveis. Use a busca do catálogo.",true);
+  grid.append(...CATEGORY_PREVIEWS.map(item=>previewCard(item)));
  }
 }
 async function initHomeOfferings(){
@@ -297,7 +302,16 @@ async function initHomeOfferings(){
     }
     box.append(card);
    }
-   if(!published.length)box.remove();
+   if(!published.length){
+    for(const item of SERVICE_PREVIEWS){
+     const card=document.createElement("article");card.className="service-preview";
+     const copy=document.createElement("div");copy.className="service-preview__copy";
+     const kind=document.createElement("span");kind.className="service-preview__kind";kind.textContent="Inspiração";
+     const title=document.createElement("h3");title.textContent=item.title;
+     const description=document.createElement("p");description.textContent=item.description;
+     copy.append(kind,title,description);card.append(copy);box.append(card);
+    }
+   }
   }catch{box.remove();}
  }
 }
@@ -334,9 +348,7 @@ async function initHome(){
   const paintFeatured=page=>{
    recovery.stop();
    currentProducts=page.items;
-   grid.innerHTML=currentProducts.length?
-    currentProducts.slice(0,8).map(liveProductCard).join(""):
-    '<div class="catalog-empty"><strong>Nenhum produto publicado ainda.</strong><p>Explore outras experiências da loja enquanto o catálogo é preparado.</p></div>';
+   renderProductGrid(grid,currentProducts.slice(0,8).map(liveProductCard),{title:"Nenhum produto publicado ainda.",description:"Explore outras experiências da loja enquanto o catálogo é preparado."});
    clearSnapshotNotice(grid);
   };
   const loadFeatured=async()=>{
@@ -345,13 +357,13 @@ async function initHome(){
    grid.parentNode?.querySelector("[data-home-retry]")?.remove();
    const preview=readPreview("featured")||snapshotCatalogPage(0);
    currentProducts=preview.items;
-   grid.innerHTML=preview.items.slice(0,8).map(liveProductCard).join("");
+   renderProductGrid(grid,preview.items.slice(0,8).map(liveProductCard));
    showSnapshotNotice(grid,"Conferindo preços e disponibilidade atualizados...");
    grid.setAttribute("aria-busy","true");
    // Cache-only edge preview may be newer than the bundled fallback.
    void fetchCatalogPreview("featured").then(cached=>{
     if(!cached||!loadingFeatured||!grid.hasAttribute("aria-busy"))return;
-    currentProducts=cached.items;grid.innerHTML=cached.items.slice(0,8).map(liveProductCard).join("");
+    currentProducts=cached.items;renderProductGrid(grid,cached.items.slice(0,8).map(liveProductCard));
    });
    try{
     const page=await loadCatalogPage((_index,_filters,signal)=>fetchFeatured(signal),0);
@@ -381,7 +393,7 @@ async function initHome(){
     paintFeatured(page);
    }catch{
     const preview=readPreview("featured")||snapshotCatalogPage(0);
-    currentProducts=preview.items;grid.innerHTML=currentProducts.slice(0,8).map(liveProductCard).join("");
+    currentProducts=preview.items;renderProductGrid(grid,currentProducts.slice(0,8).map(liveProductCard));
     showSnapshotNotice(grid);recovery.start();
    }
    finally{loadingFeatured=false;}
@@ -391,11 +403,26 @@ async function initHome(){
  const quiz=document.getElementById("quiz-form");
  if(quiz){
   quiz.replaceChildren();status(quiz,"Buscando experiências da loja...");
+  const localButton=document.createElement("button");
+  localButton.type="button";localButton.className="btn btn--secondary";localButton.textContent="Começar quiz ilustrativo";
+  quiz.append(localButton);
+  let localChosen=false;
+  const showLocal=async()=>{
+   if(localChosen)return;
+   localChosen=true;
+   try{const {mountLocalHomeQuiz}=await import("../modern/public-extra.js");mountLocalHomeQuiz(quiz);}
+   catch{localChosen=false;status(quiz,"Experiência temporariamente indisponível. Tente novamente.",true);quiz.append(localButton);}
+  };
+  localButton.addEventListener("click",()=>void showLocal());
   try{
    const experiences=await fetchExperiences(),e=experiences?.[0];
-   if(!e){quiz.replaceChildren();status(quiz,"Nenhuma experiência publicada no momento.");}
+   if(localChosen)return;
+   if(!e){await showLocal();}
    else{
-    const full=Array.isArray(e.questions)&&e.questions.length?e:await fetchExperience(e.id);quiz.replaceChildren();
+    const full=Array.isArray(e.questions)&&e.questions.length?e:await fetchExperience(e.id);
+    if(localChosen)return;
+    if(!Array.isArray(full.questions)||!full.questions.length){await showLocal();return;}
+    quiz.replaceChildren();
     for(const question of full.questions||[]){
      const fieldset=document.createElement("fieldset");fieldset.className="fieldset";const legend=document.createElement("legend");legend.textContent=question.title;fieldset.append(legend);
      for(const option of question.options||[]){
@@ -408,10 +435,10 @@ async function initHome(){
     quiz.addEventListener("submit",async event=>{
      event.preventDefault();button.disabled=true;out.textContent="Avaliando respostas...";
      const form=new FormData(quiz);const answers=(full.questions||[]).map(q=>({questionId:Number(q.id),optionId:Number(form.get("q-"+q.id))}));
-     try{const result=await evaluateExperience(full.id,answers);out.textContent="Seu perfil: "+String(result.title||result.key||"").slice(0,120);if(result.recommendations?.length)out.textContent+=" — "+result.recommendations.map(p=>p.name).join(", ");}catch(err){out.textContent=err.message;}finally{button.disabled=false;}
+     try{const result=await evaluateExperience(full.id,answers);out.textContent="Seu perfil: "+String(result.title||result.key||"").slice(0,120);if(result.recommendations?.length)out.textContent+=" — "+result.recommendations.map(p=>p.name).join(", ");}catch(err){out.textContent=err.message;out.append(localButton);}finally{button.disabled=false;}
     });
    }
-  }catch(err){quiz.replaceChildren();status(quiz,"Experiência indisponível: "+err.message,true);}
+  }catch(err){await showLocal();}
  }
 
 
@@ -502,9 +529,9 @@ async function initCatalog(){
   const snapshotActive=state.source==="snapshot";
   hasLiveView=state.source==="live";
   grid.querySelector("[data-api-status]")?.remove();
-  if(appendFrom>0&&grid.querySelector(".product-card"))
-   grid.insertAdjacentHTML("beforeend",state.items.slice(appendFrom).map(liveProductCard).join(""));
-  else grid.innerHTML=state.items.map(liveProductCard).join("")||(snapshotActive?'<div class="catalog-empty"><strong>Aguardando o catálogo atualizado.</strong><p>Não há resultados nesta prévia. A loja será consultada novamente.</p></div>':'<div class="catalog-empty"><strong>Nenhum produto encontrado.</strong><p>Experimente outro termo ou remova os filtros para explorar o catálogo completo.</p></div>');
+  renderProductGrid(grid,state.items.map(liveProductCard),snapshotActive
+   ?{title:"Aguardando o catálogo atualizado.",description:"Não há resultados nesta prévia. A loja será consultada novamente."}
+   :{title:"Nenhum produto encontrado.",description:"Experimente outro termo ou remova os filtros para explorar o catálogo completo."});
   if(snapshotActive)
    showSnapshotNotice(grid,SNAPSHOT_NOTICE+((form.elements.max?.value||String(form.elements.sort?.value||"").startsWith("price-"))?" A filtragem e a ordenação por preço dependem da API.":""));
   else clearSnapshotNotice(grid);
@@ -521,7 +548,7 @@ async function initCatalog(){
   const previousCount=search.state.items.length;
   loadMore.disabled=true;
   if(!search.state.items.length){
-   if(grid.dataset.snapshotPreview!=="true"&&grid.dataset.preserveView!=="true")grid.innerHTML=catalogLoadingMarkup(6);
+   if(grid.dataset.snapshotPreview!=="true"&&grid.dataset.preserveView!=="true"){clearProductGrid(grid);grid.innerHTML=catalogLoadingMarkup(6);}
    grid.setAttribute("aria-busy","true");
   }
   else loadMore.textContent="Carregando mais...";
@@ -533,7 +560,7 @@ async function initCatalog(){
    if(expectedVersion!==version)return;
    if(!search.state.items.length){
     hasLiveView=false;
-    if(grid.dataset.snapshotPreview!=="true"&&grid.dataset.preserveView!=="true")grid.replaceChildren();
+    if(grid.dataset.snapshotPreview!=="true"&&grid.dataset.preserveView!=="true")clearProductGrid(grid);
    }
    status(grid,"Não foi possível carregar esta página: "+(error?.message||"Tente novamente."),true);
    loadMore.textContent="Tentar novamente";loadMore.hidden=false;
@@ -556,15 +583,14 @@ async function initCatalog(){
     sort:form.elements.sort?.value||"recent",maxPrice:form.elements.max?.value};
    const preview=(isUnfilteredFirstPage(0,activeFilters)&&readPreview("catalog"))||snapshotCatalogPage(0,activeFilters);
    currentProducts=preview.items;
-   grid.innerHTML=preview.items.map(liveProductCard).join("")||
-    '<div class="catalog-empty"><strong>Buscando produtos...</strong><p>Aguarde a consulta ao catálogo atualizado.</p></div>';
+   renderProductGrid(grid,preview.items.map(liveProductCard),{title:"Buscando produtos...",description:"Aguarde a consulta ao catálogo atualizado."});
    grid.dataset.snapshotPreview="true";
    showSnapshotNotice(grid,"Conferindo dados atualizados...");
    if(isUnfilteredFirstPage(0,activeFilters)){
     const ticket=version;
     void fetchCatalogPreview("catalog").then(cached=>{
      if(!cached||ticket!==version||grid.dataset.snapshotPreview!=="true"||!grid.hasAttribute("aria-busy"))return;
-     currentProducts=cached.items;grid.innerHTML=cached.items.map(liveProductCard).join("");
+     currentProducts=cached.items;renderProductGrid(grid,cached.items.map(liveProductCard));
     });
    }
   }
@@ -623,65 +649,23 @@ async function initProduct(){
  let current=null,viewVersion=0,loading=false;
  const clearRelated=()=>{
   if(relatedSection)relatedSection.hidden=true;
-  relatedGrid?.replaceChildren();
+  if(relatedGrid)clearProductGrid(relatedGrid);
  };
  function renderProduct(p){
   current=p;viewVersion++;clearRelated();
   currentProducts=[p];
   const price=currentPrice(p),fallback=imageFallback(p);
   const gallery=productGalleryImages(p,{origin:location.origin,fallback});
-  const first=gallery[0]||{url:imageFromProduct(p),alt:p.name||"Produto"};
   const pricePending=price===null||price===0;
   const priceLabel=p.offlineSnapshot?"Preço atualizado indisponível":pricePending?"Valor sob consulta":money(price);
   const quantity=Number(p.stockQuantity);
   const stockLabel=!p.offlineSnapshot&&!pricePending&&p.available&&Number.isSafeInteger(quantity)&&quantity>0
-    ?'<small class="muted">'+quantity+(quantity===1?" unidade disponível":" unidades disponíveis")+'</small>':"";
-  const categories=(p.categories||[]).filter(c=>typeof c?.name==="string").slice(0,8);
-  const meta=categories.map(c=>'<span>'+safe(c.name)+'</span>').join("");
-  const thumbs=gallery.length>1?'<div class="product-gallery__thumbs" role="group" aria-label="Escolher imagem do produto">'+
-   gallery.map((image,index)=>'<button type="button" class="product-gallery__thumb" data-product-thumb="'+index+
-    '" aria-label="Ver imagem '+(index+1)+' de '+gallery.length+'" aria-pressed="'+(index===0)+'">'+
-    '<img src="'+safe(image.url)+'" data-image-fallback="'+safe(fallback)+'" alt="" loading="lazy" decoding="async" width="72" height="80"></button>').join("")+
-   '</div>':"";
-  host.innerHTML='<section class="container product-view">'+
-   '<div class="product-gallery" data-product-gallery>'+
-    '<div class="product-main-art product-gallery__main" style="--product-theme:#f6f0eb">'+
-     '<button type="button" class="product-gallery__main-button" aria-label="Ampliar imagem do produto" aria-pressed="false">'+
-      '<img src="'+safe(first.url)+'" data-image-fallback="'+safe(fallback)+'" loading="eager" fetchpriority="high" decoding="async" width="400" height="530" alt="'+safe(first.alt)+'">'+
-     '</button><span class="product-gallery__zoom-tip" aria-hidden="true">Toque para ampliar</span></div>'+thumbs+
-   '</div><div class="product-detail">'+
-    '<nav class="product-breadcrumb" aria-label="Caminho de navegação"><a href="catalogo.html">Catálogo</a><span aria-hidden="true">/</span><span>Detalhes</span></nav>'+
-    '<span class="eyebrow">'+safe(p.brand?.name||"Lojinha da Kátia")+'</span>'+
-    '<h1>'+productTitle(p)+'</h1>'+
-    '<p class="lead">'+safe(p.description||"")+'</p>'+
-    (meta?'<div class="product-detail__meta">'+meta+'</div>':"")+
-    '<p class="product-detail__price">'+priceLabel+'</p>'+
-    '<div class="product-detail__availability">'+
-     (p.offlineSnapshot?'<span class="badge">Aguardando conexão para consultar</span>':pricePending?'<span class="badge" aria-label="Preço ainda não confirmado">Preço a confirmar</span>':p.available?'<button class="btn btn--primary" type="button" data-confirm-product="'+id+'">Confirmar e consultar no WhatsApp</button>':
-      '<span class="badge" aria-label="Indisponível">Indisponível</span>')+
-    stockLabel+'</div><p class="product-detail__disclaimer">Imagens ilustram o produto cadastrado. Preço e disponibilidade são confirmados antes de qualquer solicitação.</p>'+
-   '</div></section>';
-  const galleryHost=host.querySelector("[data-product-gallery]");
-  const main=galleryHost?.querySelector(".product-gallery__main-button");
-  const mainImage=main?.querySelector("img");
-  main?.addEventListener("click",()=>{
-   const zoom=main.getAttribute("aria-pressed")!=="true";
-   main.setAttribute("aria-pressed",String(zoom));
-   main.setAttribute("aria-label",zoom?"Reduzir imagem do produto":"Ampliar imagem do produto");
-  });
-  galleryHost?.querySelectorAll("[data-product-thumb]").forEach(button=>{
-   button.addEventListener("click",()=>{
-    const index=Number(button.dataset.productThumb);
-    if(!Number.isSafeInteger(index)||index<0||index>=gallery.length||!mainImage)return;
-    const chosen=gallery[index];
-    mainImage.dataset.imageFallback=fallback;
-    mainImage.src=chosen.url;
-    mainImage.alt=chosen.alt;
-    main?.setAttribute("aria-pressed","false");
-    main?.setAttribute("aria-label","Ampliar imagem do produto");
-    galleryHost.querySelectorAll("[data-product-thumb]").forEach(other=>
-      other.setAttribute("aria-pressed",String(other===button)));
-   });
+    ?quantity+(quantity===1?" unidade disponível":" unidades disponíveis"):"";
+  const categories=(p.categories||[]).filter(c=>typeof c?.name==="string").slice(0,8).map(c=>c.name);
+  renderProductDetail(host,{
+   id,name:String(p.name||"Produto sem nome"),brand:String(p.brand?.name||"Lojinha da Kátia"),
+   description:String(p.description||""),categories,images:gallery.length?gallery:[{url:imageFromProduct(p),alt:String(p.name||"Produto")}],
+   fallback,price:priceLabel,stock:stockLabel,state:p.offlineSnapshot?"snapshot":pricePending?"pending":p.available?"available":"unavailable"
   });
   if(p.offlineSnapshot)showSnapshotNotice(host,SNAPSHOT_NOTICE);
   else clearSnapshotNotice(host);
@@ -708,7 +692,7 @@ async function initProduct(){
    }
    if(revision!==viewVersion||!recommendations.length)return;
    currentProducts=[p,...recommendations];
-   relatedGrid.innerHTML=recommendations.map(liveProductCard).join("");
+   renderProductGrid(relatedGrid,recommendations.map(liveProductCard));
    if(relatedSection)relatedSection.hidden=false;
   }catch{/* Related products are optional; the main product remains visible. */}
  }
@@ -748,7 +732,7 @@ async function initProduct(){
    void loadRelated(p,viewVersion);
   }catch(error){
    current=null;currentProducts=[];viewVersion++;clearRelated();clearSnapshotNotice(host);
-   host.replaceChildren();status(host,"Não foi possível carregar: "+error.message,true);showRetry();
+   clearProductDetail(host);status(host,"Não foi possível carregar: "+error.message,true);showRetry();
   }finally{loading=false;}
   }
  setupCommercialRefresh(()=>refresh());

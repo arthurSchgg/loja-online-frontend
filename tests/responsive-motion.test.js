@@ -18,12 +18,12 @@ test("scroll-linked product images move only within a small, predictable limit",
  assert.equal(imageScrollOffset(NaN,800),0);
 });
 test("mobile menu closes accessibly without trapping users",()=>{
- const src=read("assets/js/layout.js");
- assert.match(src,/event.key==="Escape"/);
- assert.match(src,/menuButton\.focus\(\)/);
- assert.match(src,/menuButton\.setAttribute\("aria-expanded"/);
- assert.match(src,/mobileMenu\.contains\(event.target\)/);
- assert.match(src,/if\(event.matches\)setMenuOpen\(false\)/);
+ const src=read("src/components/Shell.tsx");
+ assert.match(src,/event.key === "Escape"/);
+ assert.match(src,/menuButton\.current\?\.focus\(\)/);
+ assert.match(src,/aria-expanded=\{open\}/);
+ assert.match(src,/mobileMenu\.current\?\.contains\(event.target\)/);
+ assert.match(src,/if \(event.matches\) setOpen\(false\)/);
 });
 test("scroll image enhancements use rAF, visibility and avoid motion for reduced-motion users",()=>{
  const src=read("assets/js/animations.js");

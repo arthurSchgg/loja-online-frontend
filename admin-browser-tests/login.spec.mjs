@@ -36,3 +36,25 @@ test("admin | verified session unlocks administrative workspace",async({page})=>
  await expect(page.locator("#admin-workspace")).toBeVisible();
  await expect(page.locator("#admin-user")).toContainText("gestora");
 });
+
+test("admin | React dashboard displays indicators and clears them when switching modules",async({page})=>{
+ await page.route("**/api/v1/**",route=>{
+  const path=new URL(route.request().url()).pathname;
+  const fixtures={
+   "/api/v1/auth/csrf":{headerName:"X-CSRF-TOKEN",token:"fixture-token"},
+   "/api/v1/auth/me":{authenticated:true,username:"gestora"},
+   "/api/v1/admin/products":{content:[{id:1,stockQuantity:2,price:null},{id:2,stockQuantity:6,price:100,effectivePrice:80}],last:true},
+   "/api/v1/admin/brands":[],
+   "/api/v1/admin/categories":[]
+  };
+  return route.fulfill({status:fixtures[path]===undefined?404:200,contentType:"application/json",body:JSON.stringify(fixtures[path]??{})});
+ });
+ await page.goto("/admin.html");
+ await page.locator("#admin-module").selectOption("dashboard");
+ await expect(page.locator(".dashboard-card").first()).toContainText("2");
+ await expect(page.locator(".dashboard-card").nth(1)).toContainText("1");
+ await page.getByRole("button",{name:"Gerenciar produtos"}).click();
+ await expect(page.locator("#admin-module")).toHaveValue("products");
+ await expect(page.locator(".dashboard-card")).toHaveCount(0);
+ await expect(page.locator("#edit-form")).toBeVisible();
+});
