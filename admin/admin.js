@@ -140,6 +140,17 @@ function buildForm(values={}){
   }
   else{input=document.createElement("input");input.type=type; if(type==="number"){input.step=name==="position"||name==="brandId"?"1":".01";input.min="0";}}
   input.name=name;input.required=required;
+  // Examples are hints, never persisted values. The owner can replace them
+  // with actual information and the existing validation remains unchanged.
+  const editorHints={
+   displayName:"Ex.: Lojinha da Kátia",slogan:"Ex.: Fragrâncias que viram lembranças",
+   title:"Ex.: Um universo de aromas",subtitle:"Ex.: Descubra novas inspirações",
+   description:"Descreva este conteúdo com suas palavras.",body:"Escreva aqui o texto que será publicado.",
+   openingHours:"Informe os dias e horários reais",address:"Informe o endereço da loja",
+   region:"Informe a cidade ou região atendida",whatsapp:"DDI + DDD + número",email:"Informe o e-mail oficial",
+   instagramUrl:"URL do perfil oficial"
+  };
+  if(["text","textarea","email"].includes(type)&&editorHints[name])input.placeholder=editorHints[name];
   if(type==="checkbox"){
    const selected=moduleName==="products"&&name==="available"?values.manualAvailable??values.available:values[name];
    input.checked=selected===undefined?(moduleName==="offerings"&&name==="available"):Boolean(selected);

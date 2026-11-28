@@ -111,3 +111,17 @@ test("live | API failure or empty catalog hides illustrative offerings",async({p
  await expect(page.locator("#official-story").getByRole("button",{name:"Tentar novamente"})).toBeVisible();
  expect(errors).toEqual([]);
 });
+
+test("live | editorial examples fill unpublished sections without creating commercial offers",async({page})=>{
+ await routeInstitutional(page,{empty:true});
+ await page.goto("/espaco-das-velas.html");
+ await expect(page.locator("#candle-offerings .content-preview-card")).toHaveCount(3);
+ await expect(page.locator("#offering-filters")).toBeVisible();
+ await page.getByRole("button",{name:"Oficinas",exact:true}).click();
+ await expect(page.locator("#candle-offerings .content-preview-card")).toHaveCount(1);
+ await expect(page.locator("#candle-offerings")).toContainText("Oficinas criativas");
+ await expect(page.locator("[data-confirm-offering]")).toHaveCount(0);
+ await page.goto("/conheca-a-loja.html");
+ await expect(page.locator("#official-story .story-preview")).toContainText("Uma essência, muitas histórias");
+ await expect(page.locator("#official-story .official-story-entry")).toHaveCount(0);
+});

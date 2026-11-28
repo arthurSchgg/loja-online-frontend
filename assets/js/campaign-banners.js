@@ -19,15 +19,16 @@ export async function initCampaignBanners(){
  const hero=document.querySelector(".hero");if(!hero||document.querySelector(".managed-banner"))return;
  let banners;
  try{banners=visibleBanners(await fetchCampaigns(),location.origin);}catch{return;}
- // The approved home and its cinematic hero stay exactly as they are when no campaign is published.
- if(!banners.length)return;
+ // Editorial fallback: no discount, price, availability or fake campaign ID.
+ const illustrative=!banners.length;
+ if(illustrative)banners=[{title:"Um presente, muitas possibilidades",subtitle:"Inspire-se com fragrâncias e pequenos rituais para celebrar momentos especiais.",src:"assets/images/brand/hero-live-poster.webp",href:"/catalogo.html"}];
  const section=el("section","","managed-banner container");
  section.setAttribute("aria-label","Campanhas e novidades da loja");
  section.setAttribute("aria-roledescription","carrossel");
  const frame=el("article","","managed-banner__frame"),img=el("img"),copy=el("div","","managed-banner__copy");
  img.width=800;img.height=450;img.loading="lazy";img.decoding="async";
  const title=el("h2"),subtitle=el("p"),cta=el("a","Explorar","btn btn--primary");
- copy.append(el("span","NOVIDADES DA LOJA","eyebrow"),title,subtitle,cta);frame.append(img,copy);section.append(frame);
+ copy.append(el("span",illustrative?"INSPIRAÇÃO EDITORIAL":"NOVIDADES DA LOJA","eyebrow"),title,subtitle,cta);frame.append(img,copy);section.append(frame);
  const controls=el("div","","managed-banner__controls"),dots=el("div","","managed-banner__dots");
  let index=0,timer=null,hover=false,focused=false,visible=true;
  const preference=matchMedia("(prefers-reduced-motion: reduce)");

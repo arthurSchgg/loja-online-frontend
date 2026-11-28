@@ -17,6 +17,7 @@ import {officialStoreLinks} from "./official-contact.js";
 import {safeNumericId as numberId} from "./render-safety.js";
 import {createConfirmationGate} from "./confirmation-gate.js";
 import {setupCommercialRefresh} from "./commercial-refresh.js";
+import {CATEGORY_PREVIEWS,SERVICE_PREVIEWS,previewCard} from "./editorial-defaults.js";
 import {renderProductGrid,clearProductGrid,renderProductDetail,clearProductDetail} from "../modern/storefront.js";
 const safe=value=>escapeHtml(value??"");
 // Institutional and service pages do not need to download the catalog snapshot.
@@ -238,7 +239,7 @@ async function initContact(){
   const store=await fetchStore();
   const channels=officialStoreLinks(store);
   links.replaceChildren();
-  if(!channels.length){status(links,"A loja ainda não publicou canais de contato.");return;}
+  if(!channels.length){status(links,"Conheça nosso universo de fragrâncias e presentes.");const a=document.createElement("a");a.className="btn btn--secondary";a.href="contato.html";a.textContent="Informações de atendimento";links.append(a);return;}
   for(const channel of channels){
    const a=document.createElement("a");a.className="btn btn--secondary";
    a.href=channel.href;a.textContent=channel.label;
@@ -256,11 +257,11 @@ async function initLiveCategoryHighlights(){
  const title=section.querySelector("h2"),lead=section.querySelector("p.lead");
  if(title)title.textContent="Explore as categorias da loja.";
  if(lead)lead.textContent="Encontre produtos nas categorias realmente disponíveis no catálogo.";
- clearProductGrid(grid);status(grid,"Carregando categorias publicadas...");
+ clearProductGrid(grid);grid.replaceChildren(...CATEGORY_PREVIEWS.map(item=>previewCard(item)));
  try{
   const categories=await fetchCategories();
   clearProductGrid(grid);
-  if(!categories.length){status(grid,"Nenhuma categoria publicada no momento.");return;}
+  if(!categories.length){grid.replaceChildren(...CATEGORY_PREVIEWS.map(item=>previewCard(item)));return;}
   const palette=["#edced6","#e7e7c4","#dfd0c1","#ebcfc6"];
   for(const [index,category] of categories.slice(0,8).entries()){
    const link=document.createElement("a");
@@ -275,6 +276,7 @@ async function initLiveCategoryHighlights(){
   }
  }catch(error){
   clearProductGrid(grid);status(grid,"Categorias indisponíveis. Use a busca do catálogo.",true);
+  grid.append(...CATEGORY_PREVIEWS.map(item=>previewCard(item)));
  }
 }
 async function initHomeOfferings(){
@@ -300,7 +302,16 @@ async function initHomeOfferings(){
     }
     box.append(card);
    }
-   if(!published.length)box.remove();
+   if(!published.length){
+    for(const item of SERVICE_PREVIEWS){
+     const card=document.createElement("article");card.className="service-preview";
+     const copy=document.createElement("div");copy.className="service-preview__copy";
+     const kind=document.createElement("span");kind.className="service-preview__kind";kind.textContent="Inspiração";
+     const title=document.createElement("h3");title.textContent=item.title;
+     const description=document.createElement("p");description.textContent=item.description;
+     copy.append(kind,title,description);card.append(copy);box.append(card);
+    }
+   }
   }catch{box.remove();}
  }
 }
@@ -394,7 +405,7 @@ async function initHome(){
   quiz.replaceChildren();status(quiz,"Buscando experiências da loja...");
   try{
    const experiences=await fetchExperiences(),e=experiences?.[0];
-   if(!e){quiz.replaceChildren();status(quiz,"Nenhuma experiência publicada no momento.");}
+   if(!e){quiz.replaceChildren(previewCard({title:"Descubra seu estilo olfativo",description:"Flores, notas frescas, madeiras e aromas envolventes: explore as combinações que despertam boas sensações.",symbol:"✧"},"Experiência ilustrativa"));}
    else{
     const full=Array.isArray(e.questions)&&e.questions.length?e:await fetchExperience(e.id);quiz.replaceChildren();
     for(const question of full.questions||[]){

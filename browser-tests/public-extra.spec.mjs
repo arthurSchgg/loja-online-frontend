@@ -45,3 +45,11 @@ test("live | contact only displays official valid links",async({page})=>{
  await expect(page.locator("#contact-info")).toContainText("Rua exemplo, 100");
  await expect(page.locator("#contact-info")).toContainText("Santa Catarina");
 });
+
+test("live | unpublished experiences display an editorial example without fake quiz IDs",async({page})=>{
+ await page.route("**/api/v1/**",route=>route.fulfill({status:200,contentType:"application/json",body:"[]"}));
+ await page.goto("/viva-sua-experiencia.html");
+ await expect(page.locator("#experience-selection .content-preview-card")).toContainText("Qual é o seu estilo olfativo?");
+ await expect(page.locator("#experience-selection button")).toHaveCount(0);
+ await expect(page.locator("#experience-selection a")).toHaveAttribute("href","catalogo.html");
+});

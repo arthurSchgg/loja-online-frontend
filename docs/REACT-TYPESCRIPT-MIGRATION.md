@@ -32,6 +32,8 @@ O build público gera `dist/assets/modern/` e exclui tudo que pertence à admini
 
 ## Movimento e acessibilidade
 
+Enquanto a proprietária não publicar conteúdo personalizado, os espaços institucionais, categorias, serviços, banner e experiências podem apresentar conteúdo editorial genérico. Esses exemplos não criam registros, preços, links de WhatsApp ou IDs fictícios. O conteúdo publicado pela API substitui as apresentações automaticamente. Os campos administrativos têm sugestões visuais (placeholders), sem salvar dados de exemplo.
+
 A segunda revisão visual adiciona revelação por linhas no título da home, moldura editorial vinculada ao scroll, indicação para descobrir a coleção, cabeçalho aderente, botão de retorno ao topo com foco restaurado, menu móvel escalonado, microinterações nos cards e acabamento visual do estúdio. O movimento do frasco usa interpolação de ângulo com renderização sob demanda; controles de arraste por mouse e slider mantêm a rolagem nativa.
 
 - Sem bloqueio de rolagem ou carregamento de scripts por CDN.

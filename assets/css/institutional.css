@@ -398,3 +398,6 @@ html[data-motion="off"] .chapter-hero__art .editorial-cutout{transform:none!impo
 .quote-section p{font-size:clamp(2rem,4vw,4.4rem);font-weight:500}
 .offering-filters button{border-radius:var(--radius-button)}
 @media(max-width:768px){.chapter-hero h1{font-size:clamp(2.35rem,8.5vw,4rem);max-width:100%}}
+.story-preview{border-left:2px solid var(--color-border);padding:8px 0 8px 20px;margin:0 0 24px}
+.story-preview h3{margin:10px 0;font-size:clamp(1.25rem,2.2vw,1.9rem)}
+.story-preview p{margin:0;color:var(--color-text-muted);line-height:1.7}

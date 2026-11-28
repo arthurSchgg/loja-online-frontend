@@ -73,7 +73,7 @@ export function Experience({ live, api }: { live: boolean; api: ExperienceApi })
     : list.isError ? "Experiências indisponíveis no momento."
     : selected !== null && detail.isPending ? "Carregando perguntas..."
     : selected !== null && detail.isError ? "Não foi possível carregar esta experiência. Escolha outra ou tente novamente."
-    : selected === null ? (list.data?.length ? "Selecione uma experiência para começar." : "Nenhuma experiência publicada no momento.") : "";
+    : selected === null ? (list.data?.length ? "Selecione uma experiência para começar." : "Explore possibilidades para descobrir seu perfil olfativo.") : "";
   return <>
     <div id="experience-status" role="status" aria-live="polite">{status}</div>
     <div id="experience-selection" className="experience-selection" aria-label="Experiências disponíveis" hidden={selected !== null && !detail.isError}>
@@ -81,6 +81,12 @@ export function Experience({ live, api }: { live: boolean; api: ExperienceApi })
         <span className="eyebrow">EXPERIÊNCIA</span><h3>{item.title}</h3><p>{item.description}</p>
         <button className="btn btn--secondary" type="button" onClick={() => setSelected(item.id)}>Começar <ArrowUpRight className="cta-icon" size={16} aria-hidden="true" /></button>
       </article>)}
+      {(!live || list.isPending || list.isError || list.data?.length === 0) && <article className="content-preview-card" data-reveal>
+        <span className="content-preview-symbol" aria-hidden="true">✧</span>
+        <span className="eyebrow">Experiência ilustrativa</span><h3>Qual é o seu estilo olfativo?</h3>
+        <p>Descubra o universo das notas florais, cítricas, amadeiradas e orientais. Uma inspiração para encontrar aromas que combinam com você.</p>
+        <a className="text-link" href="catalogo.html">Explorar fragrâncias</a>
+      </article>}
       {list.isError && <button className="btn btn--secondary" type="button" onClick={() => void list.refetch()}>Tentar novamente</button>}
       {detail.isError && <button className="btn btn--secondary" type="button" onClick={() => void detail.refetch()}>Recarregar experiência</button>}
     </div>

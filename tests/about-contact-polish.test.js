@@ -24,7 +24,7 @@ test("Floratta editorial stamp uses a neutral SVG instead of the green iOS emoji
 test("the about page no longer shows a harsh boxed API failure in the story",()=>{
  assert.match(institutional,/function storyNote\(target,message,retry=false\)/);
  assert.match(institutional,/storyNote\(story,"Nossa história está temporariamente indisponível/);
- assert.match(institutional,/storyNote\(story,"Em breve, este espaço vai apresentar/);
+ assert.match(institutional,/else storyPreview\(story\)/);
  assert.doesNotMatch(institutional,/status\(story,"Não foi possível carregar a história oficial/);
  assert.match(institutionalCss,/\.institutional-story-note\{/);
  assert.match(about,/id="official-story"/);
