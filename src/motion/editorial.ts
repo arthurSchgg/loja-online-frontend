@@ -24,7 +24,7 @@ export function setupEditorialMotion() {
       });
     }
     // Move an inner layer only, leaving native image parallax and video intact.
-    const visual = document.querySelector<HTMLElement>(".hero-live-frame, .chapter-hero__art");
+    const visual = document.querySelector<HTMLElement>(".hero-showcase:not([hidden]), .hero-live-frame:not([hidden]), .chapter-hero__art");
     if (visual) {
       gsap.fromTo(visual, { opacity: 0.7, scale: 0.965, clipPath: "inset(5% 3% 5% 3% round 30px)" }, {
         opacity: 1, scale: 1, clipPath: "inset(0% 0% 0% 0% round 30px)", duration: 1.15, ease: "power3.out", clearProps: "opacity,transform,clipPath"

@@ -14,8 +14,8 @@ test("home hero has an original self-hosted photograph with optional cinematic v
  const hero=html.match(/<img\s+data-hero-bottle\s+[^>]+>/);
  assert.ok(hero,"home poster exists");
  assert.match(hero[0],/src="assets\/images\/brand\/hero-live-poster\.webp"/);
- assert.match(hero[0],/fetchpriority="high"/);
- assert.match(hero[0],/loading="eager"/);
+ assert.match(hero[0],/loading="lazy"/);
+ assert.match(html,/data-hero-live hidden/);
  assert.match(hero[0],/alt="[^"]+"/);
  assert.doesNotMatch(hero[0],/logo-katia|aurora-de-petalas/);
  assert.match(html,/<video[^>]*data-hero-video[^>]*data-src="assets\/images\/brand\/hero-live-motion\.mp4"/);

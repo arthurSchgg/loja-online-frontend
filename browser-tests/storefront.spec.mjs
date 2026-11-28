@@ -276,7 +276,7 @@ test("live | Skelt products show official photos with local fallback and no stoc
 test("demo | Live Photo poster stays visible while ambient video is optional",async({page})=>{
  await page.setViewportSize({width:1440,height:900});
  const errors=collectPageErrors(page);
- await page.goto("/index.html");
+ await page.goto("/index.html?hero=photo");
  const frame=page.locator("[data-hero-live]");
  const poster=frame.locator("img[data-hero-bottle]");
  const video=frame.locator("video[data-hero-video]");
@@ -301,7 +301,7 @@ test("motion | reduced motion avoids downloading Live Photo video",async({page})
  await page.emulateMedia({reducedMotion:"reduce"});
  await page.setViewportSize({width:375,height:812});
  const errors=collectPageErrors(page);
- await page.goto("/index.html");
+ await page.goto("/index.html?hero=photo");
  const frame=page.locator("[data-hero-live]");
  await expect(frame.locator("img[data-hero-bottle]")).toBeVisible();
  await expect(frame.locator("video[data-hero-video]")).not.toHaveAttribute("src",/hero-live-motion\.mp4/);

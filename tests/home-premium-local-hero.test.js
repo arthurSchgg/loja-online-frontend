@@ -12,7 +12,8 @@ test("home uses the approved real local Live Photo, not the retired vector illus
  const hero=html.match(/<img\s+data-hero-bottle\b[^>]*>/);
  assert.ok(hero,"home hero photograph missing");
  assert.match(hero[0],/src="assets\/images\/brand\/hero-live-poster\.webp"/);
- assert.match(hero[0],/fetchpriority="high"/);
+ assert.match(hero[0],/loading="lazy"/);
+ assert.match(html,/data-hero-showcase/);
  assert.match(hero[0],/width="900" height="1125"/);
  assert.match(hero[0],/alt="[^"]+"/);
  assert.doesNotMatch(hero[0],/unsplash|logo-katia|hero-perfumaria-editorial\.svg/);

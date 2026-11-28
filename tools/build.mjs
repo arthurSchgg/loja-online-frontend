@@ -70,7 +70,7 @@ for(const page of pages){
   html=html.replace("connect-src 'self';","connect-src 'self' "+origin+";");
  }
  if(page==="index.html"&&!html.includes('rel="preload" as="image"')){
-  html=html.replace("</head>",'<link rel="preload" as="image" href="assets/images/brand/hero-live-poster.webp" fetchpriority="high"></head>');
+  html=html.replace("</head>",'<link rel="preload" as="image" href="assets/images/editorial/transparent/lily.webp" fetchpriority="high"></head>');
  }
  if(mode==="live"&&page!=="produto.html"){
   const canonical="https://main.loja-online-frontend.pages.dev"+(page==="index.html"?"/":"/"+page.replace(/\.html$/,""));
