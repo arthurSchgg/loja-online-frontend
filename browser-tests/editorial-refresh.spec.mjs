@@ -32,3 +32,13 @@ test("motion | mobile reduced-motion navigation and card controls stay available
  await expect(page.locator(".product-card .product-visual-action").first()).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
+
+test("demo | sans-serif typography and squared buttons are consistent",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ for(const path of ["/index.html","/catalogo.html","/conheca-a-loja.html"]){
+  await page.goto(path);
+  await expect(page.locator("h1").first()).toHaveCSS("font-family",/DM Sans/);
+  if(path!=="/catalogo.html")await expect(page.locator(".btn--primary").first()).toHaveCSS("border-top-left-radius","9px");
+  await expect(page.locator(".icon-button--search")).toHaveCSS("border-top-left-radius","9px");
+ }
+});

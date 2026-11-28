@@ -102,3 +102,6 @@
  .btn .cta-icon{transition:none}
 }
 .react-product-grid{display:contents}
+.btn,.segmented button,.icon-button--add,.qty-control{border-radius:var(--radius-button)}
+.btn:not(.btn--ghost){letter-spacing:.075em}
+.btn--ghost{border-radius:0}

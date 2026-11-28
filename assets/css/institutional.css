@@ -394,3 +394,7 @@ html[data-motion="off"] .chapter-hero__art .editorial-cutout{transform:none!impo
  font-size:clamp(.9rem,2vw,1.02rem);text-align:center;
 }
 .chapter-contact__links .institutional-contact-note+.btn{margin:0}
+.chapter-hero h1{font-size:clamp(2.75rem,5.6vw,5.5rem);line-height:1.08;letter-spacing:-.055em;max-width:16ch}
+.quote-section p{font-size:clamp(2rem,4vw,4.4rem);font-weight:500}
+.offering-filters button{border-radius:var(--radius-button)}
+@media(max-width:768px){.chapter-hero h1{font-size:clamp(2.35rem,8.5vw,4rem);max-width:100%}}

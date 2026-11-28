@@ -326,3 +326,8 @@ body{font-synthesis:none;text-rendering:optimizeLegibility}
 }
 @media(prefers-reduced-motion:reduce){.product-visual-action,.btn,.catalog-chip{transition:none!important;transform:none!important}}
 html[data-motion="off"] .product-visual-action,html[data-motion="off"] .btn,html[data-motion="off"] .catalog-chip{transition:none!important;transform:none!important}
+.catalog-chip,.catalog-clear,.product-visual-action{border-radius:var(--radius-button)}
+.catalog-hero h1{font-size:clamp(2.55rem,5.4vw,5.1rem);line-height:1.08;letter-spacing:-.055em}
+.product-card__meta h3{font-size:clamp(1.08rem,1.55vw,1.45rem);line-height:1.25;font-weight:600}
+.section-heading h2{max-width:20ch}
+.product-detail h1{font-size:clamp(2.1rem,3.7vw,3.9rem);line-height:1.1}

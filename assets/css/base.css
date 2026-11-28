@@ -130,3 +130,8 @@ section[id]{scroll-margin-top:98px}
 .back-top.icon-button{position:fixed;right:clamp(14px,2.5vw,35px);bottom:clamp(16px,3vw,30px);z-index:80;width:48px;height:48px;background:var(--color-deep);color:white;border:1px solid #fff8;box-shadow:0 8px 24px #35262124}
 .back-top.icon-button:hover{background:var(--color-accent)}
 @media(max-width:560px){.back-top.icon-button{width:44px;height:44px}}
+/* Contemporary sans-serif hierarchy and gently squared controls. */
+h1,h2,h3{font-weight:600;letter-spacing:-.045em;line-height:1.08}
+h1 em,h2 em,h3 em{font-weight:inherit}
+.brand strong{font-weight:650;letter-spacing:-.035em}
+.icon-button,.header-actions .icon-button,.drawer-head .icon-button,.back-top.icon-button{border-radius:var(--radius-button)}
