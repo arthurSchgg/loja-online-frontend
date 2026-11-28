@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { motion, useReducedMotion } from "motion/react";
-import { Plus } from "lucide-react";
+import { Plus, ArrowUpRight } from "lucide-react";
 
 export interface ProductCardModel {
   id: number;
@@ -43,6 +43,7 @@ function ProductGrid({ products, empty }: { products: GridProduct[]; empty?: Emp
         <a href={href} aria-label={`Ver ${product.name}`}><div className="product-visual">
           <span className="badge">Conceito</span>
           <img src={product.image} alt={`Ilustração de frasco: ${product.name}`} loading="lazy" width="320" height="420" />
+          <span className="product-visual-action" aria-hidden="true"><ArrowUpRight size={19} strokeWidth={1.65} /></span>
         </div></a>
         <div className="product-card__meta"><small>{product.category}</small><h3><a href={href}>{product.name}</a></h3>
           <p>{product.description}</p><div className="product-card__bottom"><strong>Ilustrativo: {product.price}</strong>
@@ -57,6 +58,7 @@ function ProductGrid({ products, empty }: { products: GridProduct[]; empty?: Emp
       transition={{ layout: { duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] } }}>
       <a href={href}><div className="product-visual" style={{ "--card-theme": "#faf9f6" } as React.CSSProperties}>
         <img src={product.image} data-image-fallback={product.fallback} loading="lazy" decoding="async" alt={product.alt} width="320" height="420" />
+        <span className="product-visual-action" aria-hidden="true"><ArrowUpRight size={19} strokeWidth={1.65} /></span>
       </div></a>
       <div className="product-card__meta">
         <small>{product.brand}</small>

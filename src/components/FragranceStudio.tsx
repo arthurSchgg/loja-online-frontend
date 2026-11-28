@@ -1,13 +1,28 @@
-import { Component, useState } from "react";
-import type { ReactNode } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Component, useRef, useState } from "react";
+import type { ReactNode, PointerEvent } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { MathUtils } from "three";
+import type { Group } from "three";
+import { useReducedMotion } from "motion/react";
 import { RotateCcw, RotateCw, Rotate3D } from "lucide-react";
 
 type Finish = "rosé" | "âmbar";
 
-function Bottle({ angle, finish }: { angle: number; finish: Finish }) {
+function Bottle({ angle, finish, reduced }: { angle: number; finish: Finish; reduced: boolean }) {
   const color = finish === "rosé" ? "#dba9a3" : "#d3a268";
-  return <group rotation={[0, angle, 0]} position={[0, -0.15, 0]}>
+  const group = useRef<Group>(null);
+  const initial = useRef(angle);
+  useFrame((state, delta) => {
+    if (!group.current) return;
+    const current = group.current.rotation.y;
+    const difference = Math.atan2(Math.sin(angle - current), Math.cos(angle - current));
+    if (reduced || Math.abs(difference) < .003) group.current.rotation.y = angle;
+    else {
+      group.current.rotation.y = MathUtils.damp(current, current + difference, 14, Math.min(delta, .05));
+      state.invalidate();
+    }
+  });
+  return <group ref={group} rotation={[0, initial.current, 0]} position={[0, -0.15, 0]}>
     {/* Original geometric bottle concept, never a representation of an SKU. */}
     <mesh position={[0, -0.12, 0]}>
       <boxGeometry args={[1.48, 1.82, 0.72]} />
@@ -59,8 +74,24 @@ function StudioFallback() {
 export function FragranceStudio() {
   const [angle, setAngle] = useState(25);
   const [finish, setFinish] = useState<Finish>("rosé");
+  const [dragging, setDragging] = useState(false);
+  const drag = useRef<{pointer: number; x: number; angle: number} | null>(null);
+  const reduced = useReducedMotion() || document.documentElement.dataset.motion === "off";
+  const startDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || event.pointerType === "touch") return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = { pointer: event.pointerId, x: event.clientX, angle };
+    setDragging(true);
+  };
+  const moveDrag = (event: PointerEvent<HTMLDivElement>) => {
+    const from = drag.current;
+    if (!from || from.pointer !== event.pointerId) return;
+    setAngle(((Math.round(from.angle + (event.clientX - from.x) * .65) % 360) + 360) % 360);
+  };
+  const stopDrag = () => { drag.current = null; setDragging(false); };
   return <div className="studio-interactive">
-    <div className="studio-scene" aria-label="Frasco conceitual 3D em iluminação editorial">
+    <div className="studio-scene" aria-label="Frasco conceitual 3D em iluminação editorial" data-dragging={dragging}
+      onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag} onLostPointerCapture={stopDrag}>
       <StudioBoundary>
         <Canvas frameloop="demand" dpr={[1, 1.5]} camera={{ position: [3.3, 2.3, 5.7], fov: 34 }}
           gl={{ antialias: true, alpha: true }} fallback={<StudioFallback />}>
@@ -68,13 +99,14 @@ export function FragranceStudio() {
           <directionalLight color="#fff4e3" position={[3, 5, 5]} intensity={3} />
           <directionalLight color="#dbaca4" position={[-4, 1, -3]} intensity={2} />
           <pointLight color="#ffe1bf" intensity={18} position={[2, 1.5, -3]} />
-          <Bottle angle={angle * Math.PI / 180} finish={finish} />
+          <Bottle angle={angle * Math.PI / 180} finish={finish} reduced={!!reduced} />
           <mesh position={[0, -1.23, 0]}>
             <cylinderGeometry args={[1.38, 1.5, 0.14, 48]} />
             <meshStandardMaterial color="#c6a99b" roughness={0.77} />
           </mesh>
         </Canvas>
       </StudioBoundary>
+      <span className="studio-drag-hint" aria-hidden="true"><Rotate3D size={15} /> Arraste para girar</span>
     </div>
     <div className="studio-controls">
       <label htmlFor="studio-angle">Girar frasco <output>{angle}°</output></label>
@@ -85,7 +117,7 @@ export function FragranceStudio() {
       </div>
       <fieldset className="studio-finishes"><legend>Acabamento conceitual</legend>
         {(["rosé", "âmbar"] as const).map(value => <button key={value} type="button" className="btn btn--secondary"
-          aria-pressed={finish === value} onClick={() => setFinish(value)}>{value}</button>)}
+          aria-pressed={finish === value} onClick={() => setFinish(value)}><span className="studio-swatch" data-finish={value} aria-hidden="true" />{value}</button>)}
       </fieldset>
       <button type="button" className="text-link studio-reset" onClick={() => { setAngle(25); setFinish("rosé"); }}><Rotate3D size={16} /> Reiniciar visualização</button>
     </div>

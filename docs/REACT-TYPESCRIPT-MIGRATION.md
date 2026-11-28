@@ -32,6 +32,8 @@ O build público gera `dist/assets/modern/` e exclui tudo que pertence à admini
 
 ## Movimento e acessibilidade
 
+A segunda revisão visual adiciona revelação por linhas no título da home, moldura editorial vinculada ao scroll, indicação para descobrir a coleção, cabeçalho aderente, botão de retorno ao topo com foco restaurado, menu móvel escalonado, microinterações nos cards e acabamento visual do estúdio. O movimento do frasco usa interpolação de ângulo com renderização sob demanda; controles de arraste por mouse e slider mantêm a rolagem nativa.
+
 - Sem bloqueio de rolagem ou carregamento de scripts por CDN.
 - Respeitar redução de movimento, Save-Data e foco por teclado.
 - GSAP controla o movimento editorial do hero e das camadas, Motion controla transições de interface; evitar animar o mesmo elemento com dois motores.
