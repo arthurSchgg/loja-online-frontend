@@ -32,7 +32,7 @@ O build público gera `dist/assets/modern/` e exclui tudo que pertence à admini
 
 ## Movimento e acessibilidade
 
-Experimento de hero na branch de prévia: a composição editorial de três fotografias recortadas alterna destaque, iluminação e posição por CSS e eventos de interface. A rotação automática pausa fora da viewport, com foco, mouse sobre a cena ou redução de movimento. As escolhas manuais continuam disponíveis. O hero anterior continua acessível via `?hero=photo` para comparação; as imagens não representam ofertas confirmadas.
+Experimento de hero na branch de prévia: a composição editorial de três fotografias recortadas alterna automaticamente destaque, iluminação e posição a cada 30 segundos. Não há seletores de perfume; o controle de pausa permanece para acessibilidade. A rotação para fora da área visível ou com redução de movimento. O hero anterior continua acessível via `?hero=photo` para comparação; as imagens não representam ofertas confirmadas.
 
 Enquanto a proprietária não publicar conteúdo personalizado, os espaços institucionais, categorias, serviços, banner e experiências podem apresentar conteúdo editorial genérico. Esses exemplos não criam registros, preços, links de WhatsApp ou IDs fictícios. O conteúdo publicado pela API substitui as apresentações automaticamente. Os campos administrativos têm sugestões visuais (placeholders), sem salvar dados de exemplo.
 
